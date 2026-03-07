@@ -5,7 +5,23 @@ import prettierConfig from 'eslint-config-prettier';
 
 export default [
   {
-    ignores: ['dist/**', 'coverage/**']
+    ignores: ['dist/**', 'coverage/**', '.playwright-browsers/**']
+  },
+  {
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        Buffer: 'readonly',
+        Event: 'readonly',
+        console: 'readonly',
+        document: 'readonly',
+        process: 'readonly',
+        setTimeout: 'readonly',
+        window: 'readonly'
+      }
+    }
   },
   eslint.configs.recommended,
   {
