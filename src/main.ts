@@ -17,7 +17,8 @@ import {
   installUpgradeForNodeType,
   repairMostDamagedSubsystem
 } from './engine/sim/vehicle';
-import { biomeByNodeType, buildRunLayout, mapNodePalette, MODULE_LABELS } from './game/runtime/runLayout';
+import { biomeByNodeType, buildRunLayout, MODULE_LABELS } from './game/runtime/runLayout';
+import { buildMapActionChips, buildMapBoardView } from './game/runtime/mapBoardView';
 import { buildMapSceneCopy, buildMapSceneHudLayout } from './game/runtime/mapSceneCards';
 import { buildMapSceneContent } from './game/runtime/mapSceneContent';
 import { pullCollectibleTowardTarget } from './game/runtime/collectibleMagnetism';
@@ -35,7 +36,6 @@ import { updateRunObjectives } from './game/runtime/runObjectiveUpdates';
 import { buildRunObjectiveVisualState } from './game/runtime/runObjectiveVisuals';
 import { dashEntryEnergyCost, shouldContinueDash, shouldStartDash } from './game/runtime/runDash';
 import { buildRunHudLayout } from './game/runtime/runHudLayout';
-import { projectMapPoint } from './game/runtime/mapProjection';
 import { updateMapRotation } from './game/runtime/mapRotation';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import { advanceHorizontalVelocity } from './game/runtime/runMotion';
@@ -1406,77 +1406,46 @@ async function bootstrap(): Promise<void> {
     });
     drawMapBackdrop(graphics, w, h);
 
-    const minX = Math.min(...state.sim.world.nodes.map((node) => node.x));
-    const maxX = Math.max(...state.sim.world.nodes.map((node) => node.x));
-    const minY = Math.min(...state.sim.world.nodes.map((node) => node.y));
-    const maxY = Math.max(...state.sim.world.nodes.map((node) => node.y));
-    const minZ = Math.min(...state.sim.world.nodes.map((node) => node.z));
-    const maxZ = Math.max(...state.sim.world.nodes.map((node) => node.z));
-
-    const bounds = { minX, maxX, minY, maxY, minZ, maxZ };
-    const project = (x: number, y: number, z: number): { x: number; y: number; depth: number } =>
-      projectMapPoint(x, y, z, bounds, w, h, margin, state.mapRotation);
-
     const options = connectedNeighbors(state.sim);
     const selectedOption = options[state.mapSelectionIndex] ?? null;
-    const selectedNodeId = selectedOption?.nodeId ?? null;
+    const mapBoardView = buildMapBoardView(state, w, h, margin);
 
-    for (const edge of state.sim.world.edges) {
-      const from = state.sim.world.nodes.find((node) => node.id === edge.from);
-      const to = state.sim.world.nodes.find((node) => node.id === edge.to);
-      if (!from || !to) continue;
-      const p1 = project(from.x, from.y, from.z);
-      const p2 = project(to.x, to.y, to.z);
-      const edgeWidth = clamp(1.5 + edge.distance * 0.12, 1.5, 4);
-      const isSelectedEdge =
-        (edge.from === state.sim.currentNodeId && edge.to === selectedNodeId) ||
-        (edge.to === state.sim.currentNodeId && edge.from === selectedNodeId);
-      graphics
-        .moveTo(p1.x, p1.y)
-        .lineTo(p2.x, p2.y)
-        .stroke({ color: isSelectedEdge ? '#f59e0b' : '#94a3b8', width: isSelectedEdge ? edgeWidth + 1.5 : edgeWidth, alpha: isSelectedEdge ? 0.95 : clamp(0.55 + ((p1.depth + p2.depth) * 0.00035 + 0.25), 0.4, 0.82) });
-    }
+    mapBoardView.edges.forEach((edge) => {
+      graphics.moveTo(edge.from.x, edge.from.y).lineTo(edge.to.x, edge.to.y).stroke({
+        color: edge.color,
+        width: edge.width,
+        alpha: edge.alpha
+      });
+    });
 
-    const projectedNodes = state.sim.world.nodes
-      .map((node) => ({ node, projected: project(node.x, node.y, node.z) }))
-      .sort((a, b) => a.projected.depth - b.projected.depth);
-
-    for (const { node, projected } of projectedNodes) {
-      const p = projected;
-      const isCurrent = node.id === state.sim.currentNodeId;
-      const isSelected = node.id === selectedOption?.nodeId;
-      const isVisited = state.sim.exploration.visitedNodeIds.includes(node.id);
-      const isCompleted = state.completedNodeIds.includes(node.id);
-      const isGoal = node.id === state.expeditionGoalNodeId;
-      const palette = mapNodePalette(node.type);
-      const radius = (isCurrent ? 14 : isSelected ? 12 : 10) + clamp(projected.depth / 420, -1.5, 1.5);
-      if (isGoal) {
-        graphics.circle(p.x, p.y, radius + 12).stroke({ color: '#f59e0b', width: 2.5, alpha: 0.55 });
+    mapBoardView.nodes.forEach((node) => {
+      if (node.goal) {
+        graphics.circle(node.x, node.y, node.radius + 12).stroke({ color: '#f59e0b', width: 2.5, alpha: 0.55 });
       }
-      if (isVisited || isCurrent || isSelected) {
-        graphics.circle(p.x, p.y, radius + 8).fill({ color: isCurrent ? '#2563eb' : palette.glow, alpha: isCurrent ? 0.2 : 0.16 });
+      if (node.glowRadius && node.glowColor) {
+        graphics.circle(node.x, node.y, node.glowRadius).fill({ color: node.glowColor, alpha: node.current ? 0.2 : 0.16 });
       }
-      if (isCompleted) {
-        graphics.circle(p.x, p.y, radius + 4).stroke({ color: '#0f172a', width: 2, alpha: 0.6 });
+      if (node.outline) {
+        graphics.circle(node.x, node.y, node.radius + 4).stroke({ color: '#0f172a', width: 2, alpha: 0.6 });
       }
-      graphics.circle(p.x, p.y, radius).fill(isCurrent ? '#2563eb' : isSelected ? '#f97316' : palette.fill);
-      if (isVisited && !isCurrent) {
-        graphics.circle(p.x, p.y, Math.max(2, radius - 5)).fill('#f8fafc');
+      graphics.circle(node.x, node.y, node.radius).fill(node.fill);
+      if (node.innerDot) {
+        graphics.circle(node.x, node.y, Math.max(2, node.radius - 5)).fill('#f8fafc');
       }
-      if (isGoal) {
+      if (node.starRadius) {
         graphics
-          .moveTo(p.x, p.y - (radius + 6))
-          .lineTo(p.x + 4, p.y - 2)
-          .lineTo(p.x + radius + 6, p.y)
-          .lineTo(p.x + 4, p.y + 2)
-          .lineTo(p.x, p.y + radius + 6)
-          .lineTo(p.x - 4, p.y + 2)
-          .lineTo(p.x - radius - 6, p.y)
-          .lineTo(p.x - 4, p.y - 2)
+          .moveTo(node.x, node.y - node.starRadius)
+          .lineTo(node.x + 4, node.y - 2)
+          .lineTo(node.x + node.starRadius, node.y)
+          .lineTo(node.x + 4, node.y + 2)
+          .lineTo(node.x, node.y + node.starRadius)
+          .lineTo(node.x - 4, node.y + 2)
+          .lineTo(node.x - node.starRadius, node.y)
+          .lineTo(node.x - 4, node.y - 2)
           .closePath()
           .stroke({ color: '#fbbf24', width: 1.6, alpha: 0.65 });
       }
-    }
+    });
 
     const selectedDistance = selectedOption?.distance ?? 0;
     const mapSceneContent = buildMapSceneContent(state, selectedOption?.nodeId ?? null, selectedDistance, {
@@ -1490,7 +1459,6 @@ async function bootstrap(): Promise<void> {
     const routeX = 20;
     const notesWidth = Math.max(280, Math.min(350, w - routeWidth - 120));
     const notesX = w - notesWidth - 20;
-    const chipStartX = Math.round(w * 0.5 - 292);
     const chipY = h - 58;
     const chipHeight = 34;
     const mapSceneCopy = buildMapSceneCopy({
@@ -1604,14 +1572,7 @@ async function bootstrap(): Promise<void> {
       graphics.circle(w * 0.5 + 126, 182, 6).fill('#22c55e');
     }
 
-    const mapChips = [
-      { x: chipStartX, w: 98, color: '#60a5fa', label: 'Up/Down\nRoute' },
-      { x: chipStartX + 108, w: 88, color: '#7dd3fc', label: 'Q/E\nRotate' },
-      { x: chipStartX + 206, w: 88, color: '#fbbf24', label: 'Enter\nTravel' },
-      { x: chipStartX + 304, w: 88, color: '#34d399', label: 'B\nRepair' },
-      { x: chipStartX + 402, w: 88, color: '#94a3b8', label: 'C\nInstall' },
-      { x: chipStartX + 500, w: 88, color: '#64748b', label: state.expeditionComplete ? 'N\nNew' : 'A\nReturn' }
-    ];
+    const mapChips = buildMapActionChips(w, state.expeditionComplete);
     mapChips.forEach((chip, index) => {
       drawChip(graphics, chip.x, chipY, chip.w, chip.color, chipHeight);
       const label = chipLabels[index];
