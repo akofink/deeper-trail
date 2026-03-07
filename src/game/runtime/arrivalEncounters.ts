@@ -1,3 +1,5 @@
+import { revealBiomeIntel } from '../../engine/sim/exploration';
+import { connectedNeighbors, findNode } from '../../engine/sim/world';
 import { getMaxHealth } from '../../engine/sim/vehicle';
 import type { NodeTypeKey } from '../state/gameState';
 import type { RuntimeState } from './runtimeState';
@@ -5,6 +7,22 @@ import type { RuntimeState } from './runtimeState';
 export interface ArrivalEncounterOutcome {
   readonly id: string | null;
   readonly message: string;
+}
+
+function revealConnectedBiomeIntel(state: RuntimeState): string[] {
+  const revealedTypes = new Set<string>();
+
+  for (const neighbor of connectedNeighbors(state.sim)) {
+    const node = findNode(state.sim, neighbor.nodeId);
+    if (!node) {
+      continue;
+    }
+
+    revealBiomeIntel(state.sim, node.type);
+    revealedTypes.add(node.type);
+  }
+
+  return Array.from(revealedTypes).sort();
 }
 
 export function resolveArrivalEncounter(
@@ -24,6 +42,16 @@ export function resolveArrivalEncounter(
     return {
       id: 'ruin-alignment-cache',
       message: ' Scanner traced a buried relay seam: alignment cache +1 scrap.'
+    };
+  }
+
+  if (nodeType === 'town' && state.sim.notebook.synthesisUnlocked) {
+    state.freeTravelCharges += 1;
+    const revealedTypes = revealConnectedBiomeIntel(state);
+    const routeLabel = revealedTypes.length > 0 ? ` charted ${revealedTypes.join('/')} routes and` : '';
+    return {
+      id: 'town-surveyor-synthesis',
+      message: ` Surveyor broker synced your synthesis notes:${routeLabel} banked +1 free transfer.`
     };
   }
 

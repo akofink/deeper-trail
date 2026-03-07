@@ -190,6 +190,59 @@ describe('expedition flow runtime helpers', () => {
     expect(state.mapMessage).toContain('Phase corridor');
   });
 
+  it('lets synthesized town arrivals annotate connected biome routes for future map decisions', () => {
+    const state = buildRuntimeState('arrival-town-synthesis');
+    const neighbor = connectedNeighbors(state.sim).find(({ nodeId }) => {
+      const degree = state.sim.world.edges.reduce((count, edge) => {
+        if (edge.from === nodeId || edge.to === nodeId) {
+          return count + 1;
+        }
+        return count;
+      }, 0);
+      return degree > 1;
+    });
+    expect(neighbor).toBeDefined();
+    if (!neighbor) {
+      throw new Error('Expected connected neighbor with multiple exits');
+    }
+
+    state.sim.notebook.discoveredClues.ruin = true;
+    state.sim.notebook.discoveredClues.nature = true;
+    state.sim.notebook.discoveredClues.anomaly = true;
+    state.sim.notebook.synthesisUnlocked = true;
+    const townNode = findNode(state.sim, neighbor.nodeId);
+    expect(townNode).toBeDefined();
+    if (!townNode) {
+      throw new Error('Expected neighbor node');
+    }
+    townNode.type = 'town';
+
+    const townNeighborIds = state.sim.world.edges.flatMap((edge) => {
+      if (edge.from === townNode.id) return [edge.to];
+      if (edge.to === townNode.id) return [edge.from];
+      return [];
+    });
+
+    let assignedRouteCount = 0;
+    townNeighborIds.forEach((nodeId) => {
+      const node = findNode(state.sim, nodeId);
+      if (!node || node.id === state.sim.currentNodeId) {
+        return;
+      }
+      node.type = assignedRouteCount % 2 === 0 ? 'ruin' : 'anomaly';
+      assignedRouteCount += 1;
+    });
+    expect(assignedRouteCount).toBeGreaterThan(0);
+
+    const result = travelToNodeWithRuntimeEffects(state, neighbor.nodeId);
+
+    expect(result.didTravel).toBe(true);
+    expect(state.freeTravelCharges).toBe(1);
+    expect(state.mapMessage).toContain('synthesis notes');
+    expect(state.sim.exploration.biomeKnowledge.ruin.objectiveKnown).toBe(true);
+    expect(state.sim.exploration.biomeKnowledge.ruin.riskKnown).toBe(true);
+  });
+
   it('marks expedition-goal completions as complete before returning to the map', () => {
     const state = buildRuntimeState('expedition-goal-flow');
     state.sim.currentNodeId = state.expeditionGoalNodeId;

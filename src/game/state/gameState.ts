@@ -21,6 +21,7 @@ export type VehicleCondition = Record<VehicleSubsystemKey, number>;
 export interface BiomeKnowledge {
   visits: number;
   benefitKnown: boolean;
+  objectiveKnown: boolean;
   riskKnown: boolean;
 }
 
@@ -93,10 +94,10 @@ export function createInitialGameState(seed: string): GameState {
     exploration: {
       visitedNodeIds: [startNode.id],
       biomeKnowledge: {
-        town: { visits: 0, benefitKnown: false, riskKnown: false },
-        ruin: { visits: 0, benefitKnown: false, riskKnown: false },
-        nature: { visits: 0, benefitKnown: false, riskKnown: false },
-        anomaly: { visits: 0, benefitKnown: false, riskKnown: false }
+        town: { visits: 0, benefitKnown: false, objectiveKnown: false, riskKnown: false },
+        ruin: { visits: 0, benefitKnown: false, objectiveKnown: false, riskKnown: false },
+        nature: { visits: 0, benefitKnown: false, objectiveKnown: false, riskKnown: false },
+        anomaly: { visits: 0, benefitKnown: false, objectiveKnown: false, riskKnown: false }
       }
     },
     notebook: {
