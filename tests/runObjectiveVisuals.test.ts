@@ -93,11 +93,13 @@ describe('run objective visuals helper', () => {
 
     node.type = 'anomaly';
     state.syncGates = [{ id: 'sg0', x: 120, y: 140, w: 60, h: 90, stabilized: false }];
-    state.beacons = [{ id: 'b0', x: 0, y: 0, r: 15, activated: false }];
+    state.beacons = [{ id: 'b0', x: 0, y: 0, r: 15, activated: false, scanProgress: 0.2, scanLocked: false }];
 
     let visuals = buildRunObjectiveVisualState(state);
     expect(visuals.syncGates[0]?.phaseOpen).toBe(true);
     expect(visuals.beacons[0]?.anomalyWindowOpen).toBe(true);
+    expect(visuals.beacons[0]?.anomalyScanProgressRatio).toBeCloseTo(0.5);
+    expect(visuals.beacons[0]?.anomalyScanLocked).toBe(false);
 
     node.type = 'nature';
     state.canopyLifts = [{ id: 'cl0', x: 180, y: 160, w: 80, h: 100, progress: 0.3, charted: false }];

@@ -1,4 +1,5 @@
 import {
+  anomalyLockProgressRatio,
   getBeaconRuleForNodeType,
   isPhaseWindowOpen,
   isSteadyLinkReady,
@@ -54,6 +55,8 @@ export interface RunObjectiveVisualState {
     isNextRequired: boolean;
     steadyReady: boolean;
     anomalyWindowOpen: boolean;
+    anomalyScanLocked: boolean;
+    anomalyScanProgressRatio: number;
     labelText: string;
     labelFill: string;
   }>;
@@ -120,6 +123,8 @@ export function buildRunObjectiveVisualState(state: RuntimeState): RunObjectiveV
         isNextRequired,
         steadyReady,
         anomalyWindowOpen: nodeType === 'anomaly' && isPhaseWindowOpen(state.elapsedSeconds, index),
+        anomalyScanLocked: Boolean(beacon.scanLocked),
+        anomalyScanProgressRatio: anomalyLockProgressRatio(beacon.scanProgress ?? 0),
         labelText: beaconRule === 'steady' ? 'S' : `${index + 1}`,
         labelFill: beaconLabelFill(beaconRule, steadyReady, isNextRequired)
       };

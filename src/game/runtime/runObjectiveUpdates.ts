@@ -1,9 +1,16 @@
 import type { RuntimeState } from './runtimeState';
 import { isInsideCanopyLift, updateCanopyLiftProgress } from './canopyLifts';
 import { canShatterImpactPlate } from './impactPlates';
-import { isSteadyLinkReady, type BeaconRule } from '../../engine/sim/runObjectives';
+import {
+  ANOMALY_SCAN_LOCK_SECONDS,
+  canChargeAnomalyLock,
+  isSteadyLinkReady,
+  type BeaconRule
+} from '../../engine/sim/runObjectives';
 import { canStabilizeSyncGate } from './syncGates';
 import { updateServiceStopProgress } from './serviceStops';
+import { currentNodeType } from '../../engine/sim/world';
+import { beaconInteractRadius } from './vehicleDerivedStats';
 
 export interface RunObjectiveUpdateResult {
   message: string | null;
@@ -27,7 +34,10 @@ export function activeBeaconRule(state: RuntimeState): BeaconRule {
 
 export function updateRunObjectives(state: RuntimeState, input: RunObjectiveUpdateInput): RunObjectiveUpdateResult {
   const px = state.player.x + state.player.w * 0.5;
+  const py = state.player.y + state.player.h * 0.5;
   const steadyReady = isSteadyLinkReady(Math.abs(state.player.vx), !state.player.onGround);
+  const nodeType = currentNodeType(state.sim);
+  const interactRadius = beaconInteractRadius(state);
   const playerBounds = {
     x: state.player.x,
     y: state.player.y,
@@ -37,6 +47,29 @@ export function updateRunObjectives(state: RuntimeState, input: RunObjectiveUpda
 
   let message: string | null = null;
   let durationSeconds = 0;
+
+  if (nodeType === 'anomaly' && state.sim.vehicle.scanner >= 2) {
+    for (let index = 0; index < state.beacons.length; index += 1) {
+      const beacon = state.beacons[index];
+      if (beacon.activated || beacon.scanLocked) continue;
+      const rr = (beacon.r + interactRadius) * (beacon.r + interactRadius);
+      const inRange = (beacon.x - px) * (beacon.x - px) + (beacon.y - py) * (beacon.y - py) <= rr;
+      const canCharge = inRange && canChargeAnomalyLock(Math.abs(state.player.vx), state.dashBoost, state.elapsedSeconds, index);
+
+      if (canCharge) {
+        beacon.scanProgress = Math.min((beacon.scanProgress ?? 0) + input.dt, ANOMALY_SCAN_LOCK_SECONDS);
+        if (beacon.scanProgress >= ANOMALY_SCAN_LOCK_SECONDS) {
+          beacon.scanLocked = true;
+          beacon.scanProgress = ANOMALY_SCAN_LOCK_SECONDS;
+          message = `Scanner locked relay ${beacon.id.toUpperCase()}.`;
+          durationSeconds = 1.8;
+        }
+        continue;
+      }
+
+      beacon.scanProgress = inRange ? Math.max(0, (beacon.scanProgress ?? 0) - input.dt) : 0;
+    }
+  }
 
   for (const stop of state.serviceStops) {
     const inZone = Math.abs(px - stop.x) <= stop.w * 0.5;

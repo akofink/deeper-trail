@@ -4,6 +4,8 @@ export interface Beacon {
   y: number;
   r: number;
   activated: boolean;
+  scanProgress?: number;
+  scanLocked?: boolean;
 }
 
 export interface ServiceStop {

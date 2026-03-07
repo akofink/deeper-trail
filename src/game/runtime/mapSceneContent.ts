@@ -53,10 +53,10 @@ export function buildMapSceneContent(
       : 'Vehicle: fully maxed.';
 
   const scannerHint = options.hasAutoLinkScanner
-    ? `Scanner lv.${state.sim.vehicle.scanner}: auto-link online.`
+    ? `Scanner lv.${state.sim.vehicle.scanner}: phase-lock and auto-link online.`
     : state.sim.vehicle.scanner >= 2
-      ? `Scanner lv.${state.sim.vehicle.scanner}: route preview online${state.sim.vehicle.scanner >= 4 ? ', hazard preview online.' : ', hazard preview at lv.4.'}`
-      : `Scanner lv.${state.sim.vehicle.scanner}: route preview at lv.2, auto-link at lv.3.`;
+      ? `Scanner lv.${state.sim.vehicle.scanner}: route preview and phase-lock online${state.sim.vehicle.scanner >= 4 ? ', hazard preview online.' : ', hazard preview at lv.4.'}`
+      : `Scanner lv.${state.sim.vehicle.scanner}: route preview and phase-lock at lv.2, auto-link at lv.3.`;
 
   const repairHint = options.canUseMedPatch
     ? `B: +${options.medPatchHealAmount} HP for ${options.medPatchScrapCost} scrap.`

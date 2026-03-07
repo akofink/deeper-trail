@@ -76,7 +76,7 @@ describe('map scene content helper', () => {
     expect(content.routeDetail).toContain('dist 7  fuel 7');
     expect(content.routeDetail).toContain('Air relays + canopy lifts');
     expect(content.installHint.length).toBeGreaterThan(0);
-    expect(content.scannerHint).toContain('route preview online');
+    expect(content.scannerHint).toContain('phase-lock online');
     expect(content.repairHint).toContain('repair modules');
   });
 
@@ -108,7 +108,7 @@ describe('map scene content helper', () => {
     expect(content.completionState).toBe('COMPLETE');
     expect(content.routeDetail).toContain('Select a connected route');
     expect(content.repairHint).toContain('+1 HP');
-    expect(content.scannerHint).toContain('auto-link online');
+    expect(content.scannerHint).toContain('phase-lock and auto-link online');
     expect(content.fieldNotes.join('\n')).toContain('NOTEBOOK');
     expect(content.fieldNotes.join('\n')).toContain('SYNTH');
     expect(content.fieldNotes.join('\n')).toContain('RELAY MASONRY');

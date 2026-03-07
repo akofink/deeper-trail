@@ -1,6 +1,7 @@
 import type { Beacon } from '../../game/state/runObjectives';
 
 export type BeaconRule = 'standard' | 'ordered' | 'boosted' | 'airborne' | 'steady';
+export const ANOMALY_SCAN_LOCK_SECONDS = 0.4;
 
 export interface BeaconActivationContext {
   readonly nodeType: string;
@@ -10,6 +11,7 @@ export interface BeaconActivationContext {
   readonly dashBoost: number;
   readonly isAirborne: boolean;
   readonly elapsedSeconds: number;
+  readonly scanLocked?: boolean;
 }
 
 export interface BeaconActivationResult {
@@ -35,6 +37,17 @@ export function getBeaconRuleForNodeType(nodeType: string): BeaconRule {
 export function isPhaseWindowOpen(elapsedSeconds: number, beaconIndex: number): boolean {
   const phaseTime = (elapsedSeconds + beaconIndex * PHASE_LINK_OFFSET_SECONDS) % PHASE_LINK_PERIOD_SECONDS;
   return phaseTime >= 0 && phaseTime < PHASE_LINK_OPEN_SECONDS;
+}
+
+export function canChargeAnomalyLock(currentSpeed: number, dashBoost: number, elapsedSeconds: number, beaconIndex: number): boolean {
+  return (
+    isPhaseWindowOpen(elapsedSeconds, beaconIndex) &&
+    (currentSpeed >= BOOST_LINK_SPEED || dashBoost >= BOOST_LINK_DASH_THRESHOLD)
+  );
+}
+
+export function anomalyLockProgressRatio(progress: number): number {
+  return Math.max(0, Math.min(1, progress / ANOMALY_SCAN_LOCK_SECONDS));
 }
 
 export function nextRequiredBeaconIndex(beacons: Beacon[]): number {
@@ -90,6 +103,9 @@ export function canActivateBeacon(context: BeaconActivationContext): BeaconActiv
   }
 
   if (rule === 'boosted') {
+    if (context.scanLocked) {
+      return { canActivate: true };
+    }
     if (context.currentSpeed < BOOST_LINK_SPEED && context.dashBoost < BOOST_LINK_DASH_THRESHOLD) {
       return {
         canActivate: false,

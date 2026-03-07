@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  anomalyLockProgressRatio,
   canActivateBeacon,
+  canChargeAnomalyLock,
   getBeaconRuleForNodeType,
   getObjectiveSummary,
   isPhaseWindowOpen,
@@ -131,6 +133,18 @@ describe('run objective rules', () => {
       elapsedSeconds: 0.1
     });
     expect(fast.canActivate).toBe(true);
+
+    const locked = canActivateBeacon({
+      nodeType: 'anomaly',
+      beaconIndex: 1,
+      beacons,
+      currentSpeed: 0,
+      dashBoost: 0,
+      isAirborne: false,
+      elapsedSeconds: 0.9,
+      scanLocked: true
+    });
+    expect(locked.canActivate).toBe(true);
   });
 
   it('requires nature beacons to be linked while airborne', () => {
@@ -165,5 +179,8 @@ describe('run objective rules', () => {
     expect(isPhaseWindowOpen(0.9, 0)).toBe(false);
     expect(isPhaseWindowOpen(0.1, 1)).toBe(true);
     expect(isPhaseWindowOpen(0.5, 1)).toBe(false);
+    expect(canChargeAnomalyLock(280, 0, 0.1, 0)).toBe(true);
+    expect(canChargeAnomalyLock(180, 0.1, 0.1, 0)).toBe(false);
+    expect(anomalyLockProgressRatio(0.2)).toBeCloseTo(0.5);
   });
 });

@@ -1,5 +1,7 @@
 import {
+  anomalyLockProgressRatio,
   canActivateBeacon,
+  canChargeAnomalyLock,
   getBeaconRuleForNodeType,
   getBeaconRuleLabel,
   isSteadyLinkReady
@@ -143,8 +145,21 @@ function beaconPromptText(state: RuntimeState): string | null {
       currentSpeed: Math.abs(state.player.vx),
       dashBoost: state.dashBoost,
       isAirborne: !state.player.onGround,
-      elapsedSeconds: state.elapsedSeconds
+      elapsedSeconds: state.elapsedSeconds,
+      scanLocked: beacon.scanLocked
     });
+
+    if (beaconRule === 'boosted' && state.sim.vehicle.scanner >= 2) {
+      if (beacon.scanLocked) {
+        return state.sim.vehicle.scanner >= 3
+          ? 'Signal relay in range.\nPattern locked. Scanner will confirm it.'
+          : 'Signal relay in range.\nPattern locked. Press Enter to confirm link.';
+      }
+
+      if (canChargeAnomalyLock(Math.abs(state.player.vx), state.dashBoost, state.elapsedSeconds, index)) {
+        return `Sync window open.\nHold speed to lock ${Math.round(anomalyLockProgressRatio(beacon.scanProgress ?? 0) * 100)}%.`;
+      }
+    }
 
     if (activation.canActivate) {
       if (state.sim.vehicle.scanner >= 3) {

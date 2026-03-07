@@ -960,7 +960,8 @@ async function bootstrap(): Promise<void> {
           currentSpeed: Math.abs(state.player.vx),
           dashBoost: state.dashBoost,
           isAirborne: !state.player.onGround,
-          elapsedSeconds: state.elapsedSeconds
+          elapsedSeconds: state.elapsedSeconds,
+          scanLocked: beacon.scanLocked
         });
         if (!activation.canActivate) {
           if (trigger === 'manual') {
@@ -1211,6 +1212,11 @@ async function bootstrap(): Promise<void> {
           color: beacon.anomalyWindowOpen ? '#fbbf24' : '#8b5cf6',
           alpha: beacon.anomalyWindowOpen ? 0.75 : 0.35,
           width: beacon.anomalyWindowOpen ? 3 : 2
+        });
+        graphics.circle(beacon.x - cam, beacon.y, beacon.radius + 12).stroke({
+          color: '#22d3ee',
+          alpha: beacon.anomalyScanLocked ? 0.9 : 0.18 + beacon.anomalyScanProgressRatio * 0.55,
+          width: beacon.anomalyScanLocked ? 3.2 : 1 + beacon.anomalyScanProgressRatio * 2.4
         });
       }
       if (!beacon.activated && objectiveVisuals.beaconRule === 'ordered') {

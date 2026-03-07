@@ -127,4 +127,23 @@ describe('run objective ui helpers', () => {
     expect(objectiveShortLabel('nature')).toBe('OBJ AIR');
     expect(objectiveShortLabel('anomaly')).toBe('OBJ BOOST');
   });
+
+  it('surfaces anomaly phase-lock prompts for upgraded scanners', () => {
+    const state = buildRuntimeState();
+    const node = state.sim.world.nodes.find((item) => item.id === state.sim.currentNodeId);
+    if (!node) throw new Error('Expected node');
+    node.type = 'anomaly';
+    state.sim.vehicle.scanner = 2;
+    state.elapsedSeconds = 0.1;
+    state.player.x = 0;
+    state.player.y = 0;
+    state.player.vx = 280;
+    state.dashBoost = 0.3;
+    state.beacons = [{ id: 'b0', x: 17, y: 22, r: 15, activated: false, scanProgress: 0.2, scanLocked: false }];
+
+    expect(runObjectivePrompt(state)).toContain('Hold speed to lock 50%');
+
+    state.beacons[0]!.scanLocked = true;
+    expect(runObjectivePrompt(state)).toContain('Pattern locked');
+  });
 });
