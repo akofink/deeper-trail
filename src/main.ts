@@ -31,13 +31,15 @@ import {
   hasCompletedCurrentNode,
   travelToNodeWithRuntimeEffects
 } from './game/runtime/expeditionFlow';
-import { runObjectiveProgress, runObjectivePrompt } from './game/runtime/runObjectiveUi';
+import { runObjectiveProgress } from './game/runtime/runObjectiveUi';
 import { updateRunObjectives } from './game/runtime/runObjectiveUpdates';
 import { buildRunObjectiveVisualState } from './game/runtime/runObjectiveVisuals';
 import { dashEntryEnergyCost, shouldContinueDash, shouldStartDash } from './game/runtime/runDash';
 import { buildRunHudLayout } from './game/runtime/runHudLayout';
 import { updateMapRotation } from './game/runtime/mapRotation';
+import { buildRunActionChips, buildRunSceneOverlayCard } from './game/runtime/runSceneView';
 import { buildMapHudContent, buildRunHudContent } from './game/runtime/sceneHudContent';
+import { buildModuleLabelLayouts, buildPanelHeaderLayout } from './game/runtime/sceneHudView';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import { advanceHorizontalVelocity } from './game/runtime/runMotion';
 import { rechargeShieldCharge, tryConsumeShieldCharge } from './game/runtime/shieldCharge';
@@ -1259,70 +1261,51 @@ async function bootstrap(): Promise<void> {
     drawGauge(graphics, hudLayout.rightGaugeX, 69, hudLayout.rightGaugeWidth, 12, state.dashEnergy, '#a78bfa');
     drawModuleMeters(graphics, hudLayout.rightPanelX + 14, hudLayout.rightModuleY, state.sim);
 
+    const runHeaderLayout = buildPanelHeaderLayout(hudLayout.leftPanelX);
     hud.text = runHudContent.title;
     hud.style.fontSize = 18;
     hud.style.fill = '#e2e8f0';
-    hud.x = hudLayout.leftPanelX + 14;
-    hud.y = 16;
+    hud.x = runHeaderLayout.titleX;
+    hud.y = runHeaderLayout.titleY;
     panelMeta.text = runHudContent.meta;
     panelMeta.style.fill = '#cbd5e1';
     panelMeta.style.fontSize = 12;
-    panelMeta.x = hudLayout.leftPanelX + 14;
-    panelMeta.y = 34;
+    panelMeta.x = runHeaderLayout.metaX;
+    panelMeta.y = runHeaderLayout.metaY;
     panelSeed.text = runHudContent.seed;
     panelSeed.style.fill = '#94a3b8';
-    panelSeed.x = hudLayout.leftPanelX + 14;
-    panelSeed.y = 46;
+    panelSeed.x = runHeaderLayout.seedX;
+    panelSeed.y = runHeaderLayout.seedY;
 
+    const runModuleLayouts = buildModuleLabelLayouts(hudLayout.rightPanelX + 14, hudLayout.rightModuleY, moduleLabels.length);
     moduleLabels.forEach((label, index) => {
-      const statusX = hudLayout.rightPanelX + 14;
-      const cellX = statusX + (index % 3) * 84;
-      const cellY = hudLayout.rightModuleY + Math.floor(index / 3) * 36;
+      const layout = runModuleLayouts[index];
       label.text = runHudContent.moduleLabels[index] ?? '';
       label.style.fill = '#cbd5e1';
-      label.x = cellX + 6;
-      label.y = cellY + 9;
+      label.x = layout?.x ?? 0;
+      label.y = layout?.y ?? 0;
     });
 
-    overlay.text = '';
-    if (state.mode === 'paused') {
-      overlay.text = 'Paused\nPress P to resume';
-    } else if (state.mode === 'won') {
-      overlay.text = state.expeditionComplete
-        ? 'Signal source reached.\nExpedition complete.'
-        : 'Trail complete.\nMap travel unlocked and +1 free trip earned.';
-    } else if (state.mode === 'lost') {
-      overlay.text = 'Trail lost.\nPress Enter or R to restart';
-    } else if (state.mapMessageTimer > 0 && state.mapMessage) {
-      overlay.text = state.mapMessage;
-    } else {
-      overlay.text = runObjectivePrompt(state) ?? '';
-    }
-
-    if (overlay.text) {
-      const cardX = Math.round(w * 0.5 - Math.min(460, w - 100) * 0.5);
-      layoutTextCard(graphics, overlay, overlay.text, {
+    const runOverlayCard = buildRunSceneOverlayCard(state, w);
+    if (runOverlayCard) {
+      layoutTextCard(graphics, overlay, runOverlayCard.text, {
         tone: 'dark',
-        x: cardX,
-        y: 150,
-        maxWidth: Math.min(460, w - 100),
-        minWidth: 280,
-        paddingX: 22,
-        paddingY: state.mode === 'won' || state.mode === 'lost' || state.mode === 'paused' ? 18 : 14,
+        x: runOverlayCard.x,
+        y: runOverlayCard.y,
+        maxWidth: runOverlayCard.maxWidth,
+        minWidth: runOverlayCard.minWidth,
+        paddingX: runOverlayCard.paddingX,
+        paddingY: runOverlayCard.paddingY,
         align: 'center',
         fill: '#e2e8f0',
-        fontSize: state.mode === 'won' || state.mode === 'lost' || state.mode === 'paused' ? 18 : 20
+        fontSize: runOverlayCard.fontSize
       });
+    } else {
+      overlay.text = '';
     }
     const chipY = h - 58;
     const chipHeight = 34;
-    const runChips = [
-      { x: 20, w: 94, color: '#60a5fa', label: 'Arrows\nMove' },
-      { x: 122, w: 94, color: '#fbbf24', label: 'Space\nJump' },
-      { x: 224, w: 92, color: '#a78bfa', label: 'Shift\nDash' },
-      { x: 324, w: 92, color: '#34d399', label: hasBeaconAutoLink(state) ? 'Scan\nAuto-link' : 'Enter\nLink' },
-      { x: 424, w: 82, color: '#64748b', label: 'A\nMap' }
-    ];
+    const runChips = buildRunActionChips(state);
     runChips.forEach((chip, index) => {
       drawChip(graphics, chip.x, chipY, chip.w, chip.color, chipHeight);
       const label = chipLabels[index];
@@ -1453,29 +1436,29 @@ async function bootstrap(): Promise<void> {
     drawPips(graphics, mapHud.pipsX, tripsRowY - 3, 3, Math.min(3, state.freeTravelCharges), '#facc15');
     drawModuleMeters(graphics, mapHud.moduleX, mapHud.moduleY, state.sim);
 
+    const mapHeaderLayout = buildPanelHeaderLayout(mapHud.leftPanelX, 16);
     hud.text = mapHudContent.title;
     hud.style.fontSize = 18;
     hud.style.fill = '#e2e8f0';
-    hud.x = mapHud.hudX;
-    hud.y = mapHud.hudY;
+    hud.x = mapHeaderLayout.titleX;
+    hud.y = mapHeaderLayout.titleY;
     panelMeta.text = mapHudContent.meta;
     panelMeta.style.fill = '#cbd5e1';
     panelMeta.style.fontSize = 12;
-    panelMeta.x = mapHud.metaX;
-    panelMeta.y = mapHud.metaY;
+    panelMeta.x = mapHeaderLayout.metaX;
+    panelMeta.y = mapHeaderLayout.metaY;
     panelSeed.text = mapHudContent.seed;
     panelSeed.style.fill = '#94a3b8';
-    panelSeed.x = mapHud.seedX;
-    panelSeed.y = mapHud.seedY;
+    panelSeed.x = mapHeaderLayout.seedX;
+    panelSeed.y = mapHeaderLayout.seedY;
 
+    const mapModuleLayouts = buildModuleLabelLayouts(mapHud.moduleX, mapHud.moduleY, moduleLabels.length);
     moduleLabels.forEach((label, index) => {
-      const statusX = mapHud.moduleX;
-      const cellX = statusX + (index % 3) * 84;
-      const cellY = mapHud.moduleY + Math.floor(index / 3) * 36;
+      const layout = mapModuleLayouts[index];
       label.text = mapHudContent.moduleLabels[index] ?? '';
       label.style.fill = '#cbd5e1';
-      label.x = cellX + 6;
-      label.y = cellY + 9;
+      label.x = layout?.x ?? 0;
+      label.y = layout?.y ?? 0;
     });
 
     if (mapSceneCopy.showRouteCard) {
