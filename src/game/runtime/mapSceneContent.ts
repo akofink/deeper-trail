@@ -2,6 +2,7 @@ import { asNodeTypeKey, biomeBenefitLabel, biomeRiskLabel, visibleBiomeKnowledge
 import { notebookClueProgress, notebookSignalRouteIntel } from '../../engine/sim/notebook';
 import { currentNodeType, findNode } from '../../engine/sim/world';
 import { getInstallOffer, hasAnyUpgradeableSubsystem } from '../../engine/sim/vehicle';
+import { goalSignalPrimerNote } from './goalSignal';
 import { mapNodePalette } from './runLayout';
 import type { RuntimeState } from './runtimeState';
 import { getObjectiveSummary } from '../../engine/sim/runObjectives';
@@ -33,6 +34,7 @@ export function buildMapSceneContent(
   const installOffer = getInstallOffer(state.sim, currentNodeType(state.sim));
   const selectedNodeType = asNodeTypeKey(selectedNode?.type ?? 'town');
   const signalIntel = notebookSignalRouteIntel(state.sim, state.expeditionGoalNodeId, selectedNodeId);
+  const goalPrimerNote = goalSignalPrimerNote(selectedNodeId, state);
   const selectedKnowledge = visibleBiomeKnowledge(state.sim, selectedNodeType);
   const selectedRouteKnowledge = {
     benefitKnown: selectedKnowledge.benefitKnown || signalIntel.revealsBenefit,
@@ -49,8 +51,9 @@ export function buildMapSceneContent(
             selectedRouteKnowledge.riskKnown ? biomeRiskLabel(selectedNodeType).replace('Hazards strain ', '') : 'risk ?'
           }`,
           selectedRouteKnowledge.objectiveKnown ? getObjectiveSummary(selectedNode.type) : 'Objective pattern ?',
-          signalIntel.routeHint ?? 'Signal triangulation offline.'
-        ].join('\n')
+          signalIntel.routeHint ?? 'Signal triangulation offline.',
+          goalPrimerNote
+        ].filter((line): line is string => Boolean(line)).join('\n')
       : 'Select a connected route.';
 
   const installHint = installOffer
