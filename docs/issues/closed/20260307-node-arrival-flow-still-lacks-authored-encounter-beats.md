@@ -38,3 +38,7 @@ That means node visits are still dominated by `travel -> run objective -> travel
   - [`tests/expeditionFlow.test.ts`](/Users/akofink/dev/repos/deeper-trail/.worktrees/docs-issue-triage/tests/expeditionFlow.test.ts)
   - [`docs/01-core-loop.md`](/Users/akofink/dev/repos/deeper-trail/.worktrees/docs-issue-triage/docs/01-core-loop.md)
   - [`docs/06-puzzles-and-meta-mystery.md`](/Users/akofink/dev/repos/deeper-trail/.worktrees/docs-issue-triage/docs/06-puzzles-and-meta-mystery.md)
+
+## Resolution note
+
+Resolved on 2026-03-07 by adding deterministic first-visit arrival encounters in runtime helpers. Town, ruin, nature, and anomaly arrivals can now fire authored beats based on notebook/capability state, and `tests/expeditionFlow.test.ts` now covers the added behavior.

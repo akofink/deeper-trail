@@ -32,7 +32,7 @@
 ## Content / progression priorities
 
 - [x] Add a 3-beat mini mystery arc tied to specific node/biome discoveries
-- [ ] Add at least one authored encounter/event outcome on arrival to break pure traversal rhythm
+- [x] Add at least one authored encounter/event outcome on arrival to break pure traversal rhythm
 - [ ] Add one more node-site decision so installs are occasionally a choice, not always deterministic
 
 ## Lower-priority later work

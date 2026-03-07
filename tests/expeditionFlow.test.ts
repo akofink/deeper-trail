@@ -100,11 +100,12 @@ describe('expedition flow runtime helpers', () => {
 
     expect(travel.didTravel).toBe(true);
     expect(travel.usedFreeTravel).toBe(true);
-    expect(state.freeTravelCharges).toBe(0);
+    expect(state.freeTravelCharges).toBe(1);
     expect(state.sim.currentNodeId).toBe(neighbor.nodeId);
     expect(state.sim.day).toBe(2);
     expect(state.sim.fuel).toBe(31);
     expect(state.mapMessage).toContain('fuel topped up');
+    expect(state.mapMessage).toContain('Surveyor broker');
     expect(state.sim.exploration.biomeKnowledge.town.benefitKnown).toBe(true);
   });
 
@@ -132,6 +133,61 @@ describe('expedition flow runtime helpers', () => {
     expect(state.sim.vehicle.scanner).toBe(2);
     expect(state.shieldChargeAvailable).toBe(true);
     expect(state.mapMessage).toContain('Shield charge restored');
+  });
+
+  it('adds deterministic first-visit ruin encounter scrap for upgraded scanners', () => {
+    const state = buildRuntimeState('arrival-ruin-encounter');
+    const neighbor = connectedNeighbors(state.sim)[0];
+    expect(neighbor).toBeDefined();
+    if (!neighbor) {
+      throw new Error('Expected connected neighbor');
+    }
+    state.sim.vehicle.scanner = 2;
+    const node = findNode(state.sim, neighbor.nodeId);
+    expect(node).toBeDefined();
+    if (!node) {
+      throw new Error('Expected neighbor node');
+    }
+    node.type = 'ruin';
+
+    travelToNodeWithRuntimeEffects(state, neighbor.nodeId);
+    const firstMessage = state.mapMessage;
+    const scrapAfterFirstArrival = state.sim.scrap;
+    const secondMessage = applyArrivalRewards(state);
+
+    expect(firstMessage).toContain('scavenged +2 scrap');
+    expect(firstMessage).toContain('alignment cache +1 scrap');
+    expect(scrapAfterFirstArrival).toBe(3);
+    expect(secondMessage).toContain('scavenged +2 scrap');
+    expect(secondMessage).not.toContain('alignment cache +1 scrap');
+    expect(state.sim.scrap).toBe(5);
+  });
+
+  it('banks an anomaly free transfer when synthesis and shielding stabilize the arrival pulse', () => {
+    const state = buildRuntimeState('arrival-anomaly-encounter');
+    const neighbor = connectedNeighbors(state.sim)[0];
+    expect(neighbor).toBeDefined();
+    if (!neighbor) {
+      throw new Error('Expected connected neighbor');
+    }
+
+    state.sim.notebook.discoveredClues.ruin = true;
+    state.sim.notebook.discoveredClues.nature = true;
+    state.sim.notebook.discoveredClues.anomaly = true;
+    state.sim.notebook.synthesisUnlocked = true;
+    state.sim.vehicle.shielding = 2;
+    const destination = findNode(state.sim, neighbor.nodeId);
+    expect(destination).toBeDefined();
+    if (!destination) {
+      throw new Error('Expected destination node');
+    }
+    destination.type = 'anomaly';
+
+    const result = travelToNodeWithRuntimeEffects(state, neighbor.nodeId);
+
+    expect(result.didTravel).toBe(true);
+    expect(state.freeTravelCharges).toBe(1);
+    expect(state.mapMessage).toContain('Phase corridor');
   });
 
   it('marks expedition-goal completions as complete before returning to the map', () => {

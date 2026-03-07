@@ -3,6 +3,7 @@ import { recordNotebookClue, type NotebookUnlockResult } from '../../engine/sim/
 import { travelToNode, type TravelResult } from '../../engine/sim/travel';
 import { currentNodeType, findNode } from '../../engine/sim/world';
 import { getMaxHealth } from '../../engine/sim/vehicle';
+import { resolveArrivalEncounter } from './arrivalEncounters';
 import type { RuntimeState } from './runtimeState';
 import { applyNodeCompletionState } from './runCompletion';
 import { rechargeShieldCharge } from './shieldCharge';
@@ -29,6 +30,7 @@ export function applyArrivalRewards(state: RuntimeState): string {
     return '';
   }
 
+  const firstVisit = !state.sim.exploration.visitedNodeIds.includes(node.id);
   markNodeVisited(state.sim, node.id);
   noteBiomeArrival(state.sim, node.type);
 
@@ -54,6 +56,8 @@ export function applyArrivalRewards(state: RuntimeState): string {
       message += ' Shield charge restored.';
     }
   }
+
+  message += resolveArrivalEncounter(state, asNodeTypeKey(node.type), firstVisit).message;
 
   state.mapMessage = message;
   state.mapMessageTimer = 3;
