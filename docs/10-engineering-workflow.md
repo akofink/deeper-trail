@@ -31,7 +31,7 @@ Enforce consistent code quality and repository hygiene while keeping iteration f
 
 - Keep docs and code aligned in the same PR.
 - Update `ARCHITECTURE.md` when adding/changing foundational modules.
-- Update this workflow doc when changing quality gates or branching policy.
+- Update this workflow doc when changing quality gates or branching/worktree policy.
 - When a session uncovers actionable follow-up work that will not be fixed immediately, add an open
   report under `docs/issues/` before handoff so the next contributor has a durable queue entry.
 - Name issue files `YYYYMMDD-short-kebab-case-summary.md`.
@@ -42,9 +42,11 @@ Enforce consistent code quality and repository hygiene while keeping iteration f
 
 ## Worktree policy
 
-- The primary checkout at the repo root remains the default workspace for small changes.
-- Larger features, roadmap slices, or parallel Codex sessions should use linked worktrees created under `.worktrees/`.
-- Recommended command: `git worktree add .worktrees/<task-name> -b <branch-name>`.
+- All repo changes should happen in a linked worktree on a task branch, not directly in the primary checkout, unless a user explicitly overrides this.
+- Create linked worktrees under `.worktrees/` with `git worktree add .worktrees/<task-name> -b <branch-name>`.
+- Commit incrementally while the task is in progress so review and rollback stay straightforward.
+- Merge completed worktree branches back into `main` with non-interactive git commands.
+- After merging, remove the linked worktree and delete the merged branch when feasible.
 - `.worktrees/` must stay gitignored and excluded from recursive repo tooling such as search, lint, and formatting.
 - Do not place live worktree checkouts inside `.git/`; only Git-managed metadata belongs under `.git/worktrees/`.
 - Before deleting a worktree or handing off its branch, capture any unfinished actionable findings in

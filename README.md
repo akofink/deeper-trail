@@ -86,9 +86,10 @@ Alternative: **Phaser 3** also great. If you prefer a more “batteries included
 
 ## Worktree workflow
 
-- Use the main worktree for small, local changes.
-- Use repo-local linked worktrees under `.worktrees/` for larger roadmap slices or parallel Codex sessions.
+- Use a repo-local linked worktree under `.worktrees/` for every repo change unless a user explicitly asks for a different flow.
 - Create a linked worktree with `git worktree add .worktrees/<task-name> -b <branch-name>`.
+- Keep one task per worktree branch and commit incrementally as you go.
+- Merge the completed branch back into `main`, then remove the linked worktree and clean up the merged branch.
 - `.worktrees/` is intentionally gitignored and excluded from common repo scans so nested checkouts do not pollute normal lint/search/format flows.
 - Do not place linked checkouts under `.git/`; Git already stores linked-worktree metadata in `.git/worktrees/`.
 
