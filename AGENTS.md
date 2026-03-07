@@ -85,6 +85,21 @@ Update these files when relevant:
 - Design docs under [docs](/home/akofink/dev/repos/deeper-trail/docs) when gameplay systems move materially.
 - [IMPLEMENTATION_NOTES.md](/home/akofink/dev/repos/deeper-trail/IMPLEMENTATION_NOTES.md) or [progress.md](/home/akofink/dev/repos/deeper-trail/progress.md) when carrying forward implementation status or follow-up notes.
 
+## Docs Triage And Next-Work Order
+
+- Treat [docs/issues](/home/akofink/dev/repos/deeper-trail/docs/issues) as the first stop for follow-on work. This directory is for concrete issue reports, bugs, UX problems, and playtest findings that should be evaluated before broader roadmap work.
+- Keep [docs/issues](/home/akofink/dev/repos/deeper-trail/docs/issues) for open, actionable reports. Once an issue is no longer actionable, move it to [docs/issues/closed](/home/akofink/dev/repos/deeper-trail/docs/issues/closed).
+- When starting a new task without a more specific user brief, check [docs/issues](/home/akofink/dev/repos/deeper-trail/docs/issues) first and resolve or triage the most relevant current reports before pulling new feature work forward.
+- After issue reports, continue from the existing roadmap/design docs under [docs](/home/akofink/dev/repos/deeper-trail/docs). Use those files for planned implementation slices, roadmap continuation, and design evolution.
+- Only after issue reports and roadmap continuation are covered should work drift into looser exploration: research, open-ended ideation, wonder, or roadmap extension/refinement.
+- Keep the distinction clear when writing docs:
+  - `docs/issues/*` = specific observed problems or actionable findings.
+  - `docs/issues/closed/*` = reports that have been fixed, intentionally deferred, invalidated, or otherwise closed out.
+  - `docs/*.md` numbered design docs = intended direction, roadmap, and system design.
+  - [progress.md](/home/akofink/dev/repos/deeper-trail/progress.md) / [IMPLEMENTATION_NOTES.md](/home/akofink/dev/repos/deeper-trail/IMPLEMENTATION_NOTES.md) = implementation history, constraints, and carry-forward notes.
+- When closing an issue report, add a short resolution note in the file before moving it so future contributors can see why it stopped being actionable.
+- If an issue report changes the roadmap, fix or annotate the issue first, then update the relevant design doc so future contributors see both the immediate problem and the longer-term plan.
+
 ## Gameplay And Architecture Guidance
 
 - Vehicle progression should feel like evolving one machine through modules, not swapping to unrelated vehicles through menus.
