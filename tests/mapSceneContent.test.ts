@@ -197,4 +197,27 @@ describe('map scene content helper', () => {
     expect(weakerLead.routeDetail).toContain('Objective pattern ?');
     expect(weakerLead.routeDetail).not.toContain('Best current lead.');
   });
+
+  it('warns synthesized goal routes that the source approach starts with a pre-linked relay', () => {
+    const state = buildRuntimeState();
+    state.sim.notebook.discoveredClues.ruin = true;
+    state.sim.notebook.discoveredClues.nature = true;
+    state.sim.notebook.discoveredClues.anomaly = true;
+    state.sim.notebook.synthesisUnlocked = true;
+    const goalNode = state.sim.world.nodes.find((node) => node.id === state.expeditionGoalNodeId);
+    if (!goalNode) {
+      throw new Error('Expected expedition goal node');
+    }
+
+    const content = buildMapSceneContent(state, goalNode.id, 9, {
+      canUseMedPatch: false,
+      medPatchHealAmount: 1,
+      medPatchScrapCost: 2,
+      hasAutoLinkScanner: false,
+      hasCompletedCurrentNode: true
+    });
+
+    expect(content.routeDetail).toContain('SIGNAL');
+    expect(content.routeDetail).toContain('pre-linked');
+  });
 });

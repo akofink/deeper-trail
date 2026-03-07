@@ -536,3 +536,14 @@ TODO next:
 
 - Keep pushing notebook payoff toward stranger late-game consequences, for example goal-node variants or arrival encounters that alter local run rules instead of only map intel.
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially shared HUD/draw helper plumbing like chip composition and any remaining overlay-card state.
+
+- Notebook goal-run payoff pass:
+  - Added `src/game/runtime/goalSignal.ts` so synthesized expedition-goal routes can advertise and apply a deterministic local-run variant instead of staying map-only flavor.
+  - Goal-node runs now start with relay `B0` already linked once synthesis is unlocked, and `src/main.ts` applies that primer whenever the current node's run layout is reset.
+  - Updated `src/game/runtime/mapSceneContent.ts` so selected expedition-goal routes warn that the source approach begins with a pre-linked relay.
+  - Added `tests/goalSignal.test.ts`, extended `tests/mapSceneContent.test.ts`, and updated `docs/06-puzzles-and-meta-mystery.md`.
+
+TODO next:
+
+- Decide whether later notebook payoff should mutate more than one relay/objective on the goal run or branch the actual goal-node encounter by clue mix.
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially shared HUD/draw helper plumbing like chip composition, overlay-card state, and module-meter placement.
