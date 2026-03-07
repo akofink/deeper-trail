@@ -38,3 +38,7 @@ The hottest section is the run-scene draw path around [`src/main.ts:1038`](/User
   - [`src/game/runtime/runHudLayout.ts`](/Users/akofink/dev/repos/deeper-trail/.worktrees/issue-triage-20260307/src/game/runtime/runHudLayout.ts)
   - [`src/game/runtime/mapSceneCards.ts`](/Users/akofink/dev/repos/deeper-trail/.worktrees/issue-triage-20260307/src/game/runtime/mapSceneCards.ts)
   - [`src/game/runtime/sceneHudContent.ts`](/Users/akofink/dev/repos/deeper-trail/.worktrees/issue-triage-20260307/src/game/runtime/sceneHudContent.ts)
+
+## Resolution note
+
+Closed on 2026-03-07 after extracting the run-scene objective draw path and HUD view-model assembly into dedicated runtime presentation helpers, adding targeted tests for beacon label view state and run HUD composition, and trimming more inline scene plumbing out of `src/main.ts`.
