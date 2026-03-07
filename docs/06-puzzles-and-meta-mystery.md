@@ -58,6 +58,11 @@ Use a “mystery graph”:
 - Anomaly runs now add sync gates: phase-timed fields that stabilize only when the player cuts through them with enough speed or boost.
 - Completing the first `ruin`, `nature`, and `anomaly` runs logs one seed-stable clue each.
 - Finding all three clue families auto-adds a synthesis note so the expedition reads like a small mystery arc rather than isolated route clears.
+- First arrivals now also include a small authored beat layer:
+  - scanned ruins can reveal an alignment cache for extra salvage,
+  - notebook-aware towns can bank a free transfer,
+  - nature clues can turn groves into stronger recovery stops,
+  - synthesized anomaly arrivals can stabilize a phase corridor into a free transfer.
 - Notebook progress now feeds back into route choice mechanically:
   - first clue enables signal-bearing reads on the selected route,
   - second clue adds estimated remaining leg count to the source,
