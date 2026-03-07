@@ -16,6 +16,7 @@ Enforce consistent code quality and repository hygiene while keeping iteration f
    - Pre-commit hook: lint/format staged files and run related tests.
    - Pre-push hook: full check (`lint + typecheck + tests`).
    - The browser smoke step should emit `[e2e]` progress logs so long-running push hooks do not look stalled after the nested build completes.
+   - On a healthy local setup, the full pre-push quality gate should usually finish in under 15 seconds. If the browser smoke has not printed a new `[e2e]` line or failed within about 45 seconds, treat it as stuck.
 3. **Phase 3: PR discipline (next)**
    - PR template + checklist for tests/docs updates.
    - Require status checks to pass before merge.
@@ -36,6 +37,7 @@ Enforce consistent code quality and repository hygiene while keeping iteration f
 - Update this workflow doc when changing quality gates or branching/worktree policy.
 - When validating browser visuals, prefer the lightest tool that answers the question: direct `google-chrome --headless --screenshot` capture is a good first pass, while Playwright remains the default for scripted interaction, state setup, or cases where headless Chrome capture is not reliable enough.
 - The committed Playwright smoke path should stay deterministic: prefer fixed seeds plus `window.render_game_to_text` / `window.advanceTime(ms)` over adding separate test-only gameplay controls.
+- The smoke script should prefer Playwright-managed Chromium, then fall back to common local Chrome/Chromium app installs when the managed browser is unavailable. Only force a browser binary with `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` when you need to debug a specific local browser install.
 - When a session uncovers actionable follow-up work that will not be fixed immediately, add an open
   report under `docs/issues/` before handoff so the next contributor has a durable queue entry.
 - Name issue files `YYYYMMDD-short-kebab-case-summary.md`.

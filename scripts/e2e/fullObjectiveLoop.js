@@ -13,13 +13,36 @@ const LOW_SPEED = 80;
 const SERVICE_HOLD_FRAMES = 48;
 const MAX_TICKS = 9000;
 const PLAYWRIGHT_STEP_TIMEOUT_MS = 30_000;
-const CHROME_CANDIDATES = [
-  process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
-  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-].filter(Boolean);
+const OBJECTIVE_LOOP_TIMEOUT_MS = 45_000;
+const PROGRESS_LOG_INTERVAL_TICKS = 300;
+const FALLBACK_CHROMIUM_CANDIDATES = [
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
+  "/Applications/Chromium.app/Contents/MacOS/Chromium"
+];
 
-function logStep(message) {
+export function logStep(message) {
   console.log(`[e2e] ${message}`);
+}
+
+export async function withStepTimeout(step, operation, timeoutMs = PLAYWRIGHT_STEP_TIMEOUT_MS) {
+  let timeoutHandle;
+  try {
+    return await Promise.race([
+      operation(),
+      new Promise((_, reject) => {
+        timeoutHandle = setTimeout(() => {
+          reject(new Error(`${step} exceeded ${timeoutMs}ms`));
+        }, timeoutMs);
+      })
+    ]);
+  } finally {
+    globalThis.clearTimeout(timeoutHandle);
+  }
+}
+
+function unique(values) {
+  return [...new Set(values.filter(Boolean))];
 }
 
 function assert(condition, message, state) {
@@ -44,39 +67,93 @@ function assert(condition, message, state) {
   throw new Error(`${message}\nState snapshot:\n${debugState}`);
 }
 
-function resolveExecutablePath() {
-  return CHROME_CANDIDATES.find((candidate) => candidate && fs.existsSync(candidate));
+export function resolveExecutablePath(
+  explicitPath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?.trim(),
+  managedPath = chromium.executablePath(),
+  fallbackCandidates = FALLBACK_CHROMIUM_CANDIDATES
+) {
+  if (explicitPath) {
+    return fs.existsSync(explicitPath) ? explicitPath : undefined;
+  }
+  if (managedPath && fs.existsSync(managedPath)) {
+    return managedPath;
+  }
+  return fallbackCandidates.find((candidate) => fs.existsSync(candidate));
 }
 
-async function readState(page) {
-  return page.evaluate(() => {
-    if (typeof window.render_game_to_text !== "function") {
-      throw new Error("window.render_game_to_text is unavailable");
-    }
-    return JSON.parse(window.render_game_to_text());
+export function resolveExecutablePathCandidates(
+  explicitPath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?.trim(),
+  managedPath = chromium.executablePath(),
+  fallbackCandidates = FALLBACK_CHROMIUM_CANDIDATES
+) {
+  if (explicitPath) {
+    return fs.existsSync(explicitPath) ? [explicitPath] : [];
+  }
+
+  return unique([managedPath, ...fallbackCandidates]).filter((candidate) => fs.existsSync(candidate));
+}
+
+async function launchBrowser(executablePath) {
+  return chromium.launch({
+    headless: process.env.E2E_HEADLESS !== "0",
+    executablePath,
+    args: ["--allow-file-access-from-files", "--use-gl=angle", "--use-angle=swiftshader"]
   });
 }
 
+async function launchBrowserWithFallback(candidatePaths) {
+  if (candidatePaths.length === 0) {
+    return launchBrowser(undefined);
+  }
+
+  const errors = [];
+  for (const executablePath of candidatePaths) {
+    try {
+      logStep(`trying Chromium executable: ${executablePath}`);
+      return await launchBrowser(executablePath);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      errors.push(`- ${executablePath}: ${detail}`);
+      logStep(`Chromium launch failed for ${executablePath}`);
+    }
+  }
+
+  throw new Error(`Unable to launch browser smoke with any detected Chromium executable:\n${errors.join("\n")}`);
+}
+
+async function readState(page) {
+  return withStepTimeout("reading runtime state", () =>
+    page.evaluate(() => {
+      if (typeof window.render_game_to_text !== "function") {
+        throw new Error("window.render_game_to_text is unavailable");
+      }
+      return JSON.parse(window.render_game_to_text());
+    })
+  );
+}
+
 async function advanceFrames(page, frames) {
-  await page.evaluate((count) => {
-    if (typeof window.advanceTime !== "function") {
-      throw new Error("window.advanceTime is unavailable");
-    }
-    for (let index = 0; index < count; index += 1) {
-      window.advanceTime(1000 / 60);
-    }
-  }, frames);
+  await withStepTimeout(`advancing ${frames} frame(s)`, () =>
+    page.evaluate((count) => {
+      if (typeof window.advanceTime !== "function") {
+        throw new Error("window.advanceTime is unavailable");
+      }
+      for (let index = 0; index < count; index += 1) {
+        window.advanceTime(1000 / 60);
+      }
+    }, frames)
+  );
 }
 
 async function tapKey(page, key, frames = 2) {
-  await page.keyboard.down(key);
+  await withStepTimeout(`pressing ${key}`, () => page.keyboard.down(key));
   await advanceFrames(page, frames);
-  await page.keyboard.up(key);
+  await withStepTimeout(`releasing ${key}`, () => page.keyboard.up(key));
 }
 
 async function releaseAll(page, activeKeys) {
   for (const key of activeKeys) {
-    await page.keyboard.up(key);
+    await withStepTimeout(`releasing ${key}`, () => page.keyboard.up(key));
   }
   activeKeys.clear();
 }
@@ -123,8 +200,13 @@ function jumpWindow(state) {
 async function completeTownRun(page) {
   const activeKeys = new Set();
   const sequence = targetSequence(await readState(page));
+  const loopStart = Date.now();
 
   for (let tick = 0; tick < MAX_TICKS; tick += 1) {
+    if (Date.now() - loopStart > OBJECTIVE_LOOP_TIMEOUT_MS) {
+      throw new Error(`Town run smoke exceeded ${OBJECTIVE_LOOP_TIMEOUT_MS}ms without completing`);
+    }
+
     const state = await readState(page);
     assert(state.mode === "playing", "Run smoke hit a non-playing state before completion", state);
 
@@ -137,6 +219,13 @@ async function completeTownRun(page) {
     const playerCenterX = player.x + player.width * 0.5;
     const speed = Math.abs(player.vx);
     const target = currentTarget(sequence, state);
+
+    if (tick > 0 && tick % PROGRESS_LOG_INTERVAL_TICKS === 0) {
+      const elapsedSeconds = ((Date.now() - loopStart) / 1000).toFixed(1);
+      logStep(
+        `objective loop heartbeat tick=${tick} elapsed=${elapsedSeconds}s scene=${state.scene} playerX=${playerCenterX.toFixed(1)} target=${target.kind}`
+      );
+    }
 
     if (player.onGround && jumpWindow(state)) {
       await setHeld(page, activeKeys, "ArrowRight", true);
@@ -187,12 +276,14 @@ async function completeTownRun(page) {
 
 async function main() {
   const executablePath = resolveExecutablePath();
+  const executableCandidates = resolveExecutablePathCandidates();
   logStep(`launching browser smoke for seed ${E2E_SEED}`);
-  const browser = await chromium.launch({
-    headless: process.env.E2E_HEADLESS !== "0",
-    executablePath,
-    args: ["--allow-file-access-from-files", "--use-gl=angle", "--use-angle=swiftshader"]
-  });
+  if (executablePath) {
+    logStep(`preferred Chromium executable: ${executablePath}`);
+  } else {
+    logStep("using Playwright launch defaults");
+  }
+  const browser = await launchBrowserWithFallback(executableCandidates);
 
   const page = await browser.newPage({ viewport: DEFAULT_VIEWPORT });
   const consoleErrors = [];
@@ -209,11 +300,15 @@ async function main() {
     url.searchParams.set("seed", E2E_SEED);
 
     logStep("opening built client bundle");
-    await page.goto(url.toString(), { waitUntil: "load", timeout: PLAYWRIGHT_STEP_TIMEOUT_MS });
+    await withStepTimeout("opening built client bundle", () =>
+      page.goto(url.toString(), { waitUntil: "load", timeout: PLAYWRIGHT_STEP_TIMEOUT_MS })
+    );
     logStep("waiting for debug replay hooks");
-    await page.waitForFunction(() => typeof window.render_game_to_text === "function" && typeof window.advanceTime === "function", {
-      timeout: PLAYWRIGHT_STEP_TIMEOUT_MS
-    });
+    await withStepTimeout("waiting for debug replay hooks", () =>
+      page.waitForFunction(() => typeof window.render_game_to_text === "function" && typeof window.advanceTime === "function", {
+        timeout: PLAYWRIGHT_STEP_TIMEOUT_MS
+      })
+    );
     await advanceFrames(page, 10);
 
     const initialState = await readState(page);
@@ -278,7 +373,11 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+const isEntrypoint = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (isEntrypoint) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}

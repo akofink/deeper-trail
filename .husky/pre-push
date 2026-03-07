@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
 set -e
 
-echo "pre-push: running full quality gate (lint, typecheck, unit tests, browser smoke)"
+echo "pre-push: running full quality gate (lint, typecheck, unit tests, browser smoke; usually finishes in under 15s)"
+echo "pre-push: after the build output, watch for [e2e] progress lines every few seconds during browser smoke"
 npm run check
