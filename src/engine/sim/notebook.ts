@@ -1,5 +1,6 @@
 import { createSeededRng } from '../rng/seededRng';
 import type { CoreNotebookClueKey, GameState, NodeTypeKey, NotebookEntry } from '../../game/state/gameState';
+import { connectedNeighbors, shortestLegCountBetweenNodes } from './world';
 
 const NOTEBOOK_CLUE_ORDER: CoreNotebookClueKey[] = ['ruin', 'nature', 'anomaly'];
 
@@ -38,6 +39,12 @@ const CLUE_TEMPLATES: Record<
 
 export interface NotebookUnlockResult {
   newEntries: NotebookEntry[];
+}
+
+export interface NotebookSignalRouteIntel {
+  clueCount: number;
+  fieldNote: string;
+  routeHint: string | null;
 }
 
 function makeEntry(seed: string, clueKey: CoreNotebookClueKey, nodeId: string, day: number): NotebookEntry {
@@ -95,6 +102,73 @@ export function notebookClueProgress(state: GameState): { discovered: number; to
 
 export function latestNotebookEntry(state: GameState): NotebookEntry | null {
   return state.notebook.entries[state.notebook.entries.length - 1] ?? null;
+}
+
+export function notebookSignalRouteIntel(
+  state: GameState,
+  expeditionGoalNodeId: string,
+  selectedNodeId: string | null
+): NotebookSignalRouteIntel {
+  const progress = notebookClueProgress(state);
+
+  let fieldNote = `SIGNAL ${progress.discovered}/${progress.total}`;
+  if (progress.discovered === 0) {
+    return {
+      clueCount: 0,
+      fieldNote: `${fieldNote}  bearing offline`,
+      routeHint: null
+    };
+  }
+
+  fieldNote += progress.discovered >= 2 ? '  depth online' : '  depth offline';
+  fieldNote += state.notebook.synthesisUnlocked ? '  synth lock' : '';
+
+  if (!selectedNodeId) {
+    return {
+      clueCount: progress.discovered,
+      fieldNote,
+      routeHint: null
+    };
+  }
+
+  const currentLegs = shortestLegCountBetweenNodes(state, state.currentNodeId, expeditionGoalNodeId);
+  const selectedLegs = shortestLegCountBetweenNodes(state, selectedNodeId, expeditionGoalNodeId);
+  if (currentLegs === null || selectedLegs === null) {
+    return {
+      clueCount: progress.discovered,
+      fieldNote,
+      routeHint: null
+    };
+  }
+
+  let relation = 'Signal bearing holds.';
+  if (selectedLegs < currentLegs) {
+    relation = 'Signal bearing strengthens.';
+  } else if (selectedLegs > currentLegs) {
+    relation = 'Signal bearing weakens.';
+  }
+
+  let routeHint = relation;
+  if (progress.discovered >= 2) {
+    routeHint += ` Source est. ${selectedLegs} leg${selectedLegs === 1 ? '' : 's'}.`;
+  }
+
+  if (state.notebook.synthesisUnlocked) {
+    const bestNeighborLegs = connectedNeighbors(state)
+      .map((neighbor) => shortestLegCountBetweenNodes(state, neighbor.nodeId, expeditionGoalNodeId))
+      .filter((legs): legs is number => legs !== null);
+
+    const bestNeighborLegCount = bestNeighborLegs.length > 0 ? Math.min(...bestNeighborLegs) : null;
+    if (bestNeighborLegCount !== null && selectedLegs === bestNeighborLegCount) {
+      routeHint += ' Best current lead.';
+    }
+  }
+
+  return {
+    clueCount: progress.discovered,
+    fieldNote,
+    routeHint
+  };
 }
 
 export function recordNotebookClue(

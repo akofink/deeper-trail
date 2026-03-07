@@ -478,3 +478,15 @@ TODO next:
   - `src/engine/sim/exploration.ts` now exposes biome objective visibility alongside benefit/risk visibility; first visits permanently teach that biome's objective pattern.
   - `src/game/runtime/mapSceneContent.ts` now hides selected-route objective summaries behind scanner lv.3 or prior biome experience, and field notes now include the same objective-pattern knowledge tier.
   - Updated `tests/exploration.test.ts` and `tests/mapSceneContent.test.ts`; targeted typecheck plus `tests/exploration.test.ts` and `tests/mapSceneContent.test.ts` pass.
+
+- Notebook triangulation pass:
+  - Gave notebook progress a direct route-choice payoff instead of leaving it as flavor-only mystery text.
+  - Added `shortestLegCountBetweenNodes(...)` in `src/engine/sim/world.ts` so map-side guidance can reason about seeded graph depth without renderer-owned path logic.
+  - Added `notebookSignalRouteIntel(...)` in `src/engine/sim/notebook.ts`; the first clue unlocks selected-route bearing reads, the second unlocks estimated remaining legs to the source, and synthesis marks the strongest currently connected lead.
+  - Updated `src/game/runtime/mapSceneContent.ts` so route cards and field notes surface this triangulation tiering alongside the existing scanner-based biome intel.
+  - Updated `docs/06-puzzles-and-meta-mystery.md`; targeted notebook/map-content tests and `npm run check` pass.
+
+TODO next:
+
+- Decide whether synthesis should eventually do more than route marking, for example unlocking authored encounter outcomes or notebook-conditioned goal-node variants.
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially repeated HUD text-reset / draw-primitive plumbing and any remaining scene-specific card layout or module-meter setup.

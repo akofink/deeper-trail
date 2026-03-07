@@ -58,4 +58,8 @@ Use a “mystery graph”:
 - Anomaly runs now add sync gates: phase-timed fields that stabilize only when the player cuts through them with enough speed or boost.
 - Completing the first `ruin`, `nature`, and `anomaly` runs logs one seed-stable clue each.
 - Finding all three clue families auto-adds a synthesis note so the expedition reads like a small mystery arc rather than isolated route clears.
-- The current notebook is intentionally lightweight: it is a discovery layer and map-side reminder, not yet a branching puzzle graph.
+- Notebook progress now feeds back into route choice mechanically:
+  - first clue enables signal-bearing reads on the selected route,
+  - second clue adds estimated remaining leg count to the source,
+  - synthesis marks the strongest currently connected lead on the route board.
+- The current notebook is still intentionally lightweight: it is a discovery layer and route-intel aid, not yet a full branching puzzle graph.
