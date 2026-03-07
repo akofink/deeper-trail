@@ -56,7 +56,7 @@ export function getBeaconRuleLabel(nodeType: string): string {
 export function getObjectiveSummary(nodeType: string): string {
   const rule = getBeaconRuleForNodeType(nodeType);
   if (rule === 'steady') return 'Steady relays + service bays';
-  if (rule === 'ordered') return 'Ordered relays';
+  if (rule === 'ordered') return 'Ordered relays + impact plates';
   if (rule === 'airborne') return 'Air relays + canopy lifts';
   if (rule === 'boosted') return 'Boost-sync relays + sync gates';
   return 'Relay links';

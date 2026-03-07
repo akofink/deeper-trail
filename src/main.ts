@@ -33,6 +33,7 @@ import {
   updateCanopyLiftProgress,
   usesCanopyLifts
 } from './game/runtime/canopyLifts';
+import { canShatterImpactPlate, impactPlatePrompt, totalImpactPlateProgress, usesImpactPlates } from './game/runtime/impactPlates';
 import { applyNodeCompletionState } from './game/runtime/runCompletion';
 import { dashEntryEnergyCost, shouldContinueDash, shouldStartDash } from './game/runtime/runDash';
 import { buildRunHudLayout } from './game/runtime/runHudLayout';
@@ -485,6 +486,7 @@ function makeInitialRuntimeState(canvasHeight: number, seed = createRunSeed()): 
     serviceStops: run.serviceStops,
     syncGates: run.syncGates,
     canopyLifts: run.canopyLifts,
+    impactPlates: run.impactPlates,
     sim
   };
 }
@@ -536,6 +538,7 @@ function resetRunFromCurrentNode(state: RuntimeState): void {
   state.serviceStops = run.serviceStops;
   state.syncGates = run.syncGates;
   state.canopyLifts = run.canopyLifts;
+  state.impactPlates = run.impactPlates;
   state.dashEnergy = 1;
   state.dashBoost = 0;
   state.wheelRotation = 0;
@@ -641,6 +644,21 @@ function hasCanopyLiftInRange(state: RuntimeState): boolean {
   return false;
 }
 
+function hasImpactPlateInRange(state: RuntimeState): boolean {
+  if (!usesImpactPlates(currentNodeType(state.sim))) {
+    return false;
+  }
+
+  const px = state.player.x + state.player.w * 0.5;
+  for (const plate of state.impactPlates) {
+    if (impactPlatePrompt(plate, px, state.player.onGround)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function serviceStopPromptText(state: RuntimeState): string | null {
   if (state.scene !== 'run' || state.mode !== 'playing' || !usesServiceStops(currentNodeType(state.sim))) {
     return null;
@@ -713,6 +731,20 @@ function canopyLiftPromptText(state: RuntimeState): string | null {
     return !state.player.onGround
       ? `Canopy draft engaged.\nHold in the bloom to chart ${Math.round(lift.progress / CANOPY_LIFT_HOLD_SECONDS * 100)}%.`
       : 'Canopy draft dormant.\nJump into the bloom and stay airborne to chart it.';
+  }
+
+  return null;
+}
+
+function impactPlatePromptText(state: RuntimeState): string | null {
+  if (state.scene !== 'run' || state.mode !== 'playing' || !usesImpactPlates(currentNodeType(state.sim))) {
+    return null;
+  }
+
+  const px = state.player.x + state.player.w * 0.5;
+  for (const plate of state.impactPlates) {
+    const prompt = impactPlatePrompt(plate, px, state.player.onGround);
+    if (prompt) return prompt;
   }
 
   return null;
@@ -805,6 +837,7 @@ function runObjectiveProgress(state: RuntimeState): {
   serviceStopsRemaining: number;
   syncGatesRemaining: number;
   canopyLiftsRemaining: number;
+  impactPlatesRemaining: number;
 } {
   const beaconProgress = {
     completed: state.beacons.filter((beacon) => beacon.activated).length,
@@ -813,14 +846,26 @@ function runObjectiveProgress(state: RuntimeState): {
   const serviceStopProgress = totalServiceStopProgress(state.serviceStops);
   const syncGateProgress = totalSyncGateProgress(state.syncGates);
   const canopyLiftProgress = totalCanopyLiftProgress(state.canopyLifts);
+  const impactPlateProgress = totalImpactPlateProgress(state.impactPlates);
 
   return {
-    completed: beaconProgress.completed + serviceStopProgress.completed + syncGateProgress.completed + canopyLiftProgress.completed,
-    total: beaconProgress.total + serviceStopProgress.total + syncGateProgress.total + canopyLiftProgress.total,
+    completed:
+      beaconProgress.completed +
+      serviceStopProgress.completed +
+      syncGateProgress.completed +
+      canopyLiftProgress.completed +
+      impactPlateProgress.completed,
+    total:
+      beaconProgress.total +
+      serviceStopProgress.total +
+      syncGateProgress.total +
+      canopyLiftProgress.total +
+      impactPlateProgress.total,
     beaconsRemaining: beaconProgress.total - beaconProgress.completed,
     serviceStopsRemaining: serviceStopProgress.total - serviceStopProgress.completed,
     syncGatesRemaining: syncGateProgress.total - syncGateProgress.completed,
-    canopyLiftsRemaining: canopyLiftProgress.total - canopyLiftProgress.completed
+    canopyLiftsRemaining: canopyLiftProgress.total - canopyLiftProgress.completed,
+    impactPlatesRemaining: impactPlateProgress.total - impactPlateProgress.completed
   };
 }
 
@@ -1012,6 +1057,7 @@ async function bootstrap(): Promise<void> {
     }
 
     const p = state.player;
+    const wasOnGround = p.onGround;
     const dashState = dashInputState(keys.has('ShiftLeft'), keys.has('ShiftRight'));
     const dashDown = isDashHeld(dashState);
     const dashStart = shouldStartDash(dashDown, previousDashDown, state.dashEnergy);
@@ -1080,6 +1126,7 @@ async function bootstrap(): Promise<void> {
     }
 
     const gravityMultiplier = p.vy > 0 ? FALL_GRAVITY_MULTIPLIER : Math.abs(p.vy) < 90 && spaceDown ? HANG_GRAVITY_MULTIPLIER : 1;
+    const downwardSpeedBeforeGravity = p.vy;
     p.vy += GRAVITY * gravityMultiplier * dt;
     p.x += p.vx * dt;
     p.y += p.vy * dt;
@@ -1105,6 +1152,8 @@ async function bootstrap(): Promise<void> {
     }
 
     const playerHitbox = { x: p.x + 2, y: p.y + 2, w: p.w - 4, h: p.h - 4 };
+    const landedThisFrame = !wasOnGround && p.onGround;
+    const landingSpeed = Math.max(downwardSpeedBeforeGravity, p.vy);
 
     for (const hazard of state.hazards) {
       if (!intersects(playerHitbox, hazard) || p.invuln > 0) continue;
@@ -1187,6 +1236,14 @@ async function bootstrap(): Promise<void> {
       }
     }
 
+    for (const plate of state.impactPlates) {
+      if (!canShatterImpactPlate(plate, px, landingSpeed, landedThisFrame)) continue;
+      plate.shattered = true;
+      state.score += 20;
+      state.mapMessage = `Impact plate ${plate.id.toUpperCase()} shattered.`;
+      state.mapMessageTimer = 2.2;
+    }
+
     const objectiveProgress = runObjectiveProgress(state);
     const exitReady = objectiveProgress.completed >= objectiveProgress.total;
     if (p.x + p.w >= state.goalX && !exitReady) {
@@ -1210,6 +1267,11 @@ async function bootstrap(): Promise<void> {
       if (objectiveProgress.canopyLiftsRemaining > 0) {
         pendingParts.push(
           `${objectiveProgress.canopyLiftsRemaining} canopy ${objectiveProgress.canopyLiftsRemaining === 1 ? 'lift' : 'lifts'}`
+        );
+      }
+      if (objectiveProgress.impactPlatesRemaining > 0) {
+        pendingParts.push(
+          `${objectiveProgress.impactPlatesRemaining} impact ${objectiveProgress.impactPlatesRemaining === 1 ? 'plate' : 'plates'}`
         );
       }
       state.mapMessage = `Exit locked: finish ${pendingParts.join(' and ')}.`;
@@ -1468,6 +1530,28 @@ async function bootstrap(): Promise<void> {
       }
     }
 
+    for (const plate of state.impactPlates) {
+      const left = plate.x - plate.w * 0.5 - cam;
+      const top = state.groundY - 12;
+      graphics.roundRect(left, top, plate.w, 12, 4).fill({
+        color: plate.shattered ? '#78716c' : '#a16207',
+        alpha: plate.shattered ? 0.38 : 0.72
+      });
+      graphics.roundRect(left, top, plate.w, 12, 4).stroke({
+        color: plate.shattered ? '#d6d3d1' : '#fcd34d',
+        alpha: plate.shattered ? 0.45 : 0.7,
+        width: 1.4
+      });
+      if (!plate.shattered) {
+        graphics
+          .moveTo(left + 10, top + 4)
+          .lineTo(left + plate.w * 0.4, top + 8)
+          .lineTo(left + plate.w * 0.72, top + 3)
+          .lineTo(left + plate.w - 12, top + 8)
+          .stroke({ color: '#fef3c7', alpha: 0.55, width: 1.1 });
+      }
+    }
+
     for (const lift of state.canopyLifts) {
       const left = lift.x - lift.w * 0.5 - cam;
       const top = lift.y - lift.h * 0.5;
@@ -1649,6 +1733,8 @@ async function bootstrap(): Promise<void> {
       overlay.text = state.mapMessage;
     } else if (hasSyncGateInRange(state)) {
       overlay.text = syncGatePromptText(state) ?? '';
+    } else if (hasImpactPlateInRange(state)) {
+      overlay.text = impactPlatePromptText(state) ?? '';
     } else if (hasCanopyLiftInRange(state)) {
       overlay.text = canopyLiftPromptText(state) ?? '';
     } else if (hasServiceStopInRange(state)) {
@@ -2209,6 +2295,12 @@ async function bootstrap(): Promise<void> {
           height: lift.h,
           progress: Number(lift.progress.toFixed(2)),
           charted: lift.charted
+        })),
+        impactPlates: state.impactPlates.map((plate) => ({
+          id: plate.id,
+          x: Math.round(plate.x),
+          width: plate.w,
+          shattered: plate.shattered
         })),
         objectiveRule: getBeaconRuleForNodeType(currentNode?.type ?? 'town'),
         objectiveSummary: getObjectiveSummary(currentNode?.type ?? 'town'),

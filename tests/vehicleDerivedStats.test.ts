@@ -32,6 +32,7 @@ function buildRuntimeState(): RuntimeState {
     serviceStops: [],
     syncGates: [],
     canopyLifts: [],
+    impactPlates: [],
     player: {
       x: 0,
       y: 0,

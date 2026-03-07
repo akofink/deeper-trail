@@ -32,3 +32,10 @@ export interface CanopyLift {
   progress: number;
   charted: boolean;
 }
+
+export interface ImpactPlate {
+  id: string;
+  x: number;
+  w: number;
+  shattered: boolean;
+}

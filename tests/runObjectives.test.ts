@@ -24,6 +24,7 @@ describe('run objective rules', () => {
     expect(getBeaconRuleForNodeType('nature')).toBe('airborne');
     expect(getBeaconRuleForNodeType('anomaly')).toBe('boosted');
     expect(getObjectiveSummary('town')).toContain('service bays');
+    expect(getObjectiveSummary('ruin')).toContain('impact plates');
     expect(getObjectiveSummary('nature')).toContain('canopy lifts');
     expect(getObjectiveSummary('anomaly')).toContain('sync gates');
   });
