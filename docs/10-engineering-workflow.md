@@ -48,12 +48,15 @@ Enforce consistent code quality and repository hygiene while keeping iteration f
 - All repo changes should happen in a linked worktree on a task branch, not directly in the primary checkout, unless a user explicitly overrides this.
 - Treat agent-instruction edits as normal repo changes for this rule. Updating `AGENTS.md`, README workflow guidance, or this workflow doc still requires its own task worktree and branch.
 - Begin each task by running `git worktree list` so you can see which linked worktrees and branches are already active.
+- Before reusing, merging, or deleting another worktree, check for an active concurrent Codex session. Prefer local evidence such as `ps -axo pid,etime,command | rg '[c]odex'` plus a cwd lookup like `lsof -a -d cwd -p <pid>` on macOS when you need to map a process to a worktree path.
 - Create linked worktrees under `.worktrees/` with `git worktree add .worktrees/<task-name> -b <branch-name>`.
 - Choose a fresh branch name for each worktree. Git does not allow one branch to be checked out in multiple worktrees.
 - Use existing worktree names, branch names, and branch-local documentation updates as coordination signals before claiming new work. Relevant branch-local docs include `docs/issues/`, `progress.md`, `IMPLEMENTATION_NOTES.md`, and the numbered design docs touched by that branch.
 - Reading from another worktree is allowed for coordination and review. Writing into another agent's worktree is not allowed; confine edits to your own current worktree.
 - Commit incrementally while the task is in progress so review and rollback stay straightforward.
 - Merge completed worktree branches back into `main` with non-interactive git commands.
+- If you find an inactive worktree with no live Codex session attached, inspect its branch, finish any coherent pending work, merge it into `main`, then remove the linked worktree and delete the merged branch.
+- If that merge produces conflicts, resolve them in the current session instead of deferring by default. Preserve both branches' intended behavior where possible, run the most relevant checks, and complete the merge before cleanup.
 - After merging, remove the linked worktree and delete the merged branch as part of finishing the task.
 - `.worktrees/` must stay gitignored and excluded from recursive repo tooling such as search, lint, and formatting.
 - Do not place live worktree checkouts inside `.git/`; only Git-managed metadata belongs under `.git/worktrees/`.

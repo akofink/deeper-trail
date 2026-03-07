@@ -40,6 +40,7 @@ Current high-value files:
 - Start every code or docs task in a dedicated linked git worktree on its own branch, even for small changes, unless the user explicitly instructs otherwise.
 - This rule applies to agent-instruction updates too, including edits to `AGENTS.md`, workflow docs, README workflow guidance, and any other docs that tell future agents how to work in the repo.
 - Before creating a new worktree, inspect existing linked worktrees with `git worktree list` and treat them as active agent context.
+- Check for active concurrent Codex sessions before you touch another worktree or branch. Prefer concrete local inspection over guesswork: review `git worktree list`, inspect running Codex processes with `ps -axo pid,etime,command | rg '[c]odex'`, and when needed map a PID to its working directory with a platform-appropriate command such as `lsof -a -d cwd -p <pid>` on macOS.
 - Use existing worktree names, branch names, and branch-local docs updates to infer what work is already in progress so you do not duplicate or collide with another agent's task.
 - Prefer small, scoped edits over sweeping rewrites.
 - Commit incrementally as you go. Prefer multiple small commits that keep the branch history easy to review over one large end-of-session commit.
@@ -66,6 +67,7 @@ Before finishing substantial code changes, run `npm run check` when feasible.
 
 - Do not work directly in the primary checkout when making repo changes. Create a linked worktree and branch first.
 - Start by checking `git worktree list` so you know which branches are already checked out and which task names are already claimed by another worktree.
+- Before you treat any other worktree as abandoned, check whether a live Codex session is still attached to it. A checked-out worktree is not automatically inactive just because it has been idle for a while.
 - Create the branch and worktree together with `git worktree add .worktrees/<task-name> -b <branch-name>`.
 - Git does not allow checking out the same branch in multiple worktrees. Pick a fresh branch name for your task rather than trying to reuse a branch that is already active elsewhere.
 - Keep one task per branch/worktree so cleanup and review stay simple.
@@ -73,8 +75,10 @@ Before finishing substantial code changes, run `npm run check` when feasible.
 - When choosing new work, use branch/worktree names plus branch-local docs changes such as `docs/issues`, `progress.md`, `IMPLEMENTATION_NOTES.md`, and relevant design docs to avoid taking the same issue another agent is already handling.
 - Commit incrementally during the task rather than batching all changes into one final commit.
 - When the task is complete, merge the worktree branch back into `main` with a non-interactive git command.
+- When you find an inactive task branch or linked worktree with no live Codex session attached, clean it up instead of leaving it behind. Inspect its diff and `git status`, finish any coherent pending work, merge the branch into `main`, then remove the linked worktree and delete the merged branch.
+- If an inactive branch cannot be merged cleanly, resolve the merge conflict yourself. Read both sides carefully, preserve the intended behavior from each branch, run the most relevant tests you can, complete the merge non-interactively, and only then remove the worktree and branch.
 - After the merge, remove the linked worktree and delete the now-merged branch. Treat cleanup as part of finishing the task, including for branches that only changed agent docs or workflow instructions.
-- Before removing a worktree with unfinished work, capture any follow-up items in [docs/issues](/home/akofink/dev/repos/deeper-trail/docs/issues) so nothing is stranded in local history.
+- Before removing a worktree with unfinished or non-mergeable work, capture any follow-up items in [docs/issues](/home/akofink/dev/repos/deeper-trail/docs/issues) so nothing is stranded in local history.
 
 ## Test Expectations
 
@@ -146,6 +150,8 @@ debt that is concrete enough for another agent to pick up later.
 - Read before editing. This repo has compact files, and understanding the surrounding rule set is usually cheap.
 - Search with `rg` first.
 - During task selection or handoff, check other linked worktrees for branch-local doc changes before assuming an issue is unclaimed. Reading is allowed; editing another worktree is not.
+- Treat worktree cleanup as ongoing repo hygiene. If you confirm a worktree is inactive, do the merge and deletion work in the current session rather than leaving stale branches around for the next agent.
+- Do not guess about session ownership. Use local process inspection to distinguish active concurrent Codex sessions from truly abandoned worktrees before you merge or delete anything.
 - For quick visual verification, consider direct browser screenshots with `google-chrome --headless --screenshot` as a lightweight first pass before reaching for Playwright.
 - Use Playwright when you need scripted inputs, multi-step capture, or the direct headless screenshot path is not rendering the Pixi/WebGL scene reliably in the current environment.
 - If you add a new subsystem or rule family, place it near related engine modules and add tests alongside the behavior.
