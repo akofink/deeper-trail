@@ -44,7 +44,11 @@ Enforce consistent code quality and repository hygiene while keeping iteration f
 ## Worktree policy
 
 - All repo changes should happen in a linked worktree on a task branch, not directly in the primary checkout, unless a user explicitly overrides this.
+- Begin each task by running `git worktree list` so you can see which linked worktrees and branches are already active.
 - Create linked worktrees under `.worktrees/` with `git worktree add .worktrees/<task-name> -b <branch-name>`.
+- Choose a fresh branch name for each worktree. Git does not allow one branch to be checked out in multiple worktrees.
+- Use existing worktree names, branch names, and branch-local documentation updates as coordination signals before claiming new work. Relevant branch-local docs include `docs/issues/`, `progress.md`, `IMPLEMENTATION_NOTES.md`, and the numbered design docs touched by that branch.
+- Reading from another worktree is allowed for coordination and review. Writing into another agent's worktree is not allowed; confine edits to your own current worktree.
 - Commit incrementally while the task is in progress so review and rollback stay straightforward.
 - Merge completed worktree branches back into `main` with non-interactive git commands.
 - After merging, remove the linked worktree and delete the merged branch when feasible.

@@ -38,6 +38,8 @@ Current high-value files:
 
 - Start by reading the relevant docs before making broad gameplay or architecture changes.
 - Start every code or docs task in a dedicated linked git worktree on its own branch, even for small changes, unless the user explicitly instructs otherwise.
+- Before creating a new worktree, inspect existing linked worktrees with `git worktree list` and treat them as active agent context.
+- Use existing worktree names, branch names, and branch-local docs updates to infer what work is already in progress so you do not duplicate or collide with another agent's task.
 - Prefer small, scoped edits over sweeping rewrites.
 - Commit incrementally as you go. Prefer multiple small commits that keep the branch history easy to review over one large end-of-session commit.
 - Follow the existing split:
@@ -62,8 +64,12 @@ Before finishing substantial code changes, run `npm run check` when feasible.
 ## Branch And Worktree Workflow
 
 - Do not work directly in the primary checkout when making repo changes. Create a linked worktree and branch first.
+- Start by checking `git worktree list` so you know which branches are already checked out and which task names are already claimed by another worktree.
 - Create the branch and worktree together with `git worktree add .worktrees/<task-name> -b <branch-name>`.
+- Git does not allow checking out the same branch in multiple worktrees. Pick a fresh branch name for your task rather than trying to reuse a branch that is already active elsewhere.
 - Keep one task per branch/worktree so cleanup and review stay simple.
+- Read from other agents' worktrees when needed for coordination, but do not write into them. Only edit files inside your own current worktree.
+- When choosing new work, use branch/worktree names plus branch-local docs changes such as `docs/issues`, `progress.md`, `IMPLEMENTATION_NOTES.md`, and relevant design docs to avoid taking the same issue another agent is already handling.
 - Commit incrementally during the task rather than batching all changes into one final commit.
 - When the task is complete, merge the worktree branch back into `main` with a non-interactive git command.
 - After the merge, remove the linked worktree and delete the now-merged branch when feasible.
@@ -138,6 +144,7 @@ debt that is concrete enough for another agent to pick up later.
 
 - Read before editing. This repo has compact files, and understanding the surrounding rule set is usually cheap.
 - Search with `rg` first.
+- During task selection or handoff, check other linked worktrees for branch-local doc changes before assuming an issue is unclaimed. Reading is allowed; editing another worktree is not.
 - For quick visual verification, consider direct browser screenshots with `google-chrome --headless --screenshot` as a lightweight first pass before reaching for Playwright.
 - Use Playwright when you need scripted inputs, multi-step capture, or the direct headless screenshot path is not rendering the Pixi/WebGL scene reliably in the current environment.
 - If you add a new subsystem or rule family, place it near related engine modules and add tests alongside the behavior.
