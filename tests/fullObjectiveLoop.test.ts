@@ -1,7 +1,12 @@
 import fs from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { resolveExecutablePath, resolveExecutablePathCandidates, withStepTimeout } from "../scripts/e2e/fullObjectiveLoop.js";
+import {
+  beaconApproachState,
+  resolveExecutablePath,
+  resolveExecutablePathCandidates,
+  withStepTimeout
+} from "../scripts/e2e/fullObjectiveLoop.js";
 
 const ORIGINAL_EXECUTABLE_PATH = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
 
@@ -46,5 +51,26 @@ describe("fullObjectiveLoop helpers", () => {
     await expect(withStepTimeout("test step", () => new Promise(() => {}), 10)).rejects.toThrow(
       "test step exceeded 10ms"
     );
+  });
+
+  it("keeps creeping toward elevated beacons until the true interact radius is reached", () => {
+    const approach = beaconApproachState(
+      { kind: "beacon", id: "b0", x: 360, y: 302 },
+      {
+        run: {
+          player: {
+            x: 321,
+            y: 342,
+            width: 32,
+            height: 36
+          }
+        }
+      }
+    );
+
+    expect(approach.inRange).toBe(false);
+    expect(approach.shouldBrake).toBe(false);
+    expect(approach.shouldCreep).toBe(true);
+    expect(Math.round(approach.distance)).toBe(62);
   });
 });

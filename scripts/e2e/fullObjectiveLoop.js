@@ -7,6 +7,7 @@ const E2E_SEED = "e2e-1";
 const DEFAULT_VIEWPORT = { width: 1440, height: 960 };
 const INTERACT_RADIUS = 55;
 const BRAKE_DISTANCE = 140;
+const CREEP_DISTANCE = 28;
 const JUMP_MIN_DISTANCE = 58;
 const JUMP_MAX_DISTANCE = 108;
 const LOW_SPEED = 80;
@@ -171,7 +172,7 @@ async function setHeld(page, activeKeys, key, nextHeld) {
 
 function targetSequence(state) {
   return [
-    ...state.run.beacons.map((beacon) => ({ kind: "beacon", id: beacon.id, x: beacon.x })),
+    ...state.run.beacons.map((beacon) => ({ kind: "beacon", id: beacon.id, x: beacon.x, y: beacon.y })),
     ...state.run.serviceStops.map((stop) => ({ kind: "service", id: stop.id, x: stop.x, width: stop.width }))
   ].sort((left, right) => left.x - right.x);
 }
@@ -195,6 +196,27 @@ function jumpWindow(state) {
     const dx = hazard.x - playerRight;
     return dx >= JUMP_MIN_DISTANCE && dx <= JUMP_MAX_DISTANCE;
   });
+}
+
+export function beaconApproachState(target, state) {
+  const player = state.run.player;
+  const playerCenterX = player.x + player.width * 0.5;
+  const playerCenterY = player.y + player.height * 0.5;
+  const dx = target.x - playerCenterX;
+  const dy = target.y - playerCenterY;
+  const distance = Math.hypot(dx, dy);
+  const inRange = distance <= INTERACT_RADIUS;
+  const shouldCreep = !inRange && Math.abs(dx) <= CREEP_DISTANCE;
+  const shouldBrake = !inRange && !shouldCreep && dx <= BRAKE_DISTANCE;
+
+  return {
+    dx,
+    dy,
+    distance,
+    inRange,
+    shouldBrake,
+    shouldCreep
+  };
 }
 
 async function completeTownRun(page) {
@@ -234,19 +256,17 @@ async function completeTownRun(page) {
     }
 
     if (target.kind === "beacon") {
-      const dx = target.x - playerCenterX;
-      const inRange = Math.abs(dx) <= INTERACT_RADIUS;
-      const shouldBrake = dx <= BRAKE_DISTANCE;
+      const approach = beaconApproachState(target, state);
 
-      if (inRange && player.onGround && speed <= LOW_SPEED) {
+      if (approach.inRange && player.onGround && speed <= LOW_SPEED) {
         await setHeld(page, activeKeys, "ArrowRight", false);
         await tapKey(page, "Enter", 2);
         await advanceFrames(page, 8);
         continue;
       }
 
-      await setHeld(page, activeKeys, "ArrowRight", !shouldBrake);
-      await advanceFrames(page, shouldBrake ? 3 : 2);
+      await setHeld(page, activeKeys, "ArrowRight", !approach.shouldBrake || approach.shouldCreep);
+      await advanceFrames(page, approach.shouldBrake && !approach.shouldCreep ? 3 : 2);
       continue;
     }
 
