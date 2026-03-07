@@ -52,6 +52,7 @@
 - Prompt-priority, compact objective labels, and aggregate objective progress now belong in `game/runtime/runObjectiveUi.ts` so run-scene objective messaging stays testable outside Pixi.
 - Per-frame objective mutation now belongs in `game/runtime/runObjectiveUpdates.ts` so service-bay/sync-gate/canopy-lift/impact-plate advancement can be tested without the render loop.
 - Objective visual-emphasis state now belongs in `game/runtime/runObjectiveVisuals.ts` so draw-pass special cases can consume precomputed labels/highlights instead of rebuilding those decisions inline.
+- Map-scene route/detail/notebook text assembly now belongs in `game/runtime/mapSceneContent.ts` so the map renderer can focus on layout/drawing instead of building long dynamic copy blocks inline.
 - World-node helper lookups belong in deterministic helpers (`engine/sim/world.ts`) so map travel, route cards, and automation all read the same node/neighbor logic.
 
 ## Current practical world-render guidance

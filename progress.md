@@ -449,7 +449,13 @@ TODO next:
   - Added `tests/runObjectiveVisuals.test.ts` to cover ordered/steady relay emphasis, anomaly phase highlighting, and canopy/plate visual ratios.
   - Validation: targeted typecheck and visual-helper test slice pass.
 
+- Map-scene content extraction pass:
+  - Added `src/game/runtime/mapSceneContent.ts` to own route-detail text, install/scanner/repair hints, notebook field notes, and completion-state copy instead of building that content inline in `drawMapScene()`.
+  - Updated `src/main.ts` to render map cards from the extracted content object while keeping panel/card layout local to the Pixi shell.
+  - Added `tests/mapSceneContent.test.ts` to cover selected-route copy, scanner/install hints, notebook field notes, and completion-state outcomes.
+  - Validation: targeted typecheck and map-content test slice pass.
+
 TODO next:
 
 - Decide whether notebook clues should start affecting route choice mechanically, for example by revealing pre-arrival scanner/map intel or unlocking authored encounter outcomes.
-- Continue breaking remaining scene orchestration out of `src/main.ts`, especially reusable draw primitives/layout passes and larger scene-composition blocks.
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially map-board rendering/layout and shared draw primitives.
