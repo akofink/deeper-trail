@@ -519,3 +519,14 @@ TODO next:
 
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially shared HUD/draw helper plumbing like chip composition, overlay-card state, and module-meter placement.
 - Decide whether synthesis should eventually do more than route marking, for example unlocking authored encounter outcomes or notebook-conditioned goal-node variants.
+
+- Notebook-conditioned arrival payoff pass:
+  - Extended `BiomeKnowledge` in `src/game/state/gameState.ts` with persistent `objectiveKnown` state so route/objective intel can be learned outside pure visit-count or scanner gates.
+  - Added `revealBiomeIntel(...)` in `src/engine/sim/exploration.ts` and updated visibility logic so deterministic encounters can permanently teach benefit, objective, and risk intel for a biome.
+  - Updated `src/game/runtime/arrivalEncounters.ts` so synthesized first-time town arrivals now bank a free transfer and annotate connected neighboring biome routes using the notebook, giving synthesis a direct route-choice payoff after travel.
+  - Updated `tests/exploration.test.ts`, `tests/mapSceneContent.test.ts`, and `tests/expeditionFlow.test.ts`; updated `docs/06-puzzles-and-meta-mystery.md`.
+
+TODO next:
+
+- Keep pushing notebook payoff toward stranger late-game consequences, for example goal-node variants or arrival encounters that alter local run rules instead of only map intel.
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially shared HUD/draw helper plumbing like chip composition, overlay-card state, and module-meter placement.

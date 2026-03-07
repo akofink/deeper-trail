@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { biomeBenefitLabel, biomeRiskLabel, markNodeVisited, noteBiomeArrival, noteBiomeHazard, visibleBiomeKnowledge } from '../src/engine/sim/exploration';
+import {
+  biomeBenefitLabel,
+  biomeRiskLabel,
+  markNodeVisited,
+  noteBiomeArrival,
+  noteBiomeHazard,
+  revealBiomeIntel,
+  visibleBiomeKnowledge
+} from '../src/engine/sim/exploration';
 import { createInitialGameState } from '../src/game/state/gameState';
 
 describe('exploration notes', () => {
@@ -14,6 +22,7 @@ describe('exploration notes', () => {
     expect(state.exploration.visitedNodeIds.filter((id) => id === 'node-2')).toHaveLength(1);
     expect(state.exploration.biomeKnowledge.nature.visits).toBe(1);
     expect(state.exploration.biomeKnowledge.nature.benefitKnown).toBe(true);
+    expect(state.exploration.biomeKnowledge.nature.objectiveKnown).toBe(true);
     expect(biomeBenefitLabel('nature')).toContain('+1 HP');
   });
 
@@ -66,6 +75,18 @@ describe('exploration notes', () => {
       benefitKnown: true,
       objectiveKnown: true,
       riskKnown: false
+    });
+  });
+
+  it('can permanently reveal full biome intel from deterministic non-visit events', () => {
+    const state = createInitialGameState('exploration-full-intel');
+
+    revealBiomeIntel(state, 'ruin');
+
+    expect(visibleBiomeKnowledge(state, 'ruin')).toEqual({
+      benefitKnown: true,
+      objectiveKnown: true,
+      riskKnown: true
     });
   });
 });

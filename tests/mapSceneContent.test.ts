@@ -118,6 +118,7 @@ describe('map scene content helper', () => {
     state.sim.notebook.synthesisUnlocked = true;
     state.sim.exploration.biomeKnowledge.ruin.visits = 2;
     state.sim.exploration.biomeKnowledge.ruin.benefitKnown = true;
+    state.sim.exploration.biomeKnowledge.ruin.objectiveKnown = true;
     state.sim.exploration.biomeKnowledge.ruin.riskKnown = true;
 
     const content = buildMapSceneContent(state, null, 0, {
@@ -136,6 +137,29 @@ describe('map scene content helper', () => {
     expect(content.fieldNotes.join('\n')).toContain('SYNTH');
     expect(content.fieldNotes.join('\n')).toContain('RELAY MASONRY');
     expect(content.fieldNotes.join('\n')).toContain('Ordered relays + impact plates');
+  });
+
+  it('uses persisted biome objective intel even before scanner upgrades or a direct visit', () => {
+    const state = buildRuntimeState();
+    state.sim.vehicle.scanner = 1;
+    const destination = state.sim.world.nodes.find((node) => node.id === 'n1');
+    if (!destination) throw new Error('Expected destination node');
+    destination.type = 'anomaly';
+    state.sim.exploration.biomeKnowledge.anomaly.benefitKnown = true;
+    state.sim.exploration.biomeKnowledge.anomaly.objectiveKnown = true;
+    state.sim.exploration.biomeKnowledge.anomaly.riskKnown = true;
+
+    const content = buildMapSceneContent(state, 'n1', 7, {
+      canUseMedPatch: false,
+      medPatchHealAmount: 1,
+      medPatchScrapCost: 2,
+      hasAutoLinkScanner: false,
+      hasCompletedCurrentNode: false
+    });
+
+    expect(content.routeDetail).toContain('Boost-sync relays + sync gates');
+    expect(content.routeDetail).not.toContain('Objective pattern ?');
+    expect(content.routeDetail).not.toContain('benefit ? / risk ?');
   });
 
   it('lets notebook synthesis decode the strongest connected lead before scanner unlocks it', () => {

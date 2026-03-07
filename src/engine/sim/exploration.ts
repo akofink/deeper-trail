@@ -33,11 +33,20 @@ export function noteBiomeArrival(state: GameState, nodeType: string): void {
   const knowledge = state.exploration.biomeKnowledge[key];
   knowledge.visits += 1;
   knowledge.benefitKnown = true;
+  knowledge.objectiveKnown = true;
 }
 
 export function noteBiomeHazard(state: GameState, nodeType: string): void {
   const key = asNodeTypeKey(nodeType);
   state.exploration.biomeKnowledge[key].riskKnown = true;
+}
+
+export function revealBiomeIntel(state: GameState, nodeType: string): void {
+  const key = asNodeTypeKey(nodeType);
+  const knowledge = state.exploration.biomeKnowledge[key];
+  knowledge.benefitKnown = true;
+  knowledge.objectiveKnown = true;
+  knowledge.riskKnown = true;
 }
 
 export function visibleBiomeKnowledge(state: GameState, nodeType: string): VisibleBiomeKnowledge {
@@ -47,7 +56,7 @@ export function visibleBiomeKnowledge(state: GameState, nodeType: string): Visib
 
   return {
     benefitKnown: learned.benefitKnown || scannerLevel >= 2,
-    objectiveKnown: learned.visits > 0 || scannerLevel >= 3,
+    objectiveKnown: learned.objectiveKnown || scannerLevel >= 3,
     riskKnown: learned.riskKnown || scannerLevel >= 4
   };
 }

@@ -61,6 +61,7 @@ Use a “mystery graph”:
 - First arrivals now also include a small authored beat layer:
   - scanned ruins can reveal an alignment cache for extra salvage,
   - notebook-aware towns can bank a free transfer,
+  - synthesized town arrivals can annotate the connected board with adjacent biome benefits, risks, and objective patterns,
   - nature clues can turn groves into stronger recovery stops,
   - synthesized anomaly arrivals can stabilize a phase corridor into a free transfer.
 - Notebook progress now feeds back into route choice mechanically:
