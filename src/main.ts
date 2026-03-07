@@ -1,5 +1,6 @@
 import { Application, Graphics, Text } from 'pixi.js';
 import { asNodeTypeKey, biomeBenefitLabel, biomeRiskLabel, markNodeVisited, noteBiomeArrival, noteBiomeHazard } from './engine/sim/exploration';
+import { notebookClueProgress, recordNotebookClue } from './engine/sim/notebook';
 import { connectedNeighbors, currentNodeType, expeditionGoalNodeId, findNode } from './engine/sim/world';
 import { canActivateBeacon, getBeaconRuleForNodeType, getBeaconRuleLabel, nextRequiredBeaconIndex } from './engine/sim/runObjectives';
 import { travelToNode } from './engine/sim/travel';
@@ -593,6 +594,20 @@ function hasBeaconAutoLink(state: RuntimeState): boolean {
   return hasAutoLinkScanner(state.sim.vehicle);
 }
 
+function notebookStatusText(state: RuntimeState): string {
+  const progress = notebookClueProgress(state.sim);
+  const synthesisTag = state.sim.notebook.synthesisUnlocked ? ' SYNTH' : '';
+  return `NB ${progress.discovered}/${progress.total}${synthesisTag}`;
+}
+
+function objectiveShortLabel(nodeType: string): string {
+  const rule = getBeaconRuleForNodeType(nodeType);
+  if (rule === 'ordered') return 'OBJ ORDER';
+  if (rule === 'airborne') return 'OBJ AIR';
+  if (rule === 'boosted') return 'OBJ BOOST';
+  return 'OBJ LINK';
+}
+
 async function bootstrap(): Promise<void> {
   const app = new Application();
   await app.init({ background: '#89c3f0', resizeTo: window, antialias: true });
@@ -837,11 +852,16 @@ async function bootstrap(): Promise<void> {
       state.mapMessage = `Exit locked: activate ${state.beacons.length - activatedCount} more signal beacon(s).`;
       state.mapMessageTimer = 2.5;
     } else if (p.x + p.w >= state.goalX) {
+      const completedNodeType = asNodeTypeKey(currentNodeType(state.sim));
       state.mode = 'won';
       state.scene = 'map';
       if (!hasCompletedCurrentNode(state)) {
         state.completedNodeIds.push(state.sim.currentNodeId);
       }
+      const notebookUpdate = recordNotebookClue(state.sim, {
+        nodeType: completedNodeType,
+        nodeId: state.sim.currentNodeId
+      });
       state.freeTravelCharges += 1;
       const flawlessRecovery = state.tookDamageThisRun ? 0 : 1;
       if (flawlessRecovery > 0) {
@@ -851,6 +871,10 @@ async function bootstrap(): Promise<void> {
         flawlessRecovery > 0
           ? 'Trail complete: route data synced. Clean run restored +1 HP and unlocked +1 free trip.'
           : 'Trail complete: route data synced. +1 free travel charge unlocked.';
+      if (notebookUpdate.newEntries.length > 0) {
+        const latestTitle = notebookUpdate.newEntries[notebookUpdate.newEntries.length - 1]?.title ?? 'new clue';
+        state.mapMessage += ` Notebook updated: ${latestTitle}.`;
+      }
       if (state.sim.currentNodeId === state.expeditionGoalNodeId) {
         state.expeditionComplete = true;
         state.mapMessage = 'Signal source reached. Expedition complete. Press N for a new expedition.';
@@ -1016,6 +1040,9 @@ async function bootstrap(): Promise<void> {
     panelValueRight.text = '';
     panelSeed.text = '';
     fieldNotesText.text = '';
+    chipLabels.forEach((label) => {
+      label.text = '';
+    });
     beaconLabels.forEach((label) => {
       label.text = '';
     });
@@ -1078,26 +1105,26 @@ async function bootstrap(): Promise<void> {
 
     const currentNode = findNode(state.sim, state.sim.currentNodeId);
     const activatedBeacons = state.beacons.filter((beacon) => beacon.activated).length;
-    const panelWidth = Math.min(320, w - 24);
+    const panelWidth = Math.min(336, w - 24);
     const statusWidth = Math.min(280, w - 24);
     const maxHealth = getMaxHealth(state.sim.vehicle);
-    drawPanel(graphics, 12, 10, panelWidth, 132);
+    drawPanel(graphics, 12, 10, panelWidth, 146);
     drawPanel(graphics, w - statusWidth - 12, 10, statusWidth, 156);
     panelLabelLeft.text = 'HP\nFUEL\nPACE';
     panelLabelLeft.x = 26;
-    panelLabelLeft.y = 44;
+    panelLabelLeft.y = 56;
     panelLabelRight.text = 'LINKS\nBOOST\nSYSTEMS';
     panelLabelRight.x = w - statusWidth;
     panelLabelRight.y = 42;
     panelValueLeft.text = `${state.health}/${maxHealth}\n${state.sim.fuel}/${state.sim.fuelCapacity}\n${Math.round(Math.abs(state.player.vx))}`;
     panelValueLeft.x = 12 + panelWidth - 42;
-    panelValueLeft.y = 46;
+    panelValueLeft.y = 58;
     panelValueRight.text = `${activatedBeacons}/${state.beacons.length}\n${Math.round(state.dashEnergy * 100)}%`;
     panelValueRight.x = w - 72;
     panelValueRight.y = 44;
-    drawPips(graphics, 84, 48, maxHealth, state.health, '#f97316');
-    drawGauge(graphics, 82, 74, panelWidth - 98, 12, state.sim.fuel / state.sim.fuelCapacity, '#38bdf8');
-    drawGauge(graphics, 82, 100, panelWidth - 98, 10, Math.min(1, Math.abs(state.player.vx) / Math.max(1, runSpeedForState(state))), '#f59e0b');
+    drawPips(graphics, 92, 60, maxHealth, state.health, '#f97316');
+    drawGauge(graphics, 90, 86, panelWidth - 106, 12, state.sim.fuel / state.sim.fuelCapacity, '#38bdf8');
+    drawGauge(graphics, 90, 112, panelWidth - 106, 10, Math.min(1, Math.abs(state.player.vx) / Math.max(1, runSpeedForState(state))), '#f59e0b');
     drawPips(graphics, w - statusWidth + 64, 46, state.beacons.length, activatedBeacons, '#22c55e');
     drawGauge(graphics, w - statusWidth + 64, 72, statusWidth - 84, 12, state.dashEnergy, '#a78bfa');
     drawModuleMeters(graphics, w - statusWidth + 14, 94, state.sim);
@@ -1107,14 +1134,15 @@ async function bootstrap(): Promise<void> {
     hud.style.fill = '#e2e8f0';
     hud.x = 26;
     hud.y = 16;
-    panelMeta.text = `SCRAP ${state.sim.scrap}   SCORE ${state.score}   ${getBeaconRuleLabel(nodeType).replace('Rule: ', '').replace('.', '')}`;
+    panelMeta.text = `SCRAP ${state.sim.scrap}   SCORE ${state.score}   ${objectiveShortLabel(nodeType)}`;
     panelMeta.style.fill = '#cbd5e1';
-    panelMeta.x = 134;
-    panelMeta.y = 18;
+    panelMeta.style.fontSize = 12;
+    panelMeta.x = 26;
+    panelMeta.y = 34;
     panelSeed.text = `SEED ${state.seed}`;
     panelSeed.style.fill = '#94a3b8';
     panelSeed.x = 26;
-    panelSeed.y = 30;
+    panelSeed.y = 46;
 
     moduleLabels.forEach((label, index) => {
       const statusX = w - statusWidth + 14;
@@ -1185,6 +1213,9 @@ async function bootstrap(): Promise<void> {
     panelValueRight.text = '';
     panelSeed.text = '';
     fieldNotesText.text = '';
+    chipLabels.forEach((label) => {
+      label.text = '';
+    });
     beaconLabels.forEach((label) => {
       label.text = '';
     });
@@ -1286,6 +1317,7 @@ async function bootstrap(): Promise<void> {
     const repairHint = canUseMedPatch(state)
       ? `B: +${MEDPATCH_HEAL_AMOUNT} HP for ${MEDPATCH_SCRAP_COST} scrap.`
       : 'B: repair modules, then patch HP.';
+    const notebookProgress = notebookClueProgress(state.sim);
     const fieldNotes = ['KNOWN BIOMES'];
     for (const type of ['town', 'ruin', 'nature', 'anomaly'] as const) {
       const knowledge = state.sim.exploration.biomeKnowledge[type];
@@ -1294,9 +1326,19 @@ async function bootstrap(): Promise<void> {
       const risk = knowledge.riskKnown ? biomeRiskLabel(type).replace('Hazards strain ', '') : '?';
       fieldNotes.push(`${name} ${knowledge.visits}x  ${benefit}  /  ${risk}`);
     }
+    fieldNotes.push('');
+    fieldNotes.push(`NOTEBOOK ${notebookProgress.discovered}/${notebookProgress.total}${state.sim.notebook.synthesisUnlocked ? '  SYNTH' : ''}`);
+    if (state.sim.notebook.entries.length === 0) {
+      fieldNotes.push('Complete ruin, nature, and anomaly runs to log signal clues.');
+    } else {
+      for (const entry of state.sim.notebook.entries.slice(-3)) {
+        fieldNotes.push(`${entry.title.toUpperCase()}`);
+        fieldNotes.push(entry.body);
+      }
+    }
 
     const completionState = state.expeditionComplete ? 'COMPLETE' : hasCompletedCurrentNode(state) ? 'READY' : 'LOCKED';
-    const topWidth = Math.min(340, w - 24);
+    const topWidth = Math.min(356, w - 24);
     const rightWidth = Math.min(300, w - 24);
     const routeWidth = Math.min(360, w - 80);
     const routeX = 20;
@@ -1321,19 +1363,19 @@ async function bootstrap(): Promise<void> {
     fieldNotesText.style.fontSize = 13;
     const notesCardHeight = fieldNotesText.height + 32;
     const notesY = Math.max(150, chipY - 14 - notesCardHeight);
-    drawPanel(graphics, 16, 14, topWidth, 124);
+    drawPanel(graphics, 16, 14, topWidth, 136);
     drawPanel(graphics, w - rightWidth - 16, 14, rightWidth, 148);
     panelLabelLeft.text = 'TRIPS\nFUEL';
     panelLabelLeft.x = 30;
-    panelLabelLeft.y = 48;
+    panelLabelLeft.y = 58;
     panelLabelRight.text = 'VEHICLE\nLEVEL / CONDITION';
     panelLabelRight.x = w - rightWidth + 4;
     panelLabelRight.y = 48;
     panelValueLeft.text = `${Math.min(3, state.freeTravelCharges)}\n${state.sim.fuel}/${state.sim.fuelCapacity}`;
     panelValueLeft.x = 16 + topWidth - 44;
-    panelValueLeft.y = 50;
-    drawGauge(graphics, 88, 78, topWidth - 106, 12, state.sim.fuel / state.sim.fuelCapacity, '#38bdf8');
-    drawPips(graphics, 88, 52, 3, Math.min(3, state.freeTravelCharges), '#facc15');
+    panelValueLeft.y = 60;
+    drawGauge(graphics, 96, 88, topWidth - 114, 12, state.sim.fuel / state.sim.fuelCapacity, '#38bdf8');
+    drawPips(graphics, 96, 62, 3, Math.min(3, state.freeTravelCharges), '#facc15');
     drawModuleMeters(graphics, w - rightWidth + 12, 70, state.sim);
 
     hud.text = `map ${state.sim.currentNodeId}`;
@@ -1341,14 +1383,15 @@ async function bootstrap(): Promise<void> {
     hud.style.fill = '#e2e8f0';
     hud.x = 30;
     hud.y = 20;
-    panelMeta.text = `DAY ${state.sim.day}   SCRAP ${state.sim.scrap}   ${completionState}`;
+    panelMeta.text = `DAY ${state.sim.day}   SCRAP ${state.sim.scrap}   ${completionState}   ${notebookStatusText(state)}`;
     panelMeta.style.fill = '#cbd5e1';
-    panelMeta.x = 108;
-    panelMeta.y = 22;
+    panelMeta.style.fontSize = 12;
+    panelMeta.x = 30;
+    panelMeta.y = 38;
     panelSeed.text = `SEED ${state.seed}`;
     panelSeed.style.fill = '#94a3b8';
     panelSeed.x = 30;
-    panelSeed.y = 34;
+    panelSeed.y = 50;
 
     moduleLabels.forEach((label, index) => {
       const statusX = w - rightWidth + 12;
@@ -1568,7 +1611,8 @@ async function bootstrap(): Promise<void> {
         scrap: state.sim.scrap,
         vehicle: state.sim.vehicle,
         vehicleCondition: state.sim.vehicleCondition,
-        exploration: state.sim.exploration
+        exploration: state.sim.exploration,
+        notebook: state.sim.notebook
       },
       map: {
         rotation: Number(state.mapRotation.toFixed(2)),

@@ -387,3 +387,15 @@ TODO next:
   - Validation:
     - `npm run build` passes.
     - Built `dist/index.html` now references `./assets/...` instead of `/deeper-trail/assets/...`.
+- Notebook / clue-layer pass:
+  - Added `src/engine/sim/notebook.ts` plus `tests/notebook.test.ts` so clue discovery is deterministic, seed-stable, and testable outside the renderer.
+  - Extended `GameState` with notebook state that tracks discovered biome clue families, concrete notebook entries, and synthesis unlock state.
+  - Completing the first `ruin`, `nature`, and `anomaly` runs now logs one notebook clue each; discovering all three auto-adds a synthesis note to create a lightweight 3-beat mystery arc.
+  - Updated `src/main.ts` map presentation and `render_game_to_text` so the notebook shows up in play/UI automation instead of living only in hidden state.
+  - Updated `FEATURE_LIST.md` and `docs/06-puzzles-and-meta-mystery.md` to reflect the shipped notebook layer.
+  - Validation: `npm run check` passes.
+
+TODO next:
+
+- Add one more biome-specific puzzle template so runs vary beyond relay linking and notebook collection.
+- Decide whether notebook clues should start affecting route choice mechanically, for example by revealing pre-arrival scanner/map intel or unlocking authored encounter outcomes.

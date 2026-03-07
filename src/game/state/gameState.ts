@@ -4,6 +4,8 @@ export const VEHICLE_SUBSYSTEM_KEYS = ['frame', 'engine', 'scanner', 'suspension
 export const NODE_TYPE_KEYS = ['town', 'ruin', 'nature', 'anomaly'] as const;
 export type VehicleSubsystemKey = (typeof VEHICLE_SUBSYSTEM_KEYS)[number];
 export type NodeTypeKey = (typeof NODE_TYPE_KEYS)[number];
+export type CoreNotebookClueKey = 'ruin' | 'nature' | 'anomaly';
+export type NotebookClueKey = 'ruin' | 'nature' | 'anomaly' | 'synthesis';
 
 export interface VehicleSubsystems {
   frame: number;
@@ -27,6 +29,22 @@ export interface ExplorationState {
   biomeKnowledge: Record<NodeTypeKey, BiomeKnowledge>;
 }
 
+export interface NotebookEntry {
+  id: string;
+  clueKey: NotebookClueKey;
+  sourceNodeType: NodeTypeKey | 'meta';
+  sourceNodeId: string | null;
+  dayDiscovered: number;
+  title: string;
+  body: string;
+}
+
+export interface NotebookState {
+  entries: NotebookEntry[];
+  discoveredClues: Record<CoreNotebookClueKey, boolean>;
+  synthesisUnlocked: boolean;
+}
+
 export interface GameState {
   seed: string;
   day: number;
@@ -37,6 +55,7 @@ export interface GameState {
   vehicle: VehicleSubsystems;
   vehicleCondition: VehicleCondition;
   exploration: ExplorationState;
+  notebook: NotebookState;
   world: ReturnType<typeof generateWorldGraph>;
 }
 
@@ -79,6 +98,15 @@ export function createInitialGameState(seed: string): GameState {
         nature: { visits: 0, benefitKnown: false, riskKnown: false },
         anomaly: { visits: 0, benefitKnown: false, riskKnown: false }
       }
+    },
+    notebook: {
+      entries: [],
+      discoveredClues: {
+        ruin: false,
+        nature: false,
+        anomaly: false
+      },
+      synthesisUnlocked: false
     },
     world
   };
