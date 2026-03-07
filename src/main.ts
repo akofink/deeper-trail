@@ -23,6 +23,7 @@ import { buildRunHudLayout } from './game/runtime/runHudLayout';
 import { projectMapPoint } from './game/runtime/mapProjection';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import { advanceHorizontalVelocity } from './game/runtime/runMotion';
+import { rechargeShieldCharge, tryConsumeShieldCharge } from './game/runtime/shieldCharge';
 import type { RuntimeState } from './game/runtime/runtimeState';
 import {
   beaconInteractRadius,
@@ -368,7 +369,11 @@ function drawVehicleAvatar(graphics: Graphics, state: RuntimeState, cameraX: num
   }
 
   if (vehicle.shielding > 1) {
-    graphics.arc(0, -2, chassisW * 0.66, Math.PI * 1.1, Math.PI * 1.9).stroke({ color: '#a78bfa', width: 2 + (vehicle.shielding - 1) * 0.5, alpha: p.invuln > 0 ? 0.85 : 0.45 });
+    graphics.arc(0, -2, chassisW * 0.66, Math.PI * 1.1, Math.PI * 1.9).stroke({
+      color: state.shieldChargeAvailable ? '#c084fc' : '#a78bfa',
+      width: 2 + (vehicle.shielding - 1) * 0.5,
+      alpha: state.shieldChargeAvailable ? 0.72 : p.invuln > 0 ? 0.85 : 0.45
+    });
   }
 
   graphics.moveTo(-wheelOffset + 2, chassisH * 0.24).lineTo(-wheelOffset + 2, chassisH * 0.74).stroke({ color: '#475569', width: 2 });
@@ -439,6 +444,7 @@ function makeInitialRuntimeState(canvasHeight: number, seed = createRunSeed()): 
     mapRotation: -0.22,
     mapRotationVelocity: 0,
     tookDamageThisRun: false,
+    shieldChargeAvailable: sim.vehicle.shielding >= 2,
     player: {
       x: START_X,
       y: groundY - PLAYER_H,
@@ -482,6 +488,12 @@ function applyArrivalRewards(state: RuntimeState): void {
     state.mapMessage = 'Anomaly pulse: scanner subsystem +1.';
   }
   normalizeRuntimeStateAfterVehicleChange(state);
+  if (node.type === 'anomaly') {
+    rechargeShieldCharge(state);
+    if (state.shieldChargeAvailable) {
+      state.mapMessage += ' Shield charge restored.';
+    }
+  }
   state.mapMessageTimer = 3;
 }
 
@@ -504,6 +516,7 @@ function resetRunFromCurrentNode(state: RuntimeState): void {
   state.dashBoost = 0;
   state.wheelRotation = 0;
   state.tookDamageThisRun = false;
+  rechargeShieldCharge(state);
   if (!state.expeditionComplete) {
     state.mode = 'playing';
   }
@@ -879,8 +892,6 @@ async function bootstrap(): Promise<void> {
 
     for (const hazard of state.hazards) {
       if (!intersects(playerHitbox, hazard) || p.invuln > 0) continue;
-      state.health -= 1;
-      state.tookDamageThisRun = true;
       const nodeType = currentNodeType(state.sim);
       const damagedSubsystem = damageSubsystemForNodeType(state.sim, nodeType);
       noteBiomeHazard(state.sim, nodeType);
@@ -891,7 +902,14 @@ async function bootstrap(): Promise<void> {
       p.vy = 0;
       p.onGround = true;
       p.coyoteTime = COYOTE_TIME;
-      state.mapMessage = `${damagedSubsystem} subsystem took field damage.`;
+      const shieldAbsorbed = tryConsumeShieldCharge(state);
+      if (!shieldAbsorbed) {
+        state.health -= 1;
+        state.tookDamageThisRun = true;
+      }
+      state.mapMessage = shieldAbsorbed
+        ? `Shield charge burned. ${damagedSubsystem} subsystem took field damage.`
+        : `${damagedSubsystem} subsystem took field damage.`;
       state.mapMessageTimer = 2;
       if (state.health <= 0) state.mode = 'lost';
       break;

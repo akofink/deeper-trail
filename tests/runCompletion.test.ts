@@ -27,6 +27,7 @@ function buildRuntimeState(): RuntimeState {
     mapRotation: 0,
     mapRotationVelocity: 0,
     tookDamageThisRun: false,
+    shieldChargeAvailable: false,
     beacons: [],
     player: {
       x: 0,

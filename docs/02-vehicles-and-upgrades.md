@@ -51,6 +51,7 @@ Every module should:
 
 - `scanner` lv.3 enables relay auto-linking.
 - `storage` lv.2 starts pulling nearby salvage pickups inward; lv.3 also increases scrap gained per pickup.
+- `shielding` lv.2 grants one rechargeable shielded hit each run.
 
 ## Visual persistence
 

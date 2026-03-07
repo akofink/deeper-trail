@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { collectibleMagnetRadius, collectibleMagnetSpeed, scrapGainPerCollectible } from '../src/game/runtime/vehicleDerivedStats';
+import { hasShieldChargeCapacity, rechargeShieldCharge, tryConsumeShieldCharge } from '../src/game/runtime/shieldCharge';
 import type { RuntimeState } from '../src/game/runtime/runtimeState';
 import { createInitialGameState } from '../src/game/state/gameState';
 
 function buildRuntimeState(): RuntimeState {
-  const sim = createInitialGameState('vehicle-derived-stats');
+  const sim = createInitialGameState('shield-charge');
 
   return {
     mode: 'playing',
@@ -51,26 +51,27 @@ function buildRuntimeState(): RuntimeState {
   };
 }
 
-describe('storage-derived collectible bonuses', () => {
-  it('unlocks salvage magnetism at storage level 2', () => {
+describe('shield charge runtime rules', () => {
+  it('unlocks a rechargeable shield charge at shielding level 2', () => {
     const state = buildRuntimeState();
 
-    expect(collectibleMagnetRadius(state)).toBe(0);
-    expect(collectibleMagnetSpeed(state)).toBe(0);
+    expect(hasShieldChargeCapacity(state)).toBe(false);
 
-    state.sim.vehicle.storage = 2;
+    state.sim.vehicle.shielding = 2;
 
-    expect(collectibleMagnetRadius(state)).toBeGreaterThan(0);
-    expect(collectibleMagnetSpeed(state)).toBeGreaterThan(0);
+    expect(hasShieldChargeCapacity(state)).toBe(true);
+    rechargeShieldCharge(state);
+    expect(state.shieldChargeAvailable).toBe(true);
   });
 
-  it('increases scrap yield at storage level 3 and above', () => {
+  it('consumes the charge only once per run', () => {
     const state = buildRuntimeState();
+    state.sim.vehicle.shielding = 2;
+    rechargeShieldCharge(state);
 
-    expect(scrapGainPerCollectible(state)).toBe(1);
-
-    state.sim.vehicle.storage = 3;
-
-    expect(scrapGainPerCollectible(state)).toBe(2);
+    expect(tryConsumeShieldCharge(state)).toBe(true);
+    expect(state.shieldChargeAvailable).toBe(false);
+    expect(state.tookDamageThisRun).toBe(true);
+    expect(tryConsumeShieldCharge(state)).toBe(false);
   });
 });

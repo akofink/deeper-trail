@@ -58,6 +58,7 @@ export interface RuntimeState {
   mapRotation: number;
   mapRotationVelocity: number;
   tookDamageThisRun: boolean;
+  shieldChargeAvailable: boolean;
   beacons: Beacon[];
   player: Player;
   cameraX: number;
