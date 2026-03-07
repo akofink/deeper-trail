@@ -38,6 +38,7 @@ Current high-value files:
 
 - Start by reading the relevant docs before making broad gameplay or architecture changes.
 - Start every code or docs task in a dedicated linked git worktree on its own branch, even for small changes, unless the user explicitly instructs otherwise.
+- This rule applies to agent-instruction updates too, including edits to `AGENTS.md`, workflow docs, README workflow guidance, and any other docs that tell future agents how to work in the repo.
 - Before creating a new worktree, inspect existing linked worktrees with `git worktree list` and treat them as active agent context.
 - Use existing worktree names, branch names, and branch-local docs updates to infer what work is already in progress so you do not duplicate or collide with another agent's task.
 - Prefer small, scoped edits over sweeping rewrites.
@@ -72,7 +73,7 @@ Before finishing substantial code changes, run `npm run check` when feasible.
 - When choosing new work, use branch/worktree names plus branch-local docs changes such as `docs/issues`, `progress.md`, `IMPLEMENTATION_NOTES.md`, and relevant design docs to avoid taking the same issue another agent is already handling.
 - Commit incrementally during the task rather than batching all changes into one final commit.
 - When the task is complete, merge the worktree branch back into `main` with a non-interactive git command.
-- After the merge, remove the linked worktree and delete the now-merged branch when feasible.
+- After the merge, remove the linked worktree and delete the now-merged branch. Treat cleanup as part of finishing the task, including for branches that only changed agent docs or workflow instructions.
 - Before removing a worktree with unfinished work, capture any follow-up items in [docs/issues](/home/akofink/dev/repos/deeper-trail/docs/issues) so nothing is stranded in local history.
 
 ## Test Expectations

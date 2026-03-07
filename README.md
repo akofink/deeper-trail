@@ -87,13 +87,14 @@ Alternative: **Phaser 3** also great. If you prefer a more “batteries included
 ## Worktree workflow
 
 - Use a repo-local linked worktree under `.worktrees/` for every repo change unless a user explicitly asks for a different flow.
+- This includes repo-instruction updates such as `AGENTS.md`, workflow docs, and README policy edits themselves.
 - Check `git worktree list` before creating a new one so you can see which tasks and branches are already active.
 - Create a linked worktree with `git worktree add .worktrees/<task-name> -b <branch-name>`.
 - Use distinct task and branch names per agent. Git will not let the same branch be checked out in multiple worktrees.
 - Keep one task per worktree branch and commit incrementally as you go.
 - Use other linked worktrees as read-only coordination context: branch/worktree names and branch-local docs updates can tell you which issue another agent already owns.
 - Do not write into another agent's worktree. Coordinate by updating docs in your own branch and by choosing unclaimed tasks.
-- Merge the completed branch back into `main`, then remove the linked worktree and clean up the merged branch.
+- Merge the completed branch back into `main`, then remove the linked worktree and delete the merged branch as part of the same task.
 - `.worktrees/` is intentionally gitignored and excluded from common repo scans so nested checkouts do not pollute normal lint/search/format flows.
 - Do not place linked checkouts under `.git/`; Git already stores linked-worktree metadata in `.git/worktrees/`.
 
