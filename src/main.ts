@@ -1,5 +1,5 @@
 import { Application, Graphics, Text } from 'pixi.js';
-import { asNodeTypeKey, biomeBenefitLabel, biomeRiskLabel, noteBiomeHazard, visibleBiomeKnowledge } from './engine/sim/exploration';
+import { noteBiomeHazard } from './engine/sim/exploration';
 import { notebookClueProgress } from './engine/sim/notebook';
 import { connectedNeighbors, currentNodeType, expeditionGoalNodeId, findNode } from './engine/sim/world';
 import {
@@ -13,13 +13,13 @@ import {
   damageSubsystemForNodeType,
   getInstallOffer,
   getMaxHealth,
-  hasAnyUpgradeableSubsystem,
   hasAutoLinkScanner,
   installUpgradeForNodeType,
   repairMostDamagedSubsystem
 } from './engine/sim/vehicle';
 import { biomeByNodeType, buildRunLayout, mapNodePalette, MODULE_LABELS } from './game/runtime/runLayout';
 import { buildMapSceneCopy, buildMapSceneHudLayout } from './game/runtime/mapSceneCards';
+import { buildMapSceneContent } from './game/runtime/mapSceneContent';
 import { pullCollectibleTowardTarget } from './game/runtime/collectibleMagnetism';
 import {
   applyCanopyLiftAssist,
@@ -1479,55 +1479,13 @@ async function bootstrap(): Promise<void> {
     }
 
     const selectedDistance = selectedOption?.distance ?? 0;
-    const selectedNode = selectedOption ? findNode(state.sim, selectedOption.nodeId) : null;
-    const installOffer = getInstallOffer(state.sim, currentNodeType(state.sim));
-    const selectedNodeType = asNodeTypeKey(selectedNode?.type ?? 'town');
-    const selectedKnowledge = visibleBiomeKnowledge(state.sim, selectedNodeType);
-    const routeDetail = selectedOption && selectedNode
-      ? [
-          `${selectedNode.id}  ${mapNodePalette(selectedNode.type).label}${selectedNode.id === state.expeditionGoalNodeId ? '  SIGNAL' : ''}`,
-          `dist ${selectedDistance}  fuel ${selectedDistance}`,
-          `${selectedKnowledge.benefitKnown ? biomeBenefitLabel(selectedNodeType).replace(' on arrival', '') : 'benefit ?'} / ${
-            selectedKnowledge.riskKnown ? biomeRiskLabel(selectedNodeType).replace('Hazards strain ', '') : 'risk ?'
-          }`,
-          getObjectiveSummary(selectedNode.type)
-        ].join('\n')
-      : 'Select a connected route.';
-    const installHint = installOffer
-      ? `Site: +${installOffer.subsystem} lv${installOffer.nextLevel}  cost ${installOffer.scrapCost}`
-      : hasAnyUpgradeableSubsystem(state.sim)
-        ? 'Site: no install here. Try another biome.'
-        : 'Vehicle: fully maxed.';
-    const scannerHint = hasBeaconAutoLink(state)
-      ? `Scanner lv.${state.sim.vehicle.scanner}: auto-link online.`
-      : state.sim.vehicle.scanner >= 2
-        ? `Scanner lv.${state.sim.vehicle.scanner}: route preview online${state.sim.vehicle.scanner >= 4 ? ', hazard preview online.' : ', hazard preview at lv.4.'}`
-        : `Scanner lv.${state.sim.vehicle.scanner}: route preview at lv.2, auto-link at lv.3.`;
-    const repairHint = canUseMedPatch(state)
-      ? `B: +${MEDPATCH_HEAL_AMOUNT} HP for ${MEDPATCH_SCRAP_COST} scrap.`
-      : 'B: repair modules, then patch HP.';
-    const notebookProgress = notebookClueProgress(state.sim);
-    const fieldNotes = ['KNOWN BIOMES'];
-    for (const type of ['town', 'ruin', 'nature', 'anomaly'] as const) {
-      const knowledge = state.sim.exploration.biomeKnowledge[type];
-      const visibleKnowledge = visibleBiomeKnowledge(state.sim, type);
-      const name = mapNodePalette(type).label.padEnd(6, ' ');
-      const benefit = visibleKnowledge.benefitKnown ? biomeBenefitLabel(type).replace(' on arrival', '') : '+?';
-      const risk = visibleKnowledge.riskKnown ? biomeRiskLabel(type).replace('Hazards strain ', '') : '?';
-      fieldNotes.push(`${name} ${knowledge.visits}x  ${benefit}  /  ${risk}`);
-    }
-    fieldNotes.push('');
-    fieldNotes.push(`NOTEBOOK ${notebookProgress.discovered}/${notebookProgress.total}${state.sim.notebook.synthesisUnlocked ? '  SYNTH' : ''}`);
-    if (state.sim.notebook.entries.length === 0) {
-      fieldNotes.push('Complete ruin, nature, and anomaly runs to log signal clues.');
-    } else {
-      for (const entry of state.sim.notebook.entries.slice(-3)) {
-        fieldNotes.push(`${entry.title.toUpperCase()}`);
-        fieldNotes.push(entry.body);
-      }
-    }
-
-    const completionState = state.expeditionComplete ? 'COMPLETE' : hasCompletedCurrentNode(state) ? 'READY' : 'LOCKED';
+    const mapSceneContent = buildMapSceneContent(state, selectedOption?.nodeId ?? null, selectedDistance, {
+      canUseMedPatch: canUseMedPatch(state),
+      medPatchHealAmount: MEDPATCH_HEAL_AMOUNT,
+      medPatchScrapCost: MEDPATCH_SCRAP_COST,
+      hasAutoLinkScanner: hasBeaconAutoLink(state),
+      hasCompletedCurrentNode: hasCompletedCurrentNode(state)
+    });
     const routeWidth = Math.min(360, w - 80);
     const routeX = 20;
     const notesWidth = Math.max(280, Math.min(350, w - routeWidth - 120));
@@ -1537,12 +1495,12 @@ async function bootstrap(): Promise<void> {
     const chipHeight = 34;
     const mapSceneCopy = buildMapSceneCopy({
       expeditionComplete: state.expeditionComplete,
-      installHint,
+      installHint: mapSceneContent.installHint,
       mapMessage: state.mapMessage,
       mapMessageTimer: state.mapMessageTimer,
-      repairHint,
-      routeDetail,
-      scannerHint,
+      repairHint: mapSceneContent.repairHint,
+      routeDetail: mapSceneContent.routeDetail,
+      scannerHint: mapSceneContent.scannerHint,
       score: state.score,
       seed: state.seed
     });
@@ -1553,7 +1511,7 @@ async function bootstrap(): Promise<void> {
     const routeCardHeight = overlay.height + 32;
     const routeY = Math.max(150, chipY - 14 - routeCardHeight);
 
-    fieldNotesText.text = fieldNotes.join('\n');
+    fieldNotesText.text = mapSceneContent.fieldNotes.join('\n');
     fieldNotesText.style.wordWrap = true;
     fieldNotesText.style.wordWrapWidth = Math.max(120, notesWidth - 36);
     fieldNotesText.style.fontSize = 13;
@@ -1578,7 +1536,7 @@ async function bootstrap(): Promise<void> {
     hud.style.fill = '#e2e8f0';
     hud.x = mapHud.hudX;
     hud.y = mapHud.hudY;
-    panelMeta.text = `DAY ${state.sim.day}   SCRAP ${state.sim.scrap}   ${completionState}   ${notebookStatusText(state)}`;
+    panelMeta.text = `DAY ${state.sim.day}   SCRAP ${state.sim.scrap}   ${mapSceneContent.completionState}   ${notebookStatusText(state)}`;
     panelMeta.style.fill = '#cbd5e1';
     panelMeta.style.fontSize = 12;
     panelMeta.x = mapHud.metaX;
@@ -1614,7 +1572,7 @@ async function bootstrap(): Promise<void> {
     } else {
       overlay.text = '';
     }
-    layoutTextCard(graphics, fieldNotesText, fieldNotes.join('\n'), {
+    layoutTextCard(graphics, fieldNotesText, mapSceneContent.fieldNotes.join('\n'), {
       tone: 'light',
       x: notesX,
       y: notesY,
