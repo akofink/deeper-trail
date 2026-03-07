@@ -490,3 +490,14 @@ TODO next:
 
 - Decide whether synthesis should eventually do more than route marking, for example unlocking authored encounter outcomes or notebook-conditioned goal-node variants.
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially repeated HUD text-reset / draw-primitive plumbing and any remaining scene-specific card layout or module-meter setup.
+
+- Scene HUD content extraction pass:
+  - Added `src/game/runtime/sceneHudContent.ts` to own run/map HUD title strings, meta lines, row labels/values, notebook status text, and shared module-label truncation instead of assembling that panel copy inline in `src/main.ts`.
+  - Updated `src/main.ts` to consume the extracted run/map HUD content objects and removed unused Pixi `Text` instances that were only being reset every frame.
+  - Added `tests/sceneHudContent.test.ts` to cover deterministic run/map HUD copy, notebook synthesis tag output, and trip-count clamping.
+  - Updated `IMPLEMENTATION_NOTES.md`; `npm run check` passes.
+
+TODO next:
+
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially shared HUD/draw helper plumbing like chip composition, overlay-card state, and module-meter placement.
+- Decide whether synthesis should eventually do more than route marking, for example unlocking authored encounter outcomes or notebook-conditioned goal-node variants.
