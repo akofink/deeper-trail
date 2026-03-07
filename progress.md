@@ -425,8 +425,14 @@ TODO next:
   - Updated objective summaries plus architecture/design docs so ruin nodes no longer read as ordered-relays only.
   - Added `tests/impactPlates.test.ts` plus runtime fixture updates; targeted typecheck and runtime tests pass.
 
+- Expedition-flow extraction / automation pass:
+  - Added `src/game/runtime/expeditionFlow.ts` to own node-completion effects, arrival rewards, free-trip refund handling, and the shared "has this node been completed" check instead of leaving that bookkeeping inline in `src/main.ts`.
+  - Updated `src/main.ts` to call the extracted helpers for run completion and map travel, reducing renderer-owned gameplay bookkeeping.
+  - Added `tests/expeditionFlow.test.ts` to cover a deterministic full loop: complete a node, gain a free trip, travel to a connected node with fuel refund, and apply arrival rewards / notebook progression.
+  - Validation: targeted typecheck and loop-focused tests pass.
+
 TODO next:
 
 - Decide whether notebook clues should start affecting route choice mechanically, for example by revealing pre-arrival scanner/map intel or unlocking authored encounter outcomes.
 - Consider extracting run-objective bookkeeping out of `src/main.ts` now that objectives include relays, impact plates, service bays, sync gates, and canopy lifts.
-- Cover a full node-completion-and-travel loop with deterministic automation now that the main biome objective set is broader.
+- Continue breaking remaining run-objective bookkeeping and scene orchestration out of `src/main.ts`, especially the per-frame objective update/render branches.

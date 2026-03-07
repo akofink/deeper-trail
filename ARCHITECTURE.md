@@ -36,7 +36,7 @@ docs/
 
 - `engine/sim/*` owns deterministic rules for travel, vehicle wear/repair/install, biome exploration knowledge, run-objective rules, and resource changes.
 - `engine/sim/world.ts` owns node lookup / neighbor / expedition-target helpers so route-board logic is not duplicated in the runtime shell.
-- `game/runtime/*` owns runtime-facing scene state types, derived vehicle stat helpers, and deterministic run-layout/palette setup for the current Pixi shell.
+- `game/runtime/*` owns runtime-facing scene state types, derived vehicle stat helpers, deterministic run-layout/palette setup, and expedition-flow bookkeeping for the current Pixi shell.
 - `main.ts` currently owns rendering plus input handling for the run and map scenes, but should prefer orchestrating imported helpers over growing more inline rule/config blocks.
 - Run-scene feel is intentionally partly state-driven and partly presentation-driven:
   - State-driven: movement acceleration, jump buffering/cut, coyote time, dash cooldown, beacon range, subsystem-derived speed/jump/invulnerability.

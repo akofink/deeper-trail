@@ -19,7 +19,7 @@
 
 - [x] Add one lightweight mystery/notebook layer so node completion yields clues, not just resources
 - [x] Add one more biome-specific objective/puzzle template so runs vary beyond relay rules
-- [ ] Cover a full node-completion-and-travel loop with deterministic automation
+- [x] Cover a full node-completion-and-travel loop with deterministic automation
 - [ ] Break more simulation rules out of `src/main.ts` into testable engine modules
 
 ## Playability / fun priorities
