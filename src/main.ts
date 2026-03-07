@@ -16,6 +16,7 @@ import {
 } from './engine/sim/vehicle';
 import { biomeByNodeType, buildRunLayout, mapNodePalette, MODULE_LABELS } from './game/runtime/runLayout';
 import { buildMapSceneCopy, buildMapSceneHudLayout } from './game/runtime/mapSceneCards';
+import { applyNodeCompletionState } from './game/runtime/runCompletion';
 import { dashEntryEnergyCost, shouldContinueDash, shouldStartDash } from './game/runtime/runDash';
 import { buildRunHudLayout } from './game/runtime/runHudLayout';
 import { projectMapPoint } from './game/runtime/mapProjection';
@@ -916,7 +917,6 @@ async function bootstrap(): Promise<void> {
     } else if (p.x + p.w >= state.goalX) {
       const completedNodeType = asNodeTypeKey(currentNodeType(state.sim));
       state.mode = 'won';
-      state.scene = 'map';
       if (!hasCompletedCurrentNode(state)) {
         state.completedNodeIds.push(state.sim.currentNodeId);
       }
@@ -941,6 +941,7 @@ async function bootstrap(): Promise<void> {
         state.expeditionComplete = true;
         state.mapMessage = 'Signal source reached. Expedition complete. Press N for a new expedition.';
       }
+      applyNodeCompletionState(state);
       state.mapMessageTimer = 4;
       state.sim.day += 1;
       state.sim.fuel = Math.min(state.sim.fuelCapacity, state.sim.fuel + 3);
@@ -1003,6 +1004,12 @@ async function bootstrap(): Promise<void> {
   }
 
   function tryTravelSelected(): void {
+    if (state.expeditionComplete) {
+      state.mapMessage = 'Expedition complete. Press N for a new world.';
+      state.mapMessageTimer = 3;
+      return;
+    }
+
     if (!hasCompletedCurrentNode(state)) {
       state.mapMessage = 'Complete this node run first to unlock outbound travel.';
       state.mapMessageTimer = 3;
