@@ -509,6 +509,12 @@ TODO next:
   - Added `tests/sceneHudContent.test.ts` to cover deterministic run/map HUD copy, notebook synthesis tag output, and trip-count clamping.
   - Updated `IMPLEMENTATION_NOTES.md`; `npm run check` passes.
 
+- Map-scene HUD view extraction pass:
+  - Added `src/game/runtime/mapSceneHudView.ts` to own map HUD rows, header placement, fuel/trip meter values, and module-label positioning instead of rebuilding those view details inline in `src/main.ts`.
+  - Updated `src/main.ts` to consume the extracted map HUD view model while keeping Pixi drawing primitives local to the shell.
+  - Added `tests/mapSceneHudView.test.ts` and updated `IMPLEMENTATION_NOTES.md`.
+  - Validation: `npm run typecheck` passes, targeted Vitest slices pass, and `npm run check` reaches `test:e2e` but still cannot launch a Chromium executable in this environment.
+
 TODO next:
 
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially shared HUD/draw helper plumbing like chip composition, overlay-card state, and module-meter placement.

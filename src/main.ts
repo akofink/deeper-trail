@@ -18,8 +18,9 @@ import {
 } from './engine/sim/vehicle';
 import { biomeByNodeType, buildRunLayout } from './game/runtime/runLayout';
 import { buildMapActionChips, buildMapBoardView } from './game/runtime/mapBoardView';
-import { buildMapSceneCopy, buildMapSceneHudLayout } from './game/runtime/mapSceneCards';
+import { buildMapSceneCopy } from './game/runtime/mapSceneCards';
 import { buildMapSceneContent } from './game/runtime/mapSceneContent';
+import { buildMapSceneHudViewModel } from './game/runtime/mapSceneHudView';
 import { buildMapSceneLayout } from './game/runtime/mapSceneLayout';
 import { pullCollectibleTowardTarget } from './game/runtime/collectibleMagnetism';
 import {
@@ -39,8 +40,6 @@ import { updateMapRotation } from './game/runtime/mapRotation';
 import { buildRunSceneHudViewModel } from './game/runtime/runSceneHudView';
 import { buildBeaconLabelViews, drawRunExitFlag, drawRunObjectiveVisuals } from './game/runtime/runSceneObjectiveView';
 import { buildRunActionChips, buildRunSceneOverlayCard } from './game/runtime/runSceneView';
-import { buildMapHudContent } from './game/runtime/sceneHudContent';
-import { buildModuleLabelLayouts, buildPanelHeaderLayout } from './game/runtime/sceneHudView';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import { advanceHorizontalVelocity } from './game/runtime/runMotion';
 import { rechargeShieldCharge, tryConsumeShieldCharge } from './game/runtime/shieldCharge';
@@ -1282,7 +1281,6 @@ async function bootstrap(): Promise<void> {
       hasAutoLinkScanner: hasBeaconAutoLink(state),
       hasCompletedCurrentNode: hasCompletedCurrentNode(state)
     });
-    const mapHudContent = buildMapHudContent(state, mapSceneContent.completionState);
     const mapSceneCopy = buildMapSceneCopy({
       expeditionComplete: state.expeditionComplete,
       installHint: mapSceneContent.installHint,
@@ -1304,40 +1302,41 @@ async function bootstrap(): Promise<void> {
     overlay.style.wordWrapWidth = mapSceneMeasureLayout.routeCard.wrapWidth;
     fieldNotesText.style.wordWrapWidth = mapSceneMeasureLayout.notesCard.wrapWidth;
     const mapSceneLayout = buildMapSceneLayout(w, h, overlay.height + 32, fieldNotesText.height + 32);
-    const mapHud = buildMapSceneHudLayout(w);
-    drawPanel(graphics, mapHud.leftPanelX, mapHud.leftPanelY, mapHud.leftPanelWidth, mapHud.leftPanelHeight);
-    drawPanel(graphics, mapHud.rightPanelX, mapHud.rightPanelY, mapHud.rightPanelWidth, mapHud.rightPanelHeight);
-    const [tripsRowY, fuelRowY] = mapHud.leftRowCenters;
-    layoutHudRowLabel(mapLeftRowLabels[0], mapHudContent.leftRows[0].label, mapHud.leftLabelX, tripsRowY);
-    layoutHudRowLabel(mapLeftRowLabels[1], mapHudContent.leftRows[1].label, mapHud.leftLabelX, fuelRowY);
-    layoutHudRowValue(mapLeftRowValues[0], mapHudContent.leftRows[0].value, mapHud.leftValueX, tripsRowY);
-    layoutHudRowValue(mapLeftRowValues[1], mapHudContent.leftRows[1].value, mapHud.leftValueX, fuelRowY);
-    layoutHudRowLabel(mapRightHeaderLines[0], mapHudContent.rightHeaderLines[0], mapHud.rightLabelX, mapHud.rightHeaderLine1Y);
-    layoutHudRowLabel(mapRightHeaderLines[1], mapHudContent.rightHeaderLines[1], mapHud.rightLabelX, mapHud.rightHeaderLine2Y);
-    drawGauge(graphics, mapHud.gaugeX, fuelRowY - 6, mapHud.gaugeWidth, 12, state.sim.fuel / state.sim.fuelCapacity, '#38bdf8');
-    drawPips(graphics, mapHud.pipsX, tripsRowY - 3, 3, Math.min(3, state.freeTravelCharges), '#facc15');
-    drawModuleMeters(graphics, mapHud.moduleX, mapHud.moduleY, state.sim);
+    const mapHudView = buildMapSceneHudViewModel(state, w, mapSceneContent.completionState, moduleLabels.length);
+    const mapHudLayout = mapHudView.layout;
+    drawPanel(graphics, mapHudLayout.leftPanelX, mapHudLayout.leftPanelY, mapHudLayout.leftPanelWidth, mapHudLayout.leftPanelHeight);
+    drawPanel(graphics, mapHudLayout.rightPanelX, mapHudLayout.rightPanelY, mapHudLayout.rightPanelWidth, mapHudLayout.rightPanelHeight);
+    mapHudView.leftRows.forEach((row, index) => {
+      layoutHudRowLabel(mapLeftRowLabels[index], row.label, mapHudLayout.leftLabelX, row.y);
+      layoutHudRowValue(mapLeftRowValues[index], row.value, mapHudLayout.leftValueX, row.y);
+    });
+    mapHudView.rightHeaderLines.forEach((line, index) => {
+      const y = index === 0 ? mapHudLayout.rightHeaderLine1Y : mapHudLayout.rightHeaderLine2Y;
+      layoutHudRowLabel(mapRightHeaderLines[index], line, mapHudLayout.rightLabelX, y);
+    });
+    drawGauge(graphics, mapHudLayout.gaugeX, mapHudView.leftRows[1].y - 6, mapHudLayout.gaugeWidth, 12, mapHudView.fuelRatio, '#38bdf8');
+    drawPips(graphics, mapHudLayout.pipsX, mapHudView.leftRows[0].y - 3, mapHudView.freeTripTotal, mapHudView.freeTripFilled, '#facc15');
+    drawModuleMeters(graphics, mapHudLayout.moduleX, mapHudLayout.moduleY, state.sim);
 
-    const mapHeaderLayout = buildPanelHeaderLayout(mapHud.leftPanelX, 16);
-    hud.text = mapHudContent.title;
+    const mapHeaderLayout = mapHudView.headerLayout;
+    hud.text = mapHudView.title;
     hud.style.fontSize = 18;
     hud.style.fill = '#e2e8f0';
     hud.x = mapHeaderLayout.titleX;
     hud.y = mapHeaderLayout.titleY;
-    panelMeta.text = mapHudContent.meta;
+    panelMeta.text = mapHudView.meta;
     panelMeta.style.fill = '#cbd5e1';
     panelMeta.style.fontSize = 12;
     panelMeta.x = mapHeaderLayout.metaX;
     panelMeta.y = mapHeaderLayout.metaY;
-    panelSeed.text = mapHudContent.seed;
+    panelSeed.text = mapHudView.seed;
     panelSeed.style.fill = '#94a3b8';
     panelSeed.x = mapHeaderLayout.seedX;
     panelSeed.y = mapHeaderLayout.seedY;
 
-    const mapModuleLayouts = buildModuleLabelLayouts(mapHud.moduleX, mapHud.moduleY, moduleLabels.length);
     moduleLabels.forEach((label, index) => {
-      const layout = mapModuleLayouts[index];
-      label.text = mapHudContent.moduleLabels[index] ?? '';
+      const layout = mapHudView.moduleLabels[index];
+      label.text = layout?.text ?? '';
       label.style.fill = '#cbd5e1';
       label.x = layout?.x ?? 0;
       label.y = layout?.y ?? 0;
