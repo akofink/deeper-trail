@@ -14,6 +14,7 @@ describe('run objective rules', () => {
   it('maps node types to their beacon rules', () => {
     expect(getBeaconRuleForNodeType('town')).toBe('standard');
     expect(getBeaconRuleForNodeType('ruin')).toBe('ordered');
+    expect(getBeaconRuleForNodeType('nature')).toBe('airborne');
     expect(getBeaconRuleForNodeType('anomaly')).toBe('boosted');
   });
 
@@ -27,7 +28,8 @@ describe('run objective rules', () => {
       beaconIndex: 2,
       beacons,
       currentSpeed: 0,
-      dashBoost: 0
+      dashBoost: 0,
+      isAirborne: false
     });
 
     expect(outOfOrder.canActivate).toBe(false);
@@ -45,7 +47,8 @@ describe('run objective rules', () => {
       beaconIndex: 0,
       beacons,
       currentSpeed: 180,
-      dashBoost: 0.1
+      dashBoost: 0.1,
+      isAirborne: false
     });
     expect(slow.canActivate).toBe(false);
 
@@ -54,8 +57,34 @@ describe('run objective rules', () => {
       beaconIndex: 0,
       beacons,
       currentSpeed: 280,
-      dashBoost: 0
+      dashBoost: 0,
+      isAirborne: false
     });
     expect(fast.canActivate).toBe(true);
+  });
+
+  it('requires nature beacons to be linked while airborne', () => {
+    const beacons = makeBeacons();
+
+    const grounded = canActivateBeacon({
+      nodeType: 'nature',
+      beaconIndex: 0,
+      beacons,
+      currentSpeed: 120,
+      dashBoost: 0,
+      isAirborne: false
+    });
+    expect(grounded.canActivate).toBe(false);
+    expect(grounded.reason).toContain('Jump through');
+
+    const airborne = canActivateBeacon({
+      nodeType: 'nature',
+      beaconIndex: 0,
+      beacons,
+      currentSpeed: 120,
+      dashBoost: 0,
+      isAirborne: true
+    });
+    expect(airborne.canActivate).toBe(true);
   });
 });

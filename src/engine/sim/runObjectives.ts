@@ -1,6 +1,6 @@
 import type { Beacon } from '../../game/state/runObjectives';
 
-export type BeaconRule = 'standard' | 'ordered' | 'boosted';
+export type BeaconRule = 'standard' | 'ordered' | 'boosted' | 'airborne';
 
 export interface BeaconActivationContext {
   readonly nodeType: string;
@@ -8,6 +8,7 @@ export interface BeaconActivationContext {
   readonly beacons: Beacon[];
   readonly currentSpeed: number;
   readonly dashBoost: number;
+  readonly isAirborne: boolean;
 }
 
 export interface BeaconActivationResult {
@@ -20,6 +21,7 @@ const BOOST_LINK_DASH_THRESHOLD = 0.2;
 
 export function getBeaconRuleForNodeType(nodeType: string): BeaconRule {
   if (nodeType === 'ruin') return 'ordered';
+  if (nodeType === 'nature') return 'airborne';
   if (nodeType === 'anomaly') return 'boosted';
   return 'standard';
 }
@@ -34,6 +36,7 @@ export function nextRequiredBeaconIndex(beacons: Beacon[]): number {
 export function getBeaconRuleLabel(nodeType: string): string {
   const rule = getBeaconRuleForNodeType(nodeType);
   if (rule === 'ordered') return 'Rule: link relays in order.';
+  if (rule === 'airborne') return 'Rule: link relays while airborne.';
   if (rule === 'boosted') return 'Rule: link relays while boosting.';
   return 'Rule: link any relay in range.';
 }
@@ -58,6 +61,13 @@ export function canActivateBeacon(context: BeaconActivationContext): BeaconActiv
         reason: 'Signal drift too strong. Boost through the relay to lock it.'
       };
     }
+  }
+
+  if (rule === 'airborne' && !context.isAirborne) {
+    return {
+      canActivate: false,
+      reason: 'Canopy interference active. Jump through the relay to lock it.'
+    };
   }
 
   return { canActivate: true };

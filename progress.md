@@ -218,6 +218,25 @@ TODO next:
   - Shortened map detail strings so the card communicates route/install state quickly instead of reading like a debug sentence block.
 
 - Systematic overlap fix pass:
+- Roadmap continuation: added a maintainability split plus the first nature-specific embodied objective rule.
+- Refactor / modularity:
+  - Extracted runtime-facing types into `src/game/runtime/runtimeState.ts`.
+  - Extracted deterministic run layout + palette config into `src/game/runtime/runLayout.ts`.
+  - Extracted derived vehicle stat helpers into `src/game/runtime/vehicleDerivedStats.ts`.
+  - Extracted node lookup / route-neighbor / expedition-target helpers into `src/engine/sim/world.ts`.
+  - Reduced `src/main.ts` from 1876 lines to 1657 lines by moving repeated config/rule helpers out of the Pixi shell.
+- Gameplay:
+  - Added a `nature` relay rule in `src/engine/sim/runObjectives.ts`: relays in nature biomes must be linked while airborne.
+  - Updated in-run prompt text so nature nodes clearly instruct jump-through linking, including scanner auto-link messaging.
+- Tests / validation:
+  - Expanded `tests/runObjectives.test.ts` to cover the new `nature -> airborne` rule and updated activation contexts.
+  - `npm run check` passes.
+
+TODO next:
+
+- Continue breaking `src/main.ts` into scene-oriented modules, with HUD/card rendering helpers as the next high-value extraction point.
+- Add deterministic automation or test coverage for a full nature-node completion path so the airborne relay rule is covered beyond unit activation checks.
+- Consider whether town nodes should keep the standard relay rule or become the home for a different low-complexity puzzle verb.
   - Added a reusable text-card layout helper in `src/main.ts` so run/map message cards size themselves from measured text content plus padding.
   - Replaced the fixed-size run banner and map detail card layout with wrapped content-aware cards to prevent text spill/overlap as strings change.
   - Added matching implementation guidance in `IMPLEMENTATION_NOTES.md` so future UI tweaks follow the same rule instead of returning to guessed dimensions.

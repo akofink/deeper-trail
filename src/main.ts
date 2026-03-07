@@ -1,5 +1,6 @@
 import { Application, Graphics, Text } from 'pixi.js';
 import { asNodeTypeKey, biomeBenefitLabel, biomeRiskLabel, markNodeVisited, noteBiomeArrival, noteBiomeHazard } from './engine/sim/exploration';
+import { connectedNeighbors, currentNodeType, expeditionGoalNodeId, findNode } from './engine/sim/world';
 import { canActivateBeacon, getBeaconRuleForNodeType, getBeaconRuleLabel, nextRequiredBeaconIndex } from './engine/sim/runObjectives';
 import { travelToNode } from './engine/sim/travel';
 import {
@@ -12,8 +13,18 @@ import {
   installUpgradeForNodeType,
   repairMostDamagedSubsystem
 } from './engine/sim/vehicle';
+import { biomeByNodeType, buildRunLayout, mapNodePalette, MODULE_LABELS } from './game/runtime/runLayout';
+import type { RuntimeState } from './game/runtime/runtimeState';
+import {
+  beaconInteractRadius,
+  dashSpeedForState,
+  hazardInvulnerabilitySeconds,
+  jumpSpeedForState,
+  normalizeRuntimeStateAfterVehicleChange,
+  runSpeedForState,
+  scrapGainPerCollectible
+} from './game/runtime/vehicleDerivedStats';
 import { createInitialGameState, type GameState as SimState } from './game/state/gameState';
-import type { Beacon } from './game/state/runObjectives';
 import './styles.css';
 
 declare global {
@@ -23,80 +34,11 @@ declare global {
   }
 }
 
-type Mode = 'playing' | 'paused' | 'won' | 'lost';
-type Scene = 'run' | 'map';
-
-interface Player {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  w: number;
-  h: number;
-  onGround: boolean;
-  invuln: number;
-  coyoteTime: number;
-  jumpBufferTime: number;
-  facing: -1 | 1;
-}
-
-interface Collectible {
-  x: number;
-  y: number;
-  r: number;
-  collected: boolean;
-}
-
-interface Hazard {
-  kind: 'static' | 'moving';
-  x: number;
-  baseX: number;
-  y: number;
-  w: number;
-  h: number;
-  amplitude: number;
-  speed: number;
-  phase: number;
-}
-
-interface RuntimeState {
-  mode: Mode;
-  scene: Scene;
-  seed: string;
-  expeditionGoalNodeId: string;
-  expeditionComplete: boolean;
-  score: number;
-  health: number;
-  elapsedSeconds: number;
-  mapMessage: string;
-  mapMessageTimer: number;
-  mapSelectionIndex: number;
-  completedNodeIds: string[];
-  freeTravelCharges: number;
-  dashEnergy: number;
-  dashBoost: number;
-  dashDirection: -1 | 1;
-  mapRotation: number;
-  mapRotationVelocity: number;
-  tookDamageThisRun: boolean;
-  beacons: Beacon[];
-  player: Player;
-  cameraX: number;
-  goalX: number;
-  groundY: number;
-  collectibles: Collectible[];
-  hazards: Hazard[];
-  sim: SimState;
-}
-
 const FIXED_DT = 1 / 60;
-const PLAYER_SPEED = 235;
-const JUMP_SPEED = 420;
 const GRAVITY = 1050;
 const START_X = 80;
 const PLAYER_W = 34;
 const PLAYER_H = 44;
-const DASH_SPEED_MULTIPLIER = 2.1;
 const DASH_ENERGY_DRAIN_PER_SECOND = 2.6;
 const DASH_ENERGY_RECOVER_PER_SECOND = 0.48;
 const DASH_BOOST_RAMP_PER_SECOND = 8;
@@ -144,166 +86,6 @@ function distanceSq(ax: number, ay: number, bx: number, by: number): number {
   const dx = ax - bx;
   const dy = ay - by;
   return dx * dx + dy * dy;
-}
-
-function biomeByNodeType(nodeType: string): { sky: string; back: string; ground: string; hazard: string; collectible: string } {
-  if (nodeType === 'ruin') {
-    return { sky: '#ffd7a8', back: '#f7e9d2', ground: '#8b6e42', hazard: '#7f1d1d', collectible: '#fb923c' };
-  }
-  if (nodeType === 'nature') {
-    return { sky: '#9fe7d8', back: '#d9f6ef', ground: '#3a7d44', hazard: '#166534', collectible: '#facc15' };
-  }
-  if (nodeType === 'anomaly') {
-    return { sky: '#c5b7ff', back: '#ece6ff', ground: '#5b46a8', hazard: '#4c1d95', collectible: '#22d3ee' };
-  }
-  return { sky: '#8fd3ff', back: '#d8f0ff', ground: '#4b8b3b', hazard: '#991b1b', collectible: '#ffd43b' };
-}
-
-function mapNodePalette(nodeType: string): { fill: string; glow: string; label: string } {
-  if (nodeType === 'ruin') {
-    return { fill: '#c2410c', glow: '#fed7aa', label: 'RUIN' };
-  }
-  if (nodeType === 'nature') {
-    return { fill: '#15803d', glow: '#bbf7d0', label: 'NATURE' };
-  }
-  if (nodeType === 'anomaly') {
-    return { fill: '#6d28d9', glow: '#ddd6fe', label: 'ANOM' };
-  }
-  return { fill: '#0f766e', glow: '#99f6e4', label: 'TOWN' };
-}
-
-function buildRunLayout(groundY: number, nodeType: string): Pick<RuntimeState, 'collectibles' | 'hazards' | 'goalX' | 'beacons'> {
-  // Keep obstacle widths and collectible heights inside the player's jump envelope.
-  const hazardPattern =
-    nodeType === 'anomaly'
-      ? [
-          { x: 450, w: 72 },
-          { x: 790, w: 86 },
-          { x: 1140, w: 78 },
-          { x: 1490, w: 90 },
-          { x: 1840, w: 84 },
-          { x: 2190, w: 76 }
-        ]
-      : nodeType === 'ruin'
-        ? [
-            { x: 420, w: 68 },
-            { x: 740, w: 82 },
-            { x: 1080, w: 88 },
-            { x: 1420, w: 74 },
-            { x: 1760, w: 86 },
-            { x: 2100, w: 80 }
-          ]
-        : nodeType === 'nature'
-          ? [
-              { x: 430, w: 60 },
-              { x: 760, w: 70 },
-              { x: 1090, w: 66 },
-              { x: 1420, w: 74 },
-              { x: 1750, w: 68 },
-              { x: 2080, w: 72 }
-            ]
-          : [
-              { x: 440, w: 70 },
-              { x: 770, w: 84 },
-              { x: 1110, w: 78 },
-              { x: 1450, w: 88 },
-              { x: 1790, w: 82 },
-              { x: 2130, w: 76 }
-            ];
-
-  const collectibleHeights =
-    nodeType === 'anomaly'
-      ? [76, 88, 82, 94, 86, 90]
-      : nodeType === 'ruin'
-        ? [70, 84, 78, 90, 82, 86]
-        : nodeType === 'nature'
-          ? [64, 72, 68, 80, 74, 76]
-          : [66, 82, 74, 88, 78, 84];
-
-  return {
-    goalX: 2450,
-    hazards: hazardPattern.map((hazard, i) => ({
-      kind: i % 2 === 0 ? 'moving' : 'static',
-      x: hazard.x,
-      baseX: hazard.x,
-      y: groundY - 16,
-      w: hazard.w,
-      h: 16,
-      amplitude: i % 2 === 0 ? 34 : 0,
-      speed: i % 2 === 0 ? 1.4 + i * 0.08 : 0,
-      phase: i * 0.7
-    })),
-    collectibles: hazardPattern.map((hazard, i) => ({
-      x: hazard.x + Math.round(hazard.w * 0.5) + (i % 2 === 0 ? 12 : -12),
-      y: groundY - collectibleHeights[i],
-      r: 11,
-      collected: false
-    })),
-    beacons: [
-      { id: 'b0', x: 360, y: groundY - 58, r: 15, activated: false },
-      { id: 'b1', x: 1220, y: groundY - 62, r: 15, activated: false },
-      { id: 'b2', x: 1980, y: groundY - 60, r: 15, activated: false }
-    ]
-  };
-}
-
-function connectedNeighbors(sim: SimState): Array<{ nodeId: string; distance: number }> {
-  const sourceId = sim.currentNodeId;
-  return sim.world.edges
-    .filter((edge) => edge.from === sourceId || edge.to === sourceId)
-    .map((edge) => ({
-      nodeId: edge.from === sourceId ? edge.to : edge.from,
-      distance: edge.distance
-    }));
-}
-
-function findNode(sim: SimState, nodeId: string): (typeof sim.world.nodes)[number] | undefined {
-  return sim.world.nodes.find((node) => String(node.id) === String(nodeId));
-}
-
-function currentNodeType(sim: SimState): string {
-  return findNode(sim, sim.currentNodeId)?.type ?? 'town';
-}
-
-function expeditionGoalNodeId(sim: SimState): string {
-  const startId = sim.currentNodeId;
-  let selected = sim.world.nodes.find((node) => node.id !== startId) ?? sim.world.nodes[0];
-  if (!selected) {
-    throw new Error('Expected at least one node for expedition goal');
-  }
-
-  for (const node of sim.world.nodes) {
-    if (node.id === startId) continue;
-    if (node.x > selected.x || (node.x === selected.x && node.y < selected.y)) {
-      selected = node;
-    }
-  }
-
-  return selected.id;
-}
-
-function beaconInteractRadius(state: RuntimeState): number {
-  return 40 + Math.max(0, state.sim.vehicle.scanner - 1) * 10;
-}
-
-function dashSpeedForState(state: RuntimeState): number {
-  return runSpeedForState(state) * DASH_SPEED_MULTIPLIER;
-}
-
-function jumpSpeedForState(state: RuntimeState): number {
-  return JUMP_SPEED + Math.max(0, state.sim.vehicle.suspension - 1) * 18;
-}
-
-function runSpeedForState(state: RuntimeState): number {
-  return PLAYER_SPEED + Math.max(0, state.sim.vehicle.engine - 1) * 18;
-}
-
-function hazardInvulnerabilitySeconds(state: RuntimeState): number {
-  return 1 + Math.max(0, state.sim.vehicle.shielding - 1) * 0.2;
-}
-
-function scrapGainPerCollectible(state: RuntimeState): number {
-  return state.sim.vehicle.storage >= 3 ? 2 : 1;
 }
 
 function drawPanel(graphics: Graphics, x: number, y: number, w: number, h: number, alpha = 0.88): void {
@@ -605,11 +387,6 @@ function drawVehicleAvatar(graphics: Graphics, state: RuntimeState, cameraX: num
   graphics.moveTo(2 * facing, -chassisH * 0.72).lineTo(chassisW * 0.28 * facing, -chassisH * 0.42).stroke({ color: '#e2e8f0', width: 2 });
 }
 
-function normalizeRuntimeStateAfterVehicleChange(state: RuntimeState): void {
-  const maxHealth = getMaxHealth(state.sim.vehicle);
-  state.health = Math.min(state.health, maxHealth);
-}
-
 function createRunSeed(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID().slice(0, 8);
@@ -785,19 +562,24 @@ function beaconPromptText(state: RuntimeState): string | null {
       beaconIndex: index,
       beacons: state.beacons,
       currentSpeed: Math.abs(state.player.vx),
-      dashBoost: state.dashBoost
+      dashBoost: state.dashBoost,
+      isAirborne: !state.player.onGround
     });
 
     if (activation.canActivate) {
       if (hasBeaconAutoLink(state)) {
         return getBeaconRuleForNodeType(nodeType) === 'boosted'
           ? 'Signal relay in range.\nKeep boosting to auto-link it.'
+          : getBeaconRuleForNodeType(nodeType) === 'airborne'
+            ? 'Signal relay in range.\nJump through it to auto-link.'
           : 'Signal relay in range.\nScanner will auto-link it.';
       }
       return getBeaconRuleForNodeType(nodeType) === 'ordered'
         ? `Signal relay in range.\nPress Enter to link ${beacon.id.toUpperCase()}.`
         : getBeaconRuleForNodeType(nodeType) === 'boosted'
           ? 'Signal relay in range.\nBoost through it, then press Enter.'
+          : getBeaconRuleForNodeType(nodeType) === 'airborne'
+            ? 'Signal relay in range.\nJump through it, then press Enter.'
           : 'Signal relay in range.\nPress Enter to link it.';
     }
 
@@ -1107,7 +889,8 @@ async function bootstrap(): Promise<void> {
           beaconIndex: index,
           beacons: state.beacons,
           currentSpeed: Math.abs(state.player.vx),
-          dashBoost: state.dashBoost
+          dashBoost: state.dashBoost,
+          isAirborne: !state.player.onGround
         });
         if (!activation.canActivate) {
           if (trigger === 'manual') {
@@ -1333,12 +1116,11 @@ async function bootstrap(): Promise<void> {
     panelSeed.x = 26;
     panelSeed.y = 30;
 
-    const moduleNames = ['FRAME', 'ENGINE', 'SCAN', 'SUSP', 'STORE', 'SHIELD'];
     moduleLabels.forEach((label, index) => {
       const statusX = w - statusWidth + 14;
       const cellX = statusX + (index % 3) * 84;
       const cellY = 94 + Math.floor(index / 3) * 36;
-      label.text = (moduleNames[index] ?? '').slice(0, 5);
+      label.text = (MODULE_LABELS[index] ?? '').slice(0, 5);
       label.style.fill = '#cbd5e1';
       label.x = cellX + 6;
       label.y = cellY + 9;
@@ -1568,12 +1350,11 @@ async function bootstrap(): Promise<void> {
     panelSeed.x = 30;
     panelSeed.y = 34;
 
-    const moduleNames = ['FRAME', 'ENGINE', 'SCAN', 'SUSP', 'STORE', 'SHIELD'];
     moduleLabels.forEach((label, index) => {
       const statusX = w - rightWidth + 12;
       const cellX = statusX + (index % 3) * 84;
       const cellY = 70 + Math.floor(index / 3) * 36;
-      label.text = (moduleNames[index] ?? '').slice(0, 5);
+      label.text = (MODULE_LABELS[index] ?? '').slice(0, 5);
       label.style.fill = '#cbd5e1';
       label.x = cellX + 6;
       label.y = cellY + 9;
