@@ -443,7 +443,13 @@ TODO next:
   - Added `tests/runObjectiveUpdates.test.ts` to cover combined objective advancement and completion-message ordering in a deterministic runtime fixture.
   - Validation: targeted typecheck and update-helper test slice pass.
 
+- Run-objective visual extraction pass:
+  - Added `src/game/runtime/runObjectiveVisuals.ts` to compute objective render emphasis state for service bays, impact plates, canopy lifts, sync gates, and relay labels/highlights instead of recomputing those conditions inline in `drawRunScene()`.
+  - Updated `src/main.ts` to draw from the precomputed visual state while keeping Pixi drawing primitives local to the shell.
+  - Added `tests/runObjectiveVisuals.test.ts` to cover ordered/steady relay emphasis, anomaly phase highlighting, and canopy/plate visual ratios.
+  - Validation: targeted typecheck and visual-helper test slice pass.
+
 TODO next:
 
 - Decide whether notebook clues should start affecting route choice mechanically, for example by revealing pre-arrival scanner/map intel or unlocking authored encounter outcomes.
-- Continue breaking remaining scene orchestration out of `src/main.ts`, especially the draw-pass special cases for biome objective rendering and prompt-adjacent visual treatments.
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially reusable draw primitives/layout passes and larger scene-composition blocks.
