@@ -2,7 +2,15 @@ import { Application, Graphics, Text } from 'pixi.js';
 import { asNodeTypeKey, biomeBenefitLabel, biomeRiskLabel, markNodeVisited, noteBiomeArrival, noteBiomeHazard, visibleBiomeKnowledge } from './engine/sim/exploration';
 import { notebookClueProgress, recordNotebookClue } from './engine/sim/notebook';
 import { connectedNeighbors, currentNodeType, expeditionGoalNodeId, findNode } from './engine/sim/world';
-import { canActivateBeacon, getBeaconRuleForNodeType, getBeaconRuleLabel, isPhaseWindowOpen, nextRequiredBeaconIndex } from './engine/sim/runObjectives';
+import {
+  canActivateBeacon,
+  getBeaconRuleForNodeType,
+  getBeaconRuleLabel,
+  getObjectiveSummary,
+  isPhaseWindowOpen,
+  isSteadyLinkReady,
+  nextRequiredBeaconIndex
+} from './engine/sim/runObjectives';
 import { travelToNode } from './engine/sim/travel';
 import {
   FIELD_REPAIR_SCRAP_COST,
@@ -23,6 +31,7 @@ import { buildRunHudLayout } from './game/runtime/runHudLayout';
 import { projectMapPoint } from './game/runtime/mapProjection';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import { advanceHorizontalVelocity } from './game/runtime/runMotion';
+import { SERVICE_STOP_HOLD_SECONDS, totalServiceStopProgress, updateServiceStopProgress, usesServiceStops } from './game/runtime/serviceStops';
 import { rechargeShieldCharge, tryConsumeShieldCharge } from './game/runtime/shieldCharge';
 import type { RuntimeState } from './game/runtime/runtimeState';
 import {
@@ -464,6 +473,7 @@ function makeInitialRuntimeState(canvasHeight: number, seed = createRunSeed()): 
     collectibles: run.collectibles,
     hazards: run.hazards,
     beacons: run.beacons,
+    serviceStops: run.serviceStops,
     sim
   };
 }
@@ -512,6 +522,7 @@ function resetRunFromCurrentNode(state: RuntimeState): void {
   state.collectibles = run.collectibles;
   state.hazards = run.hazards;
   state.beacons = run.beacons;
+  state.serviceStops = run.serviceStops;
   state.dashEnergy = 1;
   state.dashBoost = 0;
   state.wheelRotation = 0;
@@ -553,6 +564,40 @@ function hasBeaconInRange(state: RuntimeState): boolean {
   return false;
 }
 
+function hasServiceStopInRange(state: RuntimeState): boolean {
+  if (!usesServiceStops(currentNodeType(state.sim))) {
+    return false;
+  }
+
+  const px = state.player.x + state.player.w * 0.5;
+  for (const stop of state.serviceStops) {
+    if (stop.serviced) continue;
+    if (Math.abs(px - stop.x) <= stop.w * 0.5) return true;
+  }
+  return false;
+}
+
+function serviceStopPromptText(state: RuntimeState): string | null {
+  if (state.scene !== 'run' || state.mode !== 'playing' || !usesServiceStops(currentNodeType(state.sim))) {
+    return null;
+  }
+
+  const px = state.player.x + state.player.w * 0.5;
+  const ready = isSteadyLinkReady(Math.abs(state.player.vx), !state.player.onGround);
+  for (const stop of state.serviceStops) {
+    if (stop.serviced) continue;
+    if (Math.abs(px - stop.x) > stop.w * 0.5) continue;
+
+    return ready
+      ? `Service bay aligned.\nHold steady to finish inspection ${Math.round(stop.progress / SERVICE_STOP_HOLD_SECONDS * 100)}%.`
+      : !state.player.onGround
+        ? 'Service bay unstable.\nSettle on the road to start inspection.'
+        : 'Service bay unstable.\nEase off and hold a low speed to start inspection.';
+  }
+
+  return null;
+}
+
 function beaconPromptText(state: RuntimeState): string | null {
   if (state.scene !== 'run' || state.mode !== 'playing') {
     return null;
@@ -562,6 +607,7 @@ function beaconPromptText(state: RuntimeState): string | null {
   const py = state.player.y + state.player.h * 0.5;
   const interactRadius = beaconInteractRadius(state);
   const nodeType = currentNodeType(state.sim);
+  const beaconRule = getBeaconRuleForNodeType(nodeType);
 
   for (let index = 0; index < state.beacons.length; index += 1) {
     const beacon = state.beacons[index];
@@ -581,19 +627,30 @@ function beaconPromptText(state: RuntimeState): string | null {
 
     if (activation.canActivate) {
       if (hasBeaconAutoLink(state)) {
-        return getBeaconRuleForNodeType(nodeType) === 'boosted'
-          ? 'Signal relay in range.\nKeep boosting through an open sync window.'
-          : getBeaconRuleForNodeType(nodeType) === 'airborne'
-            ? 'Signal relay in range.\nJump through it to auto-link.'
-          : 'Signal relay in range.\nScanner will auto-link it.';
+        if (beaconRule === 'boosted') {
+          return 'Signal relay in range.\nKeep boosting through an open sync window.';
+        }
+        if (beaconRule === 'airborne') {
+          return 'Signal relay in range.\nJump through it to auto-link.';
+        }
+        if (beaconRule === 'steady') {
+          return 'Signal relay in range.\nHold steady beside it to auto-link.';
+        }
+        return 'Signal relay in range.\nScanner will auto-link it.';
       }
-      return getBeaconRuleForNodeType(nodeType) === 'ordered'
-        ? `Signal relay in range.\nPress Enter to link ${beacon.id.toUpperCase()}.`
-        : getBeaconRuleForNodeType(nodeType) === 'boosted'
-          ? 'Sync window open.\nBoost through it, then press Enter.'
-          : getBeaconRuleForNodeType(nodeType) === 'airborne'
-            ? 'Signal relay in range.\nJump through it, then press Enter.'
-          : 'Signal relay in range.\nPress Enter to link it.';
+      if (beaconRule === 'ordered') {
+        return `Signal relay in range.\nPress Enter to link ${beacon.id.toUpperCase()}.`;
+      }
+      if (beaconRule === 'boosted') {
+        return 'Sync window open.\nBoost through it, then press Enter.';
+      }
+      if (beaconRule === 'airborne') {
+        return 'Signal relay in range.\nJump through it, then press Enter.';
+      }
+      if (beaconRule === 'steady') {
+        return 'Relay stabilized.\nPress Enter while holding steady.';
+      }
+      return 'Signal relay in range.\nPress Enter to link it.';
     }
 
     return activation.reason ?? getBeaconRuleLabel(nodeType);
@@ -614,10 +671,26 @@ function notebookStatusText(state: RuntimeState): string {
 
 function objectiveShortLabel(nodeType: string): string {
   const rule = getBeaconRuleForNodeType(nodeType);
+  if (rule === 'steady') return 'OBJ STEADY';
   if (rule === 'ordered') return 'OBJ ORDER';
   if (rule === 'airborne') return 'OBJ AIR';
   if (rule === 'boosted') return 'OBJ BOOST';
   return 'OBJ LINK';
+}
+
+function runObjectiveProgress(state: RuntimeState): { completed: number; total: number; beaconsRemaining: number; serviceStopsRemaining: number } {
+  const beaconProgress = {
+    completed: state.beacons.filter((beacon) => beacon.activated).length,
+    total: state.beacons.length
+  };
+  const serviceStopProgress = totalServiceStopProgress(state.serviceStops);
+
+  return {
+    completed: beaconProgress.completed + serviceStopProgress.completed,
+    total: beaconProgress.total + serviceStopProgress.total,
+    beaconsRemaining: beaconProgress.total - beaconProgress.completed,
+    serviceStopsRemaining: serviceStopProgress.total - serviceStopProgress.completed
+  };
 }
 
 async function bootstrap(): Promise<void> {
@@ -933,11 +1006,33 @@ async function bootstrap(): Promise<void> {
       }
     }
 
-    const activatedCount = state.beacons.filter((b) => b.activated).length;
-    const allBeaconsActivated = activatedCount >= state.beacons.length;
-    if (p.x + p.w >= state.goalX && !allBeaconsActivated) {
+    const steadyReady = isSteadyLinkReady(Math.abs(state.player.vx), !state.player.onGround);
+    for (const stop of state.serviceStops) {
+      const inZone = Math.abs(px - stop.x) <= stop.w * 0.5;
+      const update = updateServiceStopProgress(stop, dt, inZone, steadyReady);
+      if (update.completedNow) {
+        state.score += 20;
+        state.mapMessage = `Service bay ${stop.id.toUpperCase()} calibrated.`;
+        state.mapMessageTimer = 2.2;
+      }
+    }
+
+    const objectiveProgress = runObjectiveProgress(state);
+    const exitReady = objectiveProgress.completed >= objectiveProgress.total;
+    if (p.x + p.w >= state.goalX && !exitReady) {
       p.x = state.goalX - 64;
-      state.mapMessage = `Exit locked: activate ${state.beacons.length - activatedCount} more signal beacon(s).`;
+      const pendingParts: string[] = [];
+      if (objectiveProgress.beaconsRemaining > 0) {
+        pendingParts.push(
+          `${objectiveProgress.beaconsRemaining} relay${objectiveProgress.beaconsRemaining === 1 ? '' : 's'}`
+        );
+      }
+      if (objectiveProgress.serviceStopsRemaining > 0) {
+        pendingParts.push(
+          `${objectiveProgress.serviceStopsRemaining} service ${objectiveProgress.serviceStopsRemaining === 1 ? 'bay' : 'bays'}`
+        );
+      }
+      state.mapMessage = `Exit locked: finish ${pendingParts.join(' and ')}.`;
       state.mapMessageTimer = 2.5;
     } else if (p.x + p.w >= state.goalX) {
       const completedNodeType = asNodeTypeKey(currentNodeType(state.sim));
@@ -1173,9 +1268,31 @@ async function bootstrap(): Promise<void> {
       graphics.rect(hazard.x - cam, hazard.y, hazard.w, hazard.h).fill(colors.hazard);
     }
 
+    for (const stop of state.serviceStops) {
+      const left = stop.x - stop.w * 0.5 - cam;
+      const bayColor = stop.serviced ? '#14b8a6' : '#0f766e';
+      graphics.roundRect(left, state.groundY - 14, stop.w, 14, 6).fill({ color: bayColor, alpha: stop.serviced ? 0.45 : 0.24 });
+      graphics.roundRect(left, state.groundY - 14, stop.w, 14, 6).stroke({ color: '#ccfbf1', alpha: stop.serviced ? 0.55 : 0.28, width: 1.2 });
+      drawGauge(
+        graphics,
+        left + 8,
+        state.groundY - 28,
+        stop.w - 16,
+        6,
+        stop.progress / SERVICE_STOP_HOLD_SECONDS,
+        '#2dd4bf',
+        '#0f172a'
+      );
+      if (!stop.serviced) {
+        graphics.roundRect(left + 10, state.groundY - 10, stop.w - 20, 6, 3).fill({ color: '#99f6e4', alpha: 0.24 });
+      }
+    }
+
     for (let index = 0; index < state.beacons.length; index += 1) {
       const beacon = state.beacons[index];
       const isNextRequired = beaconRule === 'ordered' && !beacon.activated && index === nextBeaconIndex;
+      const steadyReady =
+        beaconRule === 'steady' && !beacon.activated && isSteadyLinkReady(Math.abs(state.player.vx), !state.player.onGround);
       const ringColor = beacon.activated ? '#22c55e' : isNextRequired ? '#f59e0b' : '#64748b';
       const coreColor = beacon.activated ? '#bbf7d0' : '#cbd5e1';
       const anomalyWindowOpen = nodeType === 'anomaly' && isPhaseWindowOpen(state.elapsedSeconds, index);
@@ -1195,10 +1312,26 @@ async function bootstrap(): Promise<void> {
           width: isNextRequired ? 2.5 : 1.2
         });
       }
+      if (!beacon.activated && beaconRule === 'steady') {
+        graphics.circle(beacon.x - cam, beacon.y, beacon.r + 6).stroke({
+          color: steadyReady ? '#14b8a6' : '#0f766e',
+          alpha: steadyReady ? 0.85 : 0.32,
+          width: steadyReady ? 2.8 : 1.4
+        });
+      }
       const label = beaconLabels[index];
       if (label && !beacon.activated && beaconRule !== 'standard') {
-        label.text = `${index + 1}`;
-        label.style.fill = beaconRule === 'boosted' ? '#312e81' : isNextRequired ? '#92400e' : '#111827';
+        label.text = beaconRule === 'steady' ? 'S' : `${index + 1}`;
+        label.style.fill =
+          beaconRule === 'boosted'
+            ? '#312e81'
+            : beaconRule === 'steady'
+              ? steadyReady
+                ? '#134e4a'
+                : '#115e59'
+              : isNextRequired
+                ? '#92400e'
+                : '#111827';
         label.x = beacon.x - cam - Math.round(label.width * 0.5);
         label.y = beacon.y - Math.round(label.height * 0.5);
       }
@@ -1211,18 +1344,18 @@ async function bootstrap(): Promise<void> {
     }
 
     graphics.rect(state.goalX - cam, state.groundY - 130, 8, 130).fill('#334e68');
-    const allBeaconsActivated = state.beacons.every((beacon) => beacon.activated);
+    const objectiveProgress = runObjectiveProgress(state);
+    const exitReady = objectiveProgress.completed >= objectiveProgress.total;
     graphics
       .moveTo(state.goalX - cam + 8, state.groundY - 130)
       .lineTo(state.goalX - cam + 78, state.groundY - 110)
       .lineTo(state.goalX - cam + 8, state.groundY - 90)
       .closePath()
-      .fill(allBeaconsActivated ? '#22c55e' : '#f97316');
+      .fill(exitReady ? '#22c55e' : '#f97316');
 
     drawVehicleAvatar(playerGraphics, state, cam);
 
     const currentNode = findNode(state.sim, state.sim.currentNodeId);
-    const activatedBeacons = state.beacons.filter((beacon) => beacon.activated).length;
     const hudLayout = buildRunHudLayout(w);
     const maxHealth = getMaxHealth(state.sim.vehicle);
     drawPanel(graphics, hudLayout.leftPanelX, 10, hudLayout.leftPanelWidth, hudLayout.leftPanelHeight);
@@ -1235,10 +1368,10 @@ async function bootstrap(): Promise<void> {
     layoutHudRowValue(runLeftRowValues[0], `${state.health}/${maxHealth}`, hudLayout.rowValueX, hpRowY);
     layoutHudRowValue(runLeftRowValues[1], `${state.sim.fuel}/${state.sim.fuelCapacity}`, hudLayout.rowValueX, fuelRowY);
     layoutHudRowValue(runLeftRowValues[2], `${Math.round(Math.abs(state.player.vx))}`, hudLayout.rowValueX, paceRowY);
-    layoutHudRowLabel(runRightRowLabels[0], 'LINKS', hudLayout.rightRowLabelX, linksRowY);
+    layoutHudRowLabel(runRightRowLabels[0], 'GOALS', hudLayout.rightRowLabelX, linksRowY);
     layoutHudRowLabel(runRightRowLabels[1], 'BOOST', hudLayout.rightRowLabelX, boostRowY);
     layoutHudRowLabel(runRightRowLabels[2], 'SYSTEMS', hudLayout.rightRowLabelX, systemsRowY);
-    layoutHudRowValue(runRightRowValues[0], `${activatedBeacons}/${state.beacons.length}`, hudLayout.rightRowValueX, linksRowY);
+    layoutHudRowValue(runRightRowValues[0], `${objectiveProgress.completed}/${objectiveProgress.total}`, hudLayout.rightRowValueX, linksRowY);
     layoutHudRowValue(runRightRowValues[1], `${Math.round(state.dashEnergy * 100)}%`, hudLayout.rightRowValueX, boostRowY);
     drawPips(graphics, hudLayout.leftPipsX, hpRowY - 3, maxHealth, state.health, '#f97316');
     drawGauge(graphics, hudLayout.leftGaugeX, fuelRowY - 6, hudLayout.leftGaugeWidth, 12, state.sim.fuel / state.sim.fuelCapacity, '#38bdf8');
@@ -1251,7 +1384,7 @@ async function bootstrap(): Promise<void> {
       Math.min(1, Math.abs(state.player.vx) / Math.max(1, runSpeedForState(state))),
       '#f59e0b'
     );
-    drawPips(graphics, hudLayout.rightPipsX, linksRowY - 3, state.beacons.length, activatedBeacons, '#22c55e');
+    drawPips(graphics, hudLayout.rightPipsX, linksRowY - 3, objectiveProgress.total, objectiveProgress.completed, '#22c55e');
     drawGauge(graphics, hudLayout.rightGaugeX, 69, hudLayout.rightGaugeWidth, 12, state.dashEnergy, '#a78bfa');
     drawModuleMeters(graphics, hudLayout.rightPanelX + 14, hudLayout.rightModuleY, state.sim);
 
@@ -1291,6 +1424,8 @@ async function bootstrap(): Promise<void> {
       overlay.text = 'Trail lost.\nPress Enter or R to restart';
     } else if (state.mapMessageTimer > 0 && state.mapMessage) {
       overlay.text = state.mapMessage;
+    } else if (hasServiceStopInRange(state)) {
+      overlay.text = serviceStopPromptText(state) ?? '';
     } else if (hasBeaconInRange(state)) {
       overlay.text = beaconPromptText(state) ?? '';
     }
@@ -1452,7 +1587,7 @@ async function bootstrap(): Promise<void> {
           `${selectedKnowledge.benefitKnown ? biomeBenefitLabel(selectedNodeType).replace(' on arrival', '') : 'benefit ?'} / ${
             selectedKnowledge.riskKnown ? biomeRiskLabel(selectedNodeType).replace('Hazards strain ', '') : 'risk ?'
           }`,
-          getBeaconRuleLabel(selectedNode.type).replace('Rule: ', '')
+          getObjectiveSummary(selectedNode.type)
         ].join('\n')
       : 'Select a connected route.';
     const installHint = installOffer
@@ -1790,6 +1925,7 @@ async function bootstrap(): Promise<void> {
               nodeType: selectedNode?.type ?? null,
               fuelCost: selectedOption.distance,
               objectiveRule: selectedNode ? getBeaconRuleForNodeType(selectedNode.type) : null,
+              objectiveSummary: selectedNode ? getObjectiveSummary(selectedNode.type) : null,
               isGoal: selectedOption.nodeId === state.expeditionGoalNodeId
             }
           : null,
@@ -1823,7 +1959,15 @@ async function bootstrap(): Promise<void> {
           y: Math.round(b.y),
           activated: b.activated
         })),
+        serviceStops: state.serviceStops.map((stop) => ({
+          id: stop.id,
+          x: Math.round(stop.x),
+          width: stop.w,
+          progress: Number(stop.progress.toFixed(2)),
+          serviced: stop.serviced
+        })),
         objectiveRule: getBeaconRuleForNodeType(currentNode?.type ?? 'town'),
+        objectiveSummary: getObjectiveSummary(currentNode?.type ?? 'town'),
         dashBoost: Number(state.dashBoost.toFixed(2)),
         dashEnergy: Number(state.dashEnergy.toFixed(2)),
         visibleHazards: state.hazards

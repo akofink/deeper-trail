@@ -395,7 +395,20 @@ TODO next:
   - Updated `FEATURE_LIST.md` and `docs/06-puzzles-and-meta-mystery.md` to reflect the shipped notebook layer.
   - Validation: `npm run check` passes.
 
+- Town relay-rule pass:
+  - Reworked `src/engine/sim/runObjectives.ts` so town nodes are no longer the free/default relay case; they now require a grounded low-speed "steady" link window.
+  - Added `isSteadyLinkReady(...)` and expanded `tests/runObjectives.test.ts` to cover fast, airborne, and settled town-link outcomes.
+  - Updated `src/main.ts` prompts, short objective labels, and relay rendering so the steady rule is visible on both the map card and the run scene.
+  - Updated `IMPLEMENTATION_NOTES.md` and `docs/06-puzzles-and-meta-mystery.md` so docs match the new objective pattern.
+
+- Town service-bay pass:
+  - Added deterministic town-only service bays via `src/game/runtime/serviceStops.ts` and `src/game/runtime/runLayout.ts`, giving towns a non-relay interaction verb based on grounded low-speed hold timing.
+  - Extended runtime state/rendering in `src/main.ts` so service bays draw on the road, show progress, contribute to exit locks, and surface prompts before failure.
+  - Updated `render_game_to_text` and map route details so automation and route cards expose the richer town objective summary instead of only relay rules.
+  - Added `tests/serviceStops.test.ts` plus fixture updates in runtime tests; `npm run check` passes.
+
 TODO next:
 
-- Add one more biome-specific puzzle template so runs vary beyond relay linking and notebook collection.
+- Add a non-town biome-specific interaction template so ruin, nature, or anomaly runs gain a second verb beyond relay linking.
 - Decide whether notebook clues should start affecting route choice mechanically, for example by revealing pre-arrival scanner/map intel or unlocking authored encounter outcomes.
+- Consider extracting run-objective bookkeeping out of `src/main.ts` now that objectives include both relays and service bays.

@@ -40,10 +40,10 @@
   - if a beacon/objective has special activation constraints, surface that rule both on the map route card and in the in-run prompt before the player fails it,
   - biome variation should prefer changing the player's verbs or timing requirements over just changing colors or hazard spacing,
   - current relay rule set is a good baseline pattern:
-    - `town` uses standard in-range links,
-    - `ruin` uses ordered links,
-    - `nature` uses airborne links,
-    - `anomaly` uses boost-linked relays gated by deterministic sync windows.
+  - `town` uses steady relay links plus service bays that reward grounded low-speed holding,
+  - `ruin` uses ordered links,
+  - `nature` uses airborne links,
+  - `anomaly` uses boost-linked relays gated by deterministic sync windows.
 
 ## Current modularity guidance
 

@@ -5,3 +5,11 @@ export interface Beacon {
   r: number;
   activated: boolean;
 }
+
+export interface ServiceStop {
+  id: string;
+  x: number;
+  w: number;
+  progress: number;
+  serviced: boolean;
+}

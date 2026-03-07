@@ -52,6 +52,7 @@ Use a “mystery graph”:
 ## Current prototype status
 
 - The game now has a lightweight deterministic notebook layer.
+- Town runs now use a simple positioning puzzle set: settle beside relays at low speed and hold steady inside marked service bays.
 - Completing the first `ruin`, `nature`, and `anomaly` runs logs one seed-stable clue each.
 - Finding all three clue families auto-adds a synthesis note so the expedition reads like a small mystery arc rather than isolated route clears.
 - The current notebook is intentionally lightweight: it is a discovery layer and map-side reminder, not yet a branching puzzle graph.

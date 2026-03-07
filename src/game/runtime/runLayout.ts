@@ -1,4 +1,4 @@
-import type { Beacon } from '../state/runObjectives';
+import type { Beacon, ServiceStop } from '../state/runObjectives';
 import type { Collectible, Hazard } from './runtimeState';
 
 export const MODULE_LABELS = ['FRAME', 'ENGINE', 'SCAN', 'SUSP', 'STORE', 'SHIELD'] as const;
@@ -34,6 +34,7 @@ export function buildRunLayout(groundY: number, nodeType: string): {
   hazards: Hazard[];
   collectibles: Collectible[];
   beacons: Beacon[];
+  serviceStops: ServiceStop[];
 } {
   const hazardPattern =
     nodeType === 'anomaly'
@@ -104,6 +105,13 @@ export function buildRunLayout(groundY: number, nodeType: string): {
       { id: 'b0', x: 360, y: groundY - 58, r: 15, activated: false },
       { id: 'b1', x: 1220, y: groundY - 62, r: 15, activated: false },
       { id: 'b2', x: 1980, y: groundY - 60, r: 15, activated: false }
-    ]
+    ],
+    serviceStops:
+      nodeType === 'town'
+        ? [
+            { id: 'svc0', x: 620, w: 132, progress: 0, serviced: false },
+            { id: 'svc1', x: 1610, w: 132, progress: 0, serviced: false }
+          ]
+        : []
   };
 }

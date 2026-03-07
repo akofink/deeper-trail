@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { canActivateBeacon, getBeaconRuleForNodeType, isPhaseWindowOpen, nextRequiredBeaconIndex } from '../src/engine/sim/runObjectives';
+import {
+  canActivateBeacon,
+  getBeaconRuleForNodeType,
+  getObjectiveSummary,
+  isPhaseWindowOpen,
+  isSteadyLinkReady,
+  nextRequiredBeaconIndex
+} from '../src/engine/sim/runObjectives';
 import type { Beacon } from '../src/game/state/runObjectives';
 
 function makeBeacons(): Beacon[] {
@@ -12,10 +19,54 @@ function makeBeacons(): Beacon[] {
 
 describe('run objective rules', () => {
   it('maps node types to their beacon rules', () => {
-    expect(getBeaconRuleForNodeType('town')).toBe('standard');
+    expect(getBeaconRuleForNodeType('town')).toBe('steady');
     expect(getBeaconRuleForNodeType('ruin')).toBe('ordered');
     expect(getBeaconRuleForNodeType('nature')).toBe('airborne');
     expect(getBeaconRuleForNodeType('anomaly')).toBe('boosted');
+    expect(getObjectiveSummary('town')).toContain('service bays');
+  });
+
+  it('requires town beacons to be linked while settled on the road', () => {
+    const beacons = makeBeacons();
+
+    expect(isSteadyLinkReady(60, false)).toBe(true);
+    expect(isSteadyLinkReady(120, false)).toBe(false);
+    expect(isSteadyLinkReady(40, true)).toBe(false);
+
+    const fast = canActivateBeacon({
+      nodeType: 'town',
+      beaconIndex: 0,
+      beacons,
+      currentSpeed: 120,
+      dashBoost: 0,
+      isAirborne: false,
+      elapsedSeconds: 0
+    });
+    expect(fast.canActivate).toBe(false);
+    expect(fast.reason).toContain('stabilize');
+
+    const airborne = canActivateBeacon({
+      nodeType: 'town',
+      beaconIndex: 0,
+      beacons,
+      currentSpeed: 50,
+      dashBoost: 0,
+      isAirborne: true,
+      elapsedSeconds: 0
+    });
+    expect(airborne.canActivate).toBe(false);
+    expect(airborne.reason).toContain('Settle on the road');
+
+    const settled = canActivateBeacon({
+      nodeType: 'town',
+      beaconIndex: 0,
+      beacons,
+      currentSpeed: 50,
+      dashBoost: 0,
+      isAirborne: false,
+      elapsedSeconds: 0
+    });
+    expect(settled.canActivate).toBe(true);
   });
 
   it('requires ruin beacons to be linked in sequence', () => {

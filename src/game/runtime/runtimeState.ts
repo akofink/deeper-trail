@@ -1,5 +1,5 @@
 import type { GameState as SimState } from '../state/gameState';
-import type { Beacon } from '../state/runObjectives';
+import type { Beacon, ServiceStop } from '../state/runObjectives';
 
 export type Mode = 'playing' | 'paused' | 'won' | 'lost';
 export type Scene = 'run' | 'map';
@@ -60,6 +60,7 @@ export interface RuntimeState {
   tookDamageThisRun: boolean;
   shieldChargeAvailable: boolean;
   beacons: Beacon[];
+  serviceStops: ServiceStop[];
   player: Player;
   cameraX: number;
   goalX: number;

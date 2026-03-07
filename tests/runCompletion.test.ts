@@ -29,6 +29,7 @@ function buildRuntimeState(): RuntimeState {
     tookDamageThisRun: false,
     shieldChargeAvailable: false,
     beacons: [],
+    serviceStops: [],
     player: {
       x: 0,
       y: 0,
