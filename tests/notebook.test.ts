@@ -49,21 +49,33 @@ describe('notebook clues', () => {
     const offline = notebookSignalRouteIntel(state, 'n9', 'n5');
     expect(offline.fieldNote).toContain('bearing offline');
     expect(offline.routeHint).toBeNull();
+    expect(offline.revealsObjective).toBe(false);
 
     recordNotebookClue(state, { nodeType: 'ruin', nodeId: 'n4' });
     const bearingOnly = notebookSignalRouteIntel(state, 'n9', 'n5');
     expect(bearingOnly.routeHint).toContain('strengthens');
     expect(bearingOnly.routeHint).not.toContain('Source est.');
+    expect(bearingOnly.revealsBenefit).toBe(false);
 
     recordNotebookClue(state, { nodeType: 'nature', nodeId: 'n5' });
     const withDepth = notebookSignalRouteIntel(state, 'n9', 'n3');
     expect(withDepth.fieldNote).toContain('depth online');
     expect(withDepth.routeHint).toContain('weakens');
     expect(withDepth.routeHint).toContain('Source est. 6 legs.');
+    expect(withDepth.revealsRisk).toBe(false);
 
     recordNotebookClue(state, { nodeType: 'anomaly', nodeId: 'n6' });
     const synthesized = notebookSignalRouteIntel(state, 'n9', 'n5');
     expect(synthesized.fieldNote).toContain('synth lock');
     expect(synthesized.routeHint).toContain('Best current lead.');
+    expect(synthesized.revealsBenefit).toBe(true);
+    expect(synthesized.revealsObjective).toBe(true);
+    expect(synthesized.revealsRisk).toBe(true);
+
+    const nonLead = notebookSignalRouteIntel(state, 'n9', 'n3');
+    expect(nonLead.routeHint).not.toContain('Best current lead.');
+    expect(nonLead.revealsBenefit).toBe(false);
+    expect(nonLead.revealsObjective).toBe(false);
+    expect(nonLead.revealsRisk).toBe(false);
   });
 });

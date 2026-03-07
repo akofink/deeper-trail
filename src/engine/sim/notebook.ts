@@ -45,6 +45,9 @@ export interface NotebookSignalRouteIntel {
   clueCount: number;
   fieldNote: string;
   routeHint: string | null;
+  revealsBenefit: boolean;
+  revealsObjective: boolean;
+  revealsRisk: boolean;
 }
 
 function makeEntry(seed: string, clueKey: CoreNotebookClueKey, nodeId: string, day: number): NotebookEntry {
@@ -116,7 +119,10 @@ export function notebookSignalRouteIntel(
     return {
       clueCount: 0,
       fieldNote: `${fieldNote}  bearing offline`,
-      routeHint: null
+      routeHint: null,
+      revealsBenefit: false,
+      revealsObjective: false,
+      revealsRisk: false
     };
   }
 
@@ -127,7 +133,10 @@ export function notebookSignalRouteIntel(
     return {
       clueCount: progress.discovered,
       fieldNote,
-      routeHint: null
+      routeHint: null,
+      revealsBenefit: false,
+      revealsObjective: false,
+      revealsRisk: false
     };
   }
 
@@ -137,7 +146,10 @@ export function notebookSignalRouteIntel(
     return {
       clueCount: progress.discovered,
       fieldNote,
-      routeHint: null
+      routeHint: null,
+      revealsBenefit: false,
+      revealsObjective: false,
+      revealsRisk: false
     };
   }
 
@@ -153,6 +165,7 @@ export function notebookSignalRouteIntel(
     routeHint += ` Source est. ${selectedLegs} leg${selectedLegs === 1 ? '' : 's'}.`;
   }
 
+  let revealsArrivalProfile = false;
   if (state.notebook.synthesisUnlocked) {
     const bestNeighborLegs = connectedNeighbors(state)
       .map((neighbor) => shortestLegCountBetweenNodes(state, neighbor.nodeId, expeditionGoalNodeId))
@@ -161,13 +174,17 @@ export function notebookSignalRouteIntel(
     const bestNeighborLegCount = bestNeighborLegs.length > 0 ? Math.min(...bestNeighborLegs) : null;
     if (bestNeighborLegCount !== null && selectedLegs === bestNeighborLegCount) {
       routeHint += ' Best current lead.';
+      revealsArrivalProfile = true;
     }
   }
 
   return {
     clueCount: progress.discovered,
     fieldNote,
-    routeHint
+    routeHint,
+    revealsBenefit: revealsArrivalProfile,
+    revealsObjective: revealsArrivalProfile,
+    revealsRisk: revealsArrivalProfile
   };
 }
 

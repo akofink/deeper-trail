@@ -35,3 +35,7 @@ The design doc already describes the notebook as intentionally lightweight, whic
   - [`src/game/runtime/mapSceneContent.ts`](/Users/akofink/dev/repos/deeper-trail/.worktrees/issue-triage-20260307/src/game/runtime/mapSceneContent.ts)
   - [`docs/06-puzzles-and-meta-mystery.md`](/Users/akofink/dev/repos/deeper-trail/.worktrees/issue-triage-20260307/docs/06-puzzles-and-meta-mystery.md)
   - [`progress.md`](/Users/akofink/dev/repos/deeper-trail/.worktrees/issue-triage-20260307/progress.md)
+
+## Resolution note
+
+Closed on 2026-03-07 after synthesis was extended to decode the strongest connected lead's arrival profile on the route card, giving the notebook a deterministic route-choice payoff beyond a single label.
