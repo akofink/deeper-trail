@@ -43,7 +43,7 @@
     - `town` uses standard in-range links,
     - `ruin` uses ordered links,
     - `nature` uses airborne links,
-    - `anomaly` uses boost-linked relays.
+    - `anomaly` uses boost-linked relays gated by deterministic sync windows.
 
 ## Current modularity guidance
 

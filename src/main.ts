@@ -2,7 +2,7 @@ import { Application, Graphics, Text } from 'pixi.js';
 import { asNodeTypeKey, biomeBenefitLabel, biomeRiskLabel, markNodeVisited, noteBiomeArrival, noteBiomeHazard } from './engine/sim/exploration';
 import { notebookClueProgress, recordNotebookClue } from './engine/sim/notebook';
 import { connectedNeighbors, currentNodeType, expeditionGoalNodeId, findNode } from './engine/sim/world';
-import { canActivateBeacon, getBeaconRuleForNodeType, getBeaconRuleLabel, nextRequiredBeaconIndex } from './engine/sim/runObjectives';
+import { canActivateBeacon, getBeaconRuleForNodeType, getBeaconRuleLabel, isPhaseWindowOpen, nextRequiredBeaconIndex } from './engine/sim/runObjectives';
 import { travelToNode } from './engine/sim/travel';
 import {
   FIELD_REPAIR_SCRAP_COST,
@@ -559,13 +559,14 @@ function beaconPromptText(state: RuntimeState): string | null {
       beacons: state.beacons,
       currentSpeed: Math.abs(state.player.vx),
       dashBoost: state.dashBoost,
-      isAirborne: !state.player.onGround
+      isAirborne: !state.player.onGround,
+      elapsedSeconds: state.elapsedSeconds
     });
 
     if (activation.canActivate) {
       if (hasBeaconAutoLink(state)) {
         return getBeaconRuleForNodeType(nodeType) === 'boosted'
-          ? 'Signal relay in range.\nKeep boosting to auto-link it.'
+          ? 'Signal relay in range.\nKeep boosting through an open sync window.'
           : getBeaconRuleForNodeType(nodeType) === 'airborne'
             ? 'Signal relay in range.\nJump through it to auto-link.'
           : 'Signal relay in range.\nScanner will auto-link it.';
@@ -573,7 +574,7 @@ function beaconPromptText(state: RuntimeState): string | null {
       return getBeaconRuleForNodeType(nodeType) === 'ordered'
         ? `Signal relay in range.\nPress Enter to link ${beacon.id.toUpperCase()}.`
         : getBeaconRuleForNodeType(nodeType) === 'boosted'
-          ? 'Signal relay in range.\nBoost through it, then press Enter.'
+          ? 'Sync window open.\nBoost through it, then press Enter.'
           : getBeaconRuleForNodeType(nodeType) === 'airborne'
             ? 'Signal relay in range.\nJump through it, then press Enter.'
           : 'Signal relay in range.\nPress Enter to link it.';
@@ -977,7 +978,8 @@ async function bootstrap(): Promise<void> {
           beacons: state.beacons,
           currentSpeed: Math.abs(state.player.vx),
           dashBoost: state.dashBoost,
-          isAirborne: !state.player.onGround
+          isAirborne: !state.player.onGround,
+          elapsedSeconds: state.elapsedSeconds
         });
         if (!activation.canActivate) {
           if (trigger === 'manual') {
@@ -1152,13 +1154,14 @@ async function bootstrap(): Promise<void> {
       const isNextRequired = beaconRule === 'ordered' && !beacon.activated && index === nextBeaconIndex;
       const ringColor = beacon.activated ? '#22c55e' : isNextRequired ? '#f59e0b' : '#64748b';
       const coreColor = beacon.activated ? '#bbf7d0' : '#cbd5e1';
+      const anomalyWindowOpen = nodeType === 'anomaly' && isPhaseWindowOpen(state.elapsedSeconds, index);
       graphics.circle(beacon.x - cam, beacon.y, beacon.r).fill(ringColor);
       graphics.circle(beacon.x - cam, beacon.y, beacon.r - 5).fill(coreColor);
       if (!beacon.activated && beaconRule === 'boosted') {
         graphics.circle(beacon.x - cam, beacon.y, beacon.r + 7 + Math.sin(state.elapsedSeconds * 5 + index) * 2).stroke({
-          color: '#8b5cf6',
-          alpha: 0.35,
-          width: 2
+          color: anomalyWindowOpen ? '#fbbf24' : '#8b5cf6',
+          alpha: anomalyWindowOpen ? 0.75 : 0.35,
+          width: anomalyWindowOpen ? 3 : 2
         });
       }
       if (!beacon.activated && beaconRule === 'ordered') {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canActivateBeacon, getBeaconRuleForNodeType, nextRequiredBeaconIndex } from '../src/engine/sim/runObjectives';
+import { canActivateBeacon, getBeaconRuleForNodeType, isPhaseWindowOpen, nextRequiredBeaconIndex } from '../src/engine/sim/runObjectives';
 import type { Beacon } from '../src/game/state/runObjectives';
 
 function makeBeacons(): Beacon[] {
@@ -29,7 +29,8 @@ describe('run objective rules', () => {
       beacons,
       currentSpeed: 0,
       dashBoost: 0,
-      isAirborne: false
+      isAirborne: false,
+      elapsedSeconds: 0
     });
 
     expect(outOfOrder.canActivate).toBe(false);
@@ -48,9 +49,23 @@ describe('run objective rules', () => {
       beacons,
       currentSpeed: 180,
       dashBoost: 0.1,
-      isAirborne: false
+      isAirborne: false,
+      elapsedSeconds: 0
     });
     expect(slow.canActivate).toBe(false);
+    expect(slow.reason).toContain('Boost');
+
+    const closedWindow = canActivateBeacon({
+      nodeType: 'anomaly',
+      beaconIndex: 1,
+      beacons,
+      currentSpeed: 280,
+      dashBoost: 0.35,
+      isAirborne: false,
+      elapsedSeconds: 0.9
+    });
+    expect(closedWindow.canActivate).toBe(false);
+    expect(closedWindow.reason).toContain('sync window');
 
     const fast = canActivateBeacon({
       nodeType: 'anomaly',
@@ -58,7 +73,8 @@ describe('run objective rules', () => {
       beacons,
       currentSpeed: 280,
       dashBoost: 0,
-      isAirborne: false
+      isAirborne: false,
+      elapsedSeconds: 0.1
     });
     expect(fast.canActivate).toBe(true);
   });
@@ -72,7 +88,8 @@ describe('run objective rules', () => {
       beacons,
       currentSpeed: 120,
       dashBoost: 0,
-      isAirborne: false
+      isAirborne: false,
+      elapsedSeconds: 0
     });
     expect(grounded.canActivate).toBe(false);
     expect(grounded.reason).toContain('Jump through');
@@ -83,8 +100,16 @@ describe('run objective rules', () => {
       beacons,
       currentSpeed: 120,
       dashBoost: 0,
-      isAirborne: true
+      isAirborne: true,
+      elapsedSeconds: 0
     });
     expect(airborne.canActivate).toBe(true);
+  });
+
+  it('opens anomaly sync windows deterministically per beacon index', () => {
+    expect(isPhaseWindowOpen(0.1, 0)).toBe(true);
+    expect(isPhaseWindowOpen(0.9, 0)).toBe(false);
+    expect(isPhaseWindowOpen(0.1, 1)).toBe(true);
+    expect(isPhaseWindowOpen(0.5, 1)).toBe(false);
   });
 });
