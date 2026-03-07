@@ -36,3 +36,24 @@ That means shell-level regressions in those paths can still land even when the q
   - [`src/game/runtime/impactPlates.ts`](/Users/akofink/dev/repos/deeper-trail/.worktrees/docs-issue-future-work/src/game/runtime/impactPlates.ts)
   - [`src/game/runtime/canopyLifts.ts`](/Users/akofink/dev/repos/deeper-trail/.worktrees/docs-issue-future-work/src/game/runtime/canopyLifts.ts)
   - [`src/game/runtime/syncGates.ts`](/Users/akofink/dev/repos/deeper-trail/.worktrees/docs-issue-future-work/src/game/runtime/syncGates.ts)
+
+---
+
+## Resolution (2026-03-07)
+
+Added three biome-specific browser smoke paths in `scripts/e2e/`:
+
+- **`ruinSmoke.js`** — drives `e2e-0` (ruin start): verifies ordered-relay linking and automatic impact-plate shattering on hard landing.
+- **`natureSmoke.js`** — drives `e2e-2` (nature start): verifies airborne-relay activation (jump-then-link) and automatic canopy-lift charting (0.6 s hover).
+- **`anomalySmoke.js`** — drives `e2e-3` (anomaly start): verifies boost-sync relay activation (Shift-burst + phase-window timing) and sync-gate stabilisation (jump through at run speed during the phase window).
+
+New exported helpers in `scripts/e2e/fullObjectiveLoop.js`:
+
+- `isPhaseWindowOpen(elapsedSeconds, objectiveIndex)` — mirrors engine phase logic.
+- `impactPlateJumpWindow(state)` — locates a ruin plate in the jump approach range.
+- `airborneBeaconApproachState(target, state)` — approach signals for nature airborne beacons.
+- `syncGateApproachState(target, state, gateIndex)` — approach signals for anomaly sync gates.
+
+Four new unit tests added to `tests/fullObjectiveLoop.test.ts` covering each helper.
+
+`package.json` `test:e2e` updated to run all four biome smokes after the existing town smoke.
