@@ -32,6 +32,7 @@ Enforce consistent code quality and repository hygiene while keeping iteration f
 - Keep docs and code aligned in the same PR.
 - Update `ARCHITECTURE.md` when adding/changing foundational modules.
 - Update this workflow doc when changing quality gates or branching/worktree policy.
+- When validating browser visuals, prefer the lightest tool that answers the question: direct `google-chrome --headless --screenshot` capture is a good first pass, while Playwright remains the default for scripted interaction, state setup, or cases where headless Chrome capture is not reliable enough.
 - When a session uncovers actionable follow-up work that will not be fixed immediately, add an open
   report under `docs/issues/` before handoff so the next contributor has a durable queue entry.
 - Name issue files `YYYYMMDD-short-kebab-case-summary.md`.

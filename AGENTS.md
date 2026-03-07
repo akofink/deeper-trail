@@ -138,6 +138,8 @@ debt that is concrete enough for another agent to pick up later.
 
 - Read before editing. This repo has compact files, and understanding the surrounding rule set is usually cheap.
 - Search with `rg` first.
+- For quick visual verification, consider direct browser screenshots with `google-chrome --headless --screenshot` as a lightweight first pass before reaching for Playwright.
+- Use Playwright when you need scripted inputs, multi-step capture, or the direct headless screenshot path is not rendering the Pixi/WebGL scene reliably in the current environment.
 - If you add a new subsystem or rule family, place it near related engine modules and add tests alongside the behavior.
 - If `src/main.ts` grows further because of your change, prefer extracting helpers rather than expanding one large block.
 - Avoid speculative abstractions. Add structure only when the current code actually needs it.
