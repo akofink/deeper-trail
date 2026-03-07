@@ -1,5 +1,5 @@
 import { asNodeTypeKey, biomeBenefitLabel, biomeRiskLabel, visibleBiomeKnowledge } from '../../engine/sim/exploration';
-import { notebookClueProgress } from '../../engine/sim/notebook';
+import { notebookClueProgress, notebookSignalRouteIntel } from '../../engine/sim/notebook';
 import { currentNodeType, findNode } from '../../engine/sim/world';
 import { getInstallOffer, hasAnyUpgradeableSubsystem } from '../../engine/sim/vehicle';
 import { mapNodePalette } from './runLayout';
@@ -33,6 +33,7 @@ export function buildMapSceneContent(
   const installOffer = getInstallOffer(state.sim, currentNodeType(state.sim));
   const selectedNodeType = asNodeTypeKey(selectedNode?.type ?? 'town');
   const selectedKnowledge = visibleBiomeKnowledge(state.sim, selectedNodeType);
+  const signalIntel = notebookSignalRouteIntel(state.sim, state.expeditionGoalNodeId, selectedNodeId);
 
   const routeDetail =
     selectedNode && selectedNodeId
@@ -42,7 +43,8 @@ export function buildMapSceneContent(
           `${selectedKnowledge.benefitKnown ? biomeBenefitLabel(selectedNodeType).replace(' on arrival', '') : 'benefit ?'} / ${
             selectedKnowledge.riskKnown ? biomeRiskLabel(selectedNodeType).replace('Hazards strain ', '') : 'risk ?'
           }`,
-          selectedKnowledge.objectiveKnown ? getObjectiveSummary(selectedNode.type) : 'Objective pattern ?'
+          selectedKnowledge.objectiveKnown ? getObjectiveSummary(selectedNode.type) : 'Objective pattern ?',
+          signalIntel.routeHint ?? 'Signal triangulation offline.'
         ].join('\n')
       : 'Select a connected route.';
 
@@ -64,6 +66,8 @@ export function buildMapSceneContent(
 
   const notebookProgress = notebookClueProgress(state.sim);
   const fieldNotes = ['KNOWN BIOMES'];
+  fieldNotes.push(signalIntel.fieldNote);
+  fieldNotes.push('');
   for (const type of ['town', 'ruin', 'nature', 'anomaly'] as const) {
     const knowledge = state.sim.exploration.biomeKnowledge[type];
     const visibleKnowledge = visibleBiomeKnowledge(state.sim, type);

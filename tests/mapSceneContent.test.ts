@@ -58,6 +58,8 @@ function buildRuntimeState(): RuntimeState {
 describe('map scene content helper', () => {
   it('gates selected-route objective intel behind scanner progression', () => {
     const state = buildRuntimeState();
+    state.sim.currentNodeId = 'n4';
+    state.expeditionGoalNodeId = 'n9';
     const destination = state.sim.world.nodes.find((node) => node.id === 'n1');
     if (!destination) throw new Error('Expected destination node');
     destination.type = 'nature';
@@ -75,12 +77,16 @@ describe('map scene content helper', () => {
     expect(content.routeDetail).toContain('NATURE');
     expect(content.routeDetail).toContain('dist 7  fuel 7');
     expect(content.routeDetail).toContain('Objective pattern ?');
+    expect(content.routeDetail).toContain('Signal triangulation offline.');
     expect(content.installHint.length).toBeGreaterThan(0);
     expect(content.scannerHint).toContain('phase-lock online');
     expect(content.scannerHint).toContain('objective scan at lv.3');
     expect(content.repairHint).toContain('repair modules');
+    expect(content.fieldNotes.join('\n')).toContain('SIGNAL 0/3  bearing offline');
 
     state.sim.vehicle.scanner = 3;
+    state.sim.notebook.discoveredClues.ruin = true;
+    state.sim.notebook.discoveredClues.nature = true;
     const upgradedContent = buildMapSceneContent(state, 'n1', 7, {
       canUseMedPatch: false,
       medPatchHealAmount: 1,
@@ -92,6 +98,9 @@ describe('map scene content helper', () => {
     expect(upgradedContent.routeDetail).toContain('Air relays + canopy lifts');
     expect(upgradedContent.scannerHint).toContain('objective scan');
     expect(upgradedContent.scannerHint).toContain('auto-link online');
+    expect(upgradedContent.routeDetail).toContain('Signal bearing weakens.');
+    expect(upgradedContent.routeDetail).toContain('Source est. 8 legs.');
+    expect(upgradedContent.fieldNotes.join('\n')).toContain('SIGNAL 2/3  depth online');
   });
 
   it('builds notebook field notes and completion state for explored progress', () => {
