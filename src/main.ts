@@ -1,5 +1,5 @@
 import { Application, Graphics, Text } from 'pixi.js';
-import { asNodeTypeKey, biomeBenefitLabel, biomeRiskLabel, markNodeVisited, noteBiomeArrival, noteBiomeHazard } from './engine/sim/exploration';
+import { asNodeTypeKey, biomeBenefitLabel, biomeRiskLabel, markNodeVisited, noteBiomeArrival, noteBiomeHazard, visibleBiomeKnowledge } from './engine/sim/exploration';
 import { notebookClueProgress, recordNotebookClue } from './engine/sim/notebook';
 import { connectedNeighbors, currentNodeType, expeditionGoalNodeId, findNode } from './engine/sim/world';
 import { canActivateBeacon, getBeaconRuleForNodeType, getBeaconRuleLabel, isPhaseWindowOpen, nextRequiredBeaconIndex } from './engine/sim/runObjectives';
@@ -1444,7 +1444,7 @@ async function bootstrap(): Promise<void> {
     const selectedNode = selectedOption ? findNode(state.sim, selectedOption.nodeId) : null;
     const installOffer = getInstallOffer(state.sim, currentNodeType(state.sim));
     const selectedNodeType = asNodeTypeKey(selectedNode?.type ?? 'town');
-    const selectedKnowledge = state.sim.exploration.biomeKnowledge[selectedNodeType];
+    const selectedKnowledge = visibleBiomeKnowledge(state.sim, selectedNodeType);
     const routeDetail = selectedOption && selectedNode
       ? [
           `${selectedNode.id}  ${mapNodePalette(selectedNode.type).label}${selectedNode.id === state.expeditionGoalNodeId ? '  SIGNAL' : ''}`,
@@ -1461,8 +1461,10 @@ async function bootstrap(): Promise<void> {
         ? 'Site: no install here. Try another biome.'
         : 'Vehicle: fully maxed.';
     const scannerHint = hasBeaconAutoLink(state)
-      ? 'Scanner: auto-link online.'
-      : `Scanner lv.${state.sim.vehicle.scanner}: auto-link at lv.3.`;
+      ? `Scanner lv.${state.sim.vehicle.scanner}: auto-link online.`
+      : state.sim.vehicle.scanner >= 2
+        ? `Scanner lv.${state.sim.vehicle.scanner}: route preview online${state.sim.vehicle.scanner >= 4 ? ', hazard preview online.' : ', hazard preview at lv.4.'}`
+        : `Scanner lv.${state.sim.vehicle.scanner}: route preview at lv.2, auto-link at lv.3.`;
     const repairHint = canUseMedPatch(state)
       ? `B: +${MEDPATCH_HEAL_AMOUNT} HP for ${MEDPATCH_SCRAP_COST} scrap.`
       : 'B: repair modules, then patch HP.';
@@ -1470,9 +1472,10 @@ async function bootstrap(): Promise<void> {
     const fieldNotes = ['KNOWN BIOMES'];
     for (const type of ['town', 'ruin', 'nature', 'anomaly'] as const) {
       const knowledge = state.sim.exploration.biomeKnowledge[type];
+      const visibleKnowledge = visibleBiomeKnowledge(state.sim, type);
       const name = mapNodePalette(type).label.padEnd(6, ' ');
-      const benefit = knowledge.benefitKnown ? biomeBenefitLabel(type).replace(' on arrival', '') : '+?';
-      const risk = knowledge.riskKnown ? biomeRiskLabel(type).replace('Hazards strain ', '') : '?';
+      const benefit = visibleKnowledge.benefitKnown ? biomeBenefitLabel(type).replace(' on arrival', '') : '+?';
+      const risk = visibleKnowledge.riskKnown ? biomeRiskLabel(type).replace('Hazards strain ', '') : '?';
       fieldNotes.push(`${name} ${knowledge.visits}x  ${benefit}  /  ${risk}`);
     }
     fieldNotes.push('');

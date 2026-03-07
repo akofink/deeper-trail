@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { biomeBenefitLabel, biomeRiskLabel, markNodeVisited, noteBiomeArrival, noteBiomeHazard } from '../src/engine/sim/exploration';
+import { biomeBenefitLabel, biomeRiskLabel, markNodeVisited, noteBiomeArrival, noteBiomeHazard, visibleBiomeKnowledge } from '../src/engine/sim/exploration';
 import { createInitialGameState } from '../src/game/state/gameState';
 
 describe('exploration notes', () => {
@@ -24,5 +24,26 @@ describe('exploration notes', () => {
 
     expect(state.exploration.biomeKnowledge.anomaly.riskKnown).toBe(true);
     expect(biomeRiskLabel('anomaly')).toContain('shielding');
+  });
+
+  it('lets scanner progression preview route intel before first visit', () => {
+    const state = createInitialGameState('exploration-preview');
+
+    expect(visibleBiomeKnowledge(state, 'ruin')).toEqual({
+      benefitKnown: false,
+      riskKnown: false
+    });
+
+    state.vehicle.scanner = 2;
+    expect(visibleBiomeKnowledge(state, 'ruin')).toEqual({
+      benefitKnown: true,
+      riskKnown: false
+    });
+
+    state.vehicle.scanner = 4;
+    expect(visibleBiomeKnowledge(state, 'ruin')).toEqual({
+      benefitKnown: true,
+      riskKnown: true
+    });
   });
 });

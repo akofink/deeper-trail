@@ -50,6 +50,7 @@ Every module should:
 ### Current prototype hooks
 
 - `scanner` lv.3 enables relay auto-linking.
+- `scanner` lv.2 previews biome benefits on the route board; lv.4 previews hazard strain as well.
 - `storage` lv.2 starts pulling nearby salvage pickups inward; lv.3 also increases scrap gained per pickup.
 - `shielding` lv.2 grants one rechargeable shielded hit each run.
 
