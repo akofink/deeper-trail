@@ -69,6 +69,8 @@ Use a “mystery graph”:
   - second clue adds estimated remaining leg count to the source,
   - synthesis marks the strongest currently connected lead on the route board and decodes that lead's arrival profile before travel.
 - Synthesized approaches to the expedition goal now also alter the local run:
-  - the map route card warns when the source approach is decoded,
-  - decoded goal runs start with the first relay already stabilized so synthesis changes objective pressure instead of only revealing intel.
+  - the map route card now previews a seed-stable source profile instead of a generic synthesis warning,
+  - the first discovered core clue decides which source relay starts pre-linked,
+  - the second discovered core clue decides the arrival bonus at the goal node,
+  - the third discovered core clue decides a run-layout assist such as a collapsed barrier, easier relay reach, or a primed shield charge.
 - The current notebook is still intentionally lightweight: it is a discovery layer and route-intel aid, not yet a full branching puzzle graph.
