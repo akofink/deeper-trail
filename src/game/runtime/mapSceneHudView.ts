@@ -1,6 +1,12 @@
 import { buildMapSceneHudLayout, type MapSceneHudLayout } from './mapSceneCards';
 import { buildMapHudContent } from './sceneHudContent';
-import { buildModuleLabelLayouts, buildPanelHeaderLayout, type PanelHeaderLayout } from './sceneHudView';
+import {
+  buildModuleLabelLayouts,
+  buildModuleMeterViews,
+  buildPanelHeaderLayout,
+  type ModuleMeterView,
+  type PanelHeaderLayout
+} from './sceneHudView';
 import type { RuntimeState } from './runtimeState';
 
 export interface MapHudRowView {
@@ -23,6 +29,7 @@ export interface MapSceneHudViewModel {
   layout: MapSceneHudLayout;
   leftRows: [MapHudRowView, MapHudRowView];
   moduleLabels: MapHudModuleLabelView[];
+  moduleMeters: ModuleMeterView[];
   rightHeaderLines: [string, string];
   seed: string;
   title: string;
@@ -40,6 +47,7 @@ export function buildMapSceneHudViewModel(
   const headerLayout = buildPanelHeaderLayout(layout.leftPanelX, 16);
   const [tripsRowY, fuelRowY] = layout.leftRowCenters;
   const moduleLayouts = buildModuleLabelLayouts(layout.moduleX, layout.moduleY, moduleLabelCount);
+  const moduleMeters = buildModuleMeterViews(layout.moduleX, layout.moduleY, state.sim.vehicle, state.sim.vehicleCondition);
 
   return {
     freeTripFilled: Math.min(3, state.freeTravelCharges),
@@ -56,6 +64,7 @@ export function buildMapSceneHudViewModel(
       x: moduleLayouts[index]?.x ?? 0,
       y: moduleLayouts[index]?.y ?? 0
     })),
+    moduleMeters,
     rightHeaderLines: content.rightHeaderLines,
     seed: content.seed,
     title: content.title,

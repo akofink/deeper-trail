@@ -56,7 +56,7 @@ import {
   scrapGainPerCollectible
 } from './game/runtime/vehicleDerivedStats';
 import { advanceWheelRotation } from './game/runtime/vehiclePresentation';
-import { createInitialGameState, type GameState as SimState } from './game/state/gameState';
+import { createInitialGameState } from './game/state/gameState';
 import './styles.css';
 
 declare global {
@@ -229,16 +229,30 @@ function layoutTextCard(
   return { width: desiredWidth, height: cardHeight };
 }
 
-function drawModuleMeters(graphics: Graphics, x: number, y: number, sim: SimState): void {
-  const entries = Object.entries(sim.vehicle) as Array<[keyof SimState['vehicle'], number]>;
-  entries.forEach(([subsystem, level], index) => {
-    const cellX = x + (index % 3) * 84;
-    const cellY = y + Math.floor(index / 3) * 36;
-    const condition = sim.vehicleCondition[subsystem];
-    const conditionColor = condition >= 3 ? '#34d399' : condition === 2 ? '#f59e0b' : '#ef4444';
-    graphics.roundRect(cellX, cellY, 76, 28, 10).fill({ color: '#111827', alpha: 0.9 });
-    drawGauge(graphics, cellX + 30, cellY + 6, 38, 6, level / 4, '#60a5fa', '#1e293b');
-    drawGauge(graphics, cellX + 30, cellY + 16, 38, 6, condition / 3, conditionColor, '#1e293b');
+function drawModuleMeters(graphics: Graphics, moduleMeters: Array<{
+  cellHeight: number;
+  cellWidth: number;
+  conditionColor: string;
+  conditionRatio: number;
+  gaugeHeight: number;
+  gaugeWidth: number;
+  levelRatio: number;
+  x: number;
+  y: number;
+}>): void {
+  moduleMeters.forEach((meter) => {
+    graphics.roundRect(meter.x, meter.y, meter.cellWidth, meter.cellHeight, 10).fill({ color: '#111827', alpha: 0.9 });
+    drawGauge(graphics, meter.x + 30, meter.y + 6, meter.gaugeWidth, meter.gaugeHeight, meter.levelRatio, '#60a5fa', '#1e293b');
+    drawGauge(
+      graphics,
+      meter.x + 30,
+      meter.y + 16,
+      meter.gaugeWidth,
+      meter.gaugeHeight,
+      meter.conditionRatio,
+      meter.conditionColor,
+      '#1e293b'
+    );
   });
 }
 
@@ -1141,7 +1155,7 @@ async function bootstrap(): Promise<void> {
     );
     drawPips(graphics, hudLayout.rightPipsX, runHudView.rightRows[0].y - 3, runHudView.objectiveTotal, runHudView.objectiveCompleted, '#22c55e');
     drawGauge(graphics, hudLayout.rightGaugeX, 69, hudLayout.rightGaugeWidth, 12, state.dashEnergy, '#a78bfa');
-    drawModuleMeters(graphics, hudLayout.rightPanelX + 14, hudLayout.rightModuleY, state.sim);
+    drawModuleMeters(graphics, runHudView.moduleMeters);
 
     const runHeaderLayout = runHudView.headerLayout;
     hud.text = runHudView.title;
@@ -1316,7 +1330,7 @@ async function bootstrap(): Promise<void> {
     });
     drawGauge(graphics, mapHudLayout.gaugeX, mapHudView.leftRows[1].y - 6, mapHudLayout.gaugeWidth, 12, mapHudView.fuelRatio, '#38bdf8');
     drawPips(graphics, mapHudLayout.pipsX, mapHudView.leftRows[0].y - 3, mapHudView.freeTripTotal, mapHudView.freeTripFilled, '#facc15');
-    drawModuleMeters(graphics, mapHudLayout.moduleX, mapHudLayout.moduleY, state.sim);
+    drawModuleMeters(graphics, mapHudView.moduleMeters);
 
     const mapHeaderLayout = mapHudView.headerLayout;
     hud.text = mapHudView.title;

@@ -62,6 +62,8 @@ describe('runSceneHudView', () => {
     state.sim.scrap = 5;
     state.sim.fuel = 7;
     state.sim.fuelCapacity = 10;
+    state.sim.vehicle.engine = 3;
+    state.sim.vehicleCondition.engine = 2;
     state.beacons = [
       { id: 'b0', x: 0, y: 0, r: 18, activated: true },
       { id: 'b1', x: 0, y: 0, r: 18, activated: false },
@@ -93,7 +95,7 @@ describe('runSceneHudView', () => {
     ]);
     expect(view.healthTotal).toBe(3);
     expect(view.healthFilled).toBe(2);
-    expect(view.paceRatio).toBeCloseTo(0.6068085106382979);
+    expect(view.paceRatio).toBeCloseTo(0.5261992619926199);
     expect(view.moduleLabels).toEqual([
       { text: MODULE_LABELS[0], x: 628, y: 117 },
       { text: MODULE_LABELS[1].slice(0, 5), x: 712, y: 117 },
@@ -102,5 +104,21 @@ describe('runSceneHudView', () => {
       { text: MODULE_LABELS[4].slice(0, 5), x: 712, y: 153 },
       { text: MODULE_LABELS[5].slice(0, 5), x: 796, y: 153 }
     ]);
+    expect(view.moduleMeters[0]).toMatchObject({
+      subsystem: 'frame',
+      x: 622,
+      y: 108,
+      levelRatio: 0.25,
+      conditionRatio: 1,
+      conditionColor: '#34d399'
+    });
+    expect(view.moduleMeters[1]).toMatchObject({
+      subsystem: 'engine',
+      x: 706,
+      y: 108,
+      levelRatio: 0.75,
+      conditionRatio: 2 / 3,
+      conditionColor: '#f59e0b'
+    });
   });
 });
