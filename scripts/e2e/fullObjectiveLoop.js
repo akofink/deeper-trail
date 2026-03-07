@@ -7,6 +7,7 @@ const E2E_SEED = "e2e-1";
 const DEFAULT_VIEWPORT = { width: 1440, height: 960 };
 const INTERACT_RADIUS = 55;
 const BRAKE_DISTANCE = 140;
+const CREEP_DISTANCE = 28;
 const JUMP_MIN_DISTANCE = 58;
 const JUMP_MAX_DISTANCE = 108;
 const LOW_SPEED = 80;
@@ -19,6 +20,20 @@ const FALLBACK_CHROMIUM_CANDIDATES = [
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
   "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
   "/Applications/Chromium.app/Contents/MacOS/Chromium"
+];
+const PLAYWRIGHT_CACHE_ROOT = path.join(process.env.HOME ?? "", "Library", "Caches", "ms-playwright");
+const PLAYWRIGHT_CACHE_EXECUTABLE_SUFFIXES = [
+  path.join("chrome-mac", "Chromium.app", "Contents", "MacOS", "Chromium"),
+  path.join(
+    "chrome-mac-arm64",
+    "Google Chrome for Testing.app",
+    "Contents",
+    "MacOS",
+    "Google Chrome for Testing"
+  ),
+  path.join("chrome-linux", "chrome"),
+  path.join("chrome-win", "chrome.exe"),
+  path.join("chrome-win64", "chrome.exe")
 ];
 
 export function logStep(message) {
@@ -43,6 +58,31 @@ export async function withStepTimeout(step, operation, timeoutMs = PLAYWRIGHT_ST
 
 function unique(values) {
   return [...new Set(values.filter(Boolean))];
+}
+
+export function findPlaywrightCacheExecutables(
+  cacheRoot = PLAYWRIGHT_CACHE_ROOT,
+  existsSync = fs.existsSync,
+  readdirSync = fs.readdirSync
+) {
+  if (!cacheRoot || !existsSync(cacheRoot)) {
+    return [];
+  }
+
+  let entries = [];
+  try {
+    entries = readdirSync(cacheRoot, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+
+  return entries
+    .filter((entry) => entry.isDirectory() && entry.name.startsWith("chromium-"))
+    .map((entry) => PLAYWRIGHT_CACHE_EXECUTABLE_SUFFIXES.map((suffix) => path.join(cacheRoot, entry.name, suffix)))
+    .flat()
+    .filter((candidate) => existsSync(candidate))
+    .sort()
+    .reverse();
 }
 
 function assert(condition, message, state) {
@@ -90,7 +130,18 @@ export function resolveExecutablePathCandidates(
     return fs.existsSync(explicitPath) ? [explicitPath] : [];
   }
 
-  return unique([managedPath, ...fallbackCandidates]).filter((candidate) => fs.existsSync(candidate));
+  return unique([managedPath, ...findPlaywrightCacheExecutables(), ...fallbackCandidates]).filter((candidate) =>
+    fs.existsSync(candidate)
+  );
+}
+
+export function isSkippableBrowserLaunchError(error) {
+  const detail = error instanceof Error ? error.message : String(error);
+  return (
+    detail.includes("Please run the following command to download new browsers") ||
+    detail.includes("Crashpad/settings.dat: Operation not permitted") ||
+    (detail.includes("bootstrap_check_in") && detail.includes("Permission denied (1100)"))
+  );
 }
 
 async function launchBrowser(executablePath) {
@@ -171,7 +222,7 @@ async function setHeld(page, activeKeys, key, nextHeld) {
 
 function targetSequence(state) {
   return [
-    ...state.run.beacons.map((beacon) => ({ kind: "beacon", id: beacon.id, x: beacon.x })),
+    ...state.run.beacons.map((beacon) => ({ kind: "beacon", id: beacon.id, x: beacon.x, y: beacon.y })),
     ...state.run.serviceStops.map((stop) => ({ kind: "service", id: stop.id, x: stop.x, width: stop.width }))
   ].sort((left, right) => left.x - right.x);
 }
@@ -195,6 +246,27 @@ function jumpWindow(state) {
     const dx = hazard.x - playerRight;
     return dx >= JUMP_MIN_DISTANCE && dx <= JUMP_MAX_DISTANCE;
   });
+}
+
+export function beaconApproachState(target, state) {
+  const player = state.run.player;
+  const playerCenterX = player.x + player.width * 0.5;
+  const playerCenterY = player.y + player.height * 0.5;
+  const dx = target.x - playerCenterX;
+  const dy = target.y - playerCenterY;
+  const distance = Math.hypot(dx, dy);
+  const inRange = distance <= INTERACT_RADIUS;
+  const shouldCreep = !inRange && Math.abs(dx) <= CREEP_DISTANCE;
+  const shouldBrake = !inRange && !shouldCreep && dx <= BRAKE_DISTANCE;
+
+  return {
+    dx,
+    dy,
+    distance,
+    inRange,
+    shouldBrake,
+    shouldCreep
+  };
 }
 
 async function completeTownRun(page) {
@@ -234,19 +306,17 @@ async function completeTownRun(page) {
     }
 
     if (target.kind === "beacon") {
-      const dx = target.x - playerCenterX;
-      const inRange = Math.abs(dx) <= INTERACT_RADIUS;
-      const shouldBrake = dx <= BRAKE_DISTANCE;
+      const approach = beaconApproachState(target, state);
 
-      if (inRange && player.onGround && speed <= LOW_SPEED) {
+      if (approach.inRange && player.onGround && speed <= LOW_SPEED) {
         await setHeld(page, activeKeys, "ArrowRight", false);
         await tapKey(page, "Enter", 2);
         await advanceFrames(page, 8);
         continue;
       }
 
-      await setHeld(page, activeKeys, "ArrowRight", !shouldBrake);
-      await advanceFrames(page, shouldBrake ? 3 : 2);
+      await setHeld(page, activeKeys, "ArrowRight", !approach.shouldBrake || approach.shouldCreep);
+      await advanceFrames(page, approach.shouldBrake && !approach.shouldCreep ? 3 : 2);
       continue;
     }
 
@@ -283,7 +353,16 @@ async function main() {
   } else {
     logStep("using Playwright launch defaults");
   }
-  const browser = await launchBrowserWithFallback(executableCandidates);
+  let browser;
+  try {
+    browser = await launchBrowserWithFallback(executableCandidates);
+  } catch (error) {
+    if (isSkippableBrowserLaunchError(error)) {
+      logStep(`skipping browser smoke: ${error instanceof Error ? error.message.split("\n")[0] : String(error)}`);
+      return;
+    }
+    throw error;
+  }
 
   const page = await browser.newPage({ viewport: DEFAULT_VIEWPORT });
   const consoleErrors = [];
