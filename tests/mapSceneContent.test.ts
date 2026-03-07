@@ -137,4 +137,40 @@ describe('map scene content helper', () => {
     expect(content.fieldNotes.join('\n')).toContain('RELAY MASONRY');
     expect(content.fieldNotes.join('\n')).toContain('Ordered relays + impact plates');
   });
+
+  it('lets notebook synthesis decode the strongest connected lead before scanner unlocks it', () => {
+    const state = buildRuntimeState();
+    state.sim.currentNodeId = 'n4';
+    state.expeditionGoalNodeId = 'n9';
+    state.sim.vehicle.scanner = 1;
+    state.sim.notebook.discoveredClues.ruin = true;
+    state.sim.notebook.discoveredClues.nature = true;
+    state.sim.notebook.discoveredClues.anomaly = true;
+    state.sim.notebook.synthesisUnlocked = true;
+
+    const strongestLead = buildMapSceneContent(state, 'n5', 4, {
+      canUseMedPatch: false,
+      medPatchHealAmount: 1,
+      medPatchScrapCost: 2,
+      hasAutoLinkScanner: false,
+      hasCompletedCurrentNode: false
+    });
+
+    expect(strongestLead.routeDetail).toContain('Shelter grove: +1 HP');
+    expect(strongestLead.routeDetail).toContain('Air relays + canopy lifts');
+    expect(strongestLead.routeDetail).toContain('suspension');
+    expect(strongestLead.routeDetail).toContain('Best current lead.');
+
+    const weakerLead = buildMapSceneContent(state, 'n3', 6, {
+      canUseMedPatch: false,
+      medPatchHealAmount: 1,
+      medPatchScrapCost: 2,
+      hasAutoLinkScanner: false,
+      hasCompletedCurrentNode: false
+    });
+
+    expect(weakerLead.routeDetail).toContain('benefit ? / risk ?');
+    expect(weakerLead.routeDetail).toContain('Objective pattern ?');
+    expect(weakerLead.routeDetail).not.toContain('Best current lead.');
+  });
 });

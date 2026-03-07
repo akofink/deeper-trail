@@ -32,18 +32,23 @@ export function buildMapSceneContent(
   const selectedNode = selectedNodeId ? findNode(state.sim, selectedNodeId) : null;
   const installOffer = getInstallOffer(state.sim, currentNodeType(state.sim));
   const selectedNodeType = asNodeTypeKey(selectedNode?.type ?? 'town');
-  const selectedKnowledge = visibleBiomeKnowledge(state.sim, selectedNodeType);
   const signalIntel = notebookSignalRouteIntel(state.sim, state.expeditionGoalNodeId, selectedNodeId);
+  const selectedKnowledge = visibleBiomeKnowledge(state.sim, selectedNodeType);
+  const selectedRouteKnowledge = {
+    benefitKnown: selectedKnowledge.benefitKnown || signalIntel.revealsBenefit,
+    objectiveKnown: selectedKnowledge.objectiveKnown || signalIntel.revealsObjective,
+    riskKnown: selectedKnowledge.riskKnown || signalIntel.revealsRisk
+  };
 
   const routeDetail =
     selectedNode && selectedNodeId
       ? [
           `${selectedNode.id}  ${mapNodePalette(selectedNode.type).label}${selectedNode.id === state.expeditionGoalNodeId ? '  SIGNAL' : ''}`,
           `dist ${selectedDistance}  fuel ${selectedDistance}`,
-          `${selectedKnowledge.benefitKnown ? biomeBenefitLabel(selectedNodeType).replace(' on arrival', '') : 'benefit ?'} / ${
-            selectedKnowledge.riskKnown ? biomeRiskLabel(selectedNodeType).replace('Hazards strain ', '') : 'risk ?'
+          `${selectedRouteKnowledge.benefitKnown ? biomeBenefitLabel(selectedNodeType).replace(' on arrival', '') : 'benefit ?'} / ${
+            selectedRouteKnowledge.riskKnown ? biomeRiskLabel(selectedNodeType).replace('Hazards strain ', '') : 'risk ?'
           }`,
-          selectedKnowledge.objectiveKnown ? getObjectiveSummary(selectedNode.type) : 'Objective pattern ?',
+          selectedRouteKnowledge.objectiveKnown ? getObjectiveSummary(selectedNode.type) : 'Objective pattern ?',
           signalIntel.routeHint ?? 'Signal triangulation offline.'
         ].join('\n')
       : 'Select a connected route.';

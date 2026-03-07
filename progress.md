@@ -486,9 +486,15 @@ TODO next:
   - Updated `src/game/runtime/mapSceneContent.ts` so route cards and field notes surface this triangulation tiering alongside the existing scanner-based biome intel.
   - Updated `docs/06-puzzles-and-meta-mystery.md`; targeted notebook/map-content tests and `npm run check` pass.
 
+- Notebook synthesis payoff pass:
+  - Extended `notebookSignalRouteIntel(...)` so synthesis now flags when the selected route is the strongest connected lead and unlocks decoded arrival intel for that lead.
+  - Updated `src/game/runtime/mapSceneContent.ts` so the strongest synthesized lead can reveal hidden arrival benefit, objective, and risk details before scanner progression would normally expose them.
+  - Updated `tests/notebook.test.ts` and `tests/mapSceneContent.test.ts` to pin the stronger-lead decode behavior and verify weaker connected routes stay gated.
+  - Updated `docs/06-puzzles-and-meta-mystery.md`; targeted notebook/map-content tests pass.
+
 TODO next:
 
-- Decide whether synthesis should eventually do more than route marking, for example unlocking authored encounter outcomes or notebook-conditioned goal-node variants.
+- Decide whether later notebook payoff should move beyond route intel into authored encounter outcomes or notebook-conditioned goal-node variants.
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially repeated HUD text-reset / draw-primitive plumbing and any remaining scene-specific card layout or module-meter setup.
 
 - Scene HUD content extraction pass:

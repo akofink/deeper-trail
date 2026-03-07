@@ -61,5 +61,5 @@ Use a “mystery graph”:
 - Notebook progress now feeds back into route choice mechanically:
   - first clue enables signal-bearing reads on the selected route,
   - second clue adds estimated remaining leg count to the source,
-  - synthesis marks the strongest currently connected lead on the route board.
+  - synthesis marks the strongest currently connected lead on the route board and decodes that lead's arrival profile before travel.
 - The current notebook is still intentionally lightweight: it is a discovery layer and route-intel aid, not yet a full branching puzzle graph.
