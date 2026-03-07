@@ -2,11 +2,12 @@
 
 A serverless, high-performance, 2D browser game where the player begins with almost nothing (a bicycle and a vague directive) and is gradually pulled into a widening, stranger journey that can plausibly end in **starships, alien environments, and a meta-puzzle** that keeps unfolding.
 
-The core hook: **you never “buy a new vehicle.”** You **evolve one thing into another** through granular component upgrades and discovered fabrication methods. The “bicycle → rover → skiff → ship” progression is not a menu choice; it emerges from *what the world teaches you to build*.
+The core hook: **you never “buy a new vehicle.”** You **evolve one thing into another** through granular component upgrades and discovered fabrication methods. The “bicycle → rover → skiff → ship” progression is not a menu choice; it emerges from _what the world teaches you to build_.
 
 ---
 
 ## Why this exists
+
 - **Browser-first, serverless**: runs locally; deploy to static hosting.
 - **2D only**: pixel or vector; no 3D.
 - **High replayability**: procedural generation + combinatorial systems.
@@ -15,7 +16,9 @@ The core hook: **you never “buy a new vehicle.”** You **evolve one thing int
 ---
 
 ## Tech stack recommendation (serverless)
-**TypeScript + Vite + PixiJS** (WebGL 2D renderer)  
+
+**TypeScript + Vite + PixiJS** (WebGL 2D renderer)
+
 - PixiJS for fast 2D rendering with modest hardware.
 - Vite for instant dev + static build.
 - Pure client-side deterministic generation (seeded RNG).
@@ -26,6 +29,7 @@ Alternative: **Phaser 3** also great. If you prefer a more “batteries included
 ---
 
 ## Core pillars (design constraints)
+
 1. **One journey, many scales**  
    The world expands from local roads to continents to orbital routes to interstellar paths — without breaking the 2D format.
 
@@ -33,7 +37,7 @@ Alternative: **Phaser 3** also great. If you prefer a more “batteries included
    Granular upgrades to subsystems create distinct builds and emergent solutions.
 
 3. **Obstacles require capabilities, not stats**  
-   Challenges are environmental/systemic/social/puzzle-based; upgrades unlock new *verbs*.
+   Challenges are environmental/systemic/social/puzzle-based; upgrades unlock new _verbs_.
 
 4. **A meta-puzzle that deepens**  
    Escape-room vibes: codes, diagrams, patterns, artifacts. Each layer reveals another layer.
@@ -44,6 +48,7 @@ Alternative: **Phaser 3** also great. If you prefer a more “batteries included
 ---
 
 ## The “Deeper” loop (player experience)
+
 **Minute 1:** “I’m on a bike with a bag.”  
 **Hour 2:** “I have a welded dyno hub, better tires, and a weird lens I found.”  
 **Hour 8:** “I built a crawler frame from scrapyard parts.”  
@@ -53,6 +58,7 @@ Alternative: **Phaser 3** also great. If you prefer a more “batteries included
 ---
 
 ## Split docs
+
 - [README.md](docs/README.md)
 - [00-vision.md](docs/00-vision.md)
 - [01-core-loop.md](docs/01-core-loop.md)
@@ -73,11 +79,21 @@ Alternative: **Phaser 3** also great. If you prefer a more “batteries included
 ---
 
 ## Development setup
+
 - Install dependencies: `npm install`
 - Start the game shell: `npm run dev`
 - Run quality gates: `npm run check`
 
+## GitHub Pages deployment
+
+- This repo is configured for GitHub Pages deployment from GitHub Actions.
+- The workflow lives at [.github/workflows/deploy-pages.yml](/home/akofink/dev/repos/deeper-trail/.github/workflows/deploy-pages.yml).
+- For the `akofink/deeper-trail` repository, production builds use the `/deeper-trail/` base path automatically in CI via `VITE_BASE_PATH=/deeper-trail/`.
+- In GitHub repo settings, set Pages to use `GitHub Actions` as the source.
+- After pushes to `main`, the site will deploy to `https://akofink.github.io/deeper-trail/`.
+
 ## Current code structure
+
 ```
 src/
   engine/
@@ -93,6 +109,7 @@ tests/         # unit tests for engine + state behavior
 ```
 
 ## Quality and contribution rules
+
 - Feature changes must include tests for behavior and edge cases.
 - Bug fixes must include a reproducing test that fails before the fix.
 - Keep docs updated when workflows, architecture, or behavior changes.

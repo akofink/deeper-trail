@@ -1,0 +1,108 @@
+# AGENTS.md
+
+This repository is a browser-first 2D game prototype built with TypeScript, Vite, PixiJS, and Vitest. Use this file as the default operating guide for AI agents and other contributors working in this repo.
+
+## Project Intent
+
+- Preserve the core direction in [README.md](/home/akofink/dev/repos/deeper-trail/README.md): a deterministic, replayable, serverless journey game that scales from bikes and roads to stranger late-game travel.
+- Favor changes that strengthen the game's core pillars: deterministic simulation, modular vehicle progression, capability-driven obstacles, and seed-based replayability.
+- Keep the browser build simple. This project is static-host friendly and should remain client-side.
+
+## Stack And Entry Points
+
+- Runtime: Node 20+.
+- App shell: Vite.
+- Rendering: PixiJS in [src/main.ts](/home/akofink/dev/repos/deeper-trail/src/main.ts).
+- Deterministic engine logic lives under [src/engine](/home/akofink/dev/repos/deeper-trail/src/engine).
+- Game state lives under [src/game/state](/home/akofink/dev/repos/deeper-trail/src/game/state).
+- Tests live under [tests](/home/akofink/dev/repos/deeper-trail/tests).
+
+Current high-value files:
+
+- [src/main.ts](/home/akofink/dev/repos/deeper-trail/src/main.ts): current runtime shell, input handling, HUD/map presentation, and run-scene feel code.
+- [src/engine/gen/worldGraph.ts](/home/akofink/dev/repos/deeper-trail/src/engine/gen/worldGraph.ts): seeded world generation.
+- [src/engine/rng/seededRng.ts](/home/akofink/dev/repos/deeper-trail/src/engine/rng/seededRng.ts): RNG utilities. New randomness should route through here or closely related deterministic helpers.
+- [src/engine/sim](/home/akofink/dev/repos/deeper-trail/src/engine/sim): travel, vehicle, exploration, and objective rules.
+- [src/game/state/gameState.ts](/home/akofink/dev/repos/deeper-trail/src/game/state/gameState.ts): initial run state and simulation-facing state shape.
+
+## Non-Negotiable Rules
+
+- Keep simulation deterministic. Identical seeds and inputs must produce identical simulation outcomes.
+- Do not put gameplay rules in rendering code when they belong in the engine. Rendering should read state, not define core rules.
+- Route random behavior through seeded RNG utilities.
+- Keep engine code small, pure, and directly testable where possible.
+- Do not add server dependencies or require backend services.
+- Update docs when behavior, architecture, or workflow changes.
+
+## Working Style For This Repo
+
+- Start by reading the relevant docs before making broad gameplay or architecture changes.
+- Prefer small, scoped edits over sweeping rewrites.
+- Follow the existing split:
+  - `src/engine/*` for deterministic rules and generation.
+  - `src/game/state/*` for state shaping and simulation state transitions.
+  - `src/main.ts` for rendering and input until the runtime is split further.
+- If a change touches both simulation and presentation, keep the rule change in the engine and the visual consequence in the renderer.
+- Preserve the current visual direction from [ARCHITECTURE.md](/home/akofink/dev/repos/deeper-trail/ARCHITECTURE.md): compact HUD panels, readable map scene, and strong biome readability.
+
+## Commands
+
+- Install dependencies: `npm install`
+- Run dev server: `npm run dev`
+- Build: `npm run build`
+- Typecheck: `npm run typecheck`
+- Lint: `npm run lint`
+- Test: `npm run test`
+- Full quality gate: `npm run check`
+
+Before finishing substantial code changes, run `npm run check` when feasible.
+
+## Test Expectations
+
+- Every feature change should add or update tests.
+- Every bug fix should add a reproducing test that fails before the fix and passes after.
+- Deterministic systems should be tested with seed-stable assertions.
+- Prefer targeted unit tests in [tests](/home/akofink/dev/repos/deeper-trail/tests) for engine and state behavior.
+
+Existing test coverage is centered on:
+
+- world generation
+- seeded RNG behavior
+- travel rules
+- vehicle rules
+- exploration rules
+- run objective rules
+
+## Documentation Hygiene
+
+Keep docs aligned with code in the same change.
+
+Update these files when relevant:
+
+- [ARCHITECTURE.md](/home/akofink/dev/repos/deeper-trail/ARCHITECTURE.md) for foundational module or runtime split changes.
+- [docs/10-engineering-workflow.md](/home/akofink/dev/repos/deeper-trail/docs/10-engineering-workflow.md) for changes to quality gates, hooks, or contribution workflow.
+- [README.md](/home/akofink/dev/repos/deeper-trail/README.md) for setup, stack, or user-facing project framing changes.
+- Design docs under [docs](/home/akofink/dev/repos/deeper-trail/docs) when gameplay systems move materially.
+- [IMPLEMENTATION_NOTES.md](/home/akofink/dev/repos/deeper-trail/IMPLEMENTATION_NOTES.md) or [progress.md](/home/akofink/dev/repos/deeper-trail/progress.md) when carrying forward implementation status or follow-up notes.
+
+## Gameplay And Architecture Guidance
+
+- Vehicle progression should feel like evolving one machine through modules, not swapping to unrelated vehicles through menus.
+- Obstacles should unlock through capabilities and verbs, not just numeric stat inflation.
+- Procedural content should remain seed-driven and inspectable.
+- The map scene should stay readable as a route board, not regress into debug-only graph output.
+- Run-scene feel can live partly in presentation, but core movement and subsystem-derived behavior should remain state-driven and explicit.
+
+## Practical Agent Advice
+
+- Read before editing. This repo has compact files, and understanding the surrounding rule set is usually cheap.
+- Search with `rg` first.
+- If you add a new subsystem or rule family, place it near related engine modules and add tests alongside the behavior.
+- If `src/main.ts` grows further because of your change, prefer extracting helpers rather than expanding one large block.
+- Avoid speculative abstractions. Add structure only when the current code actually needs it.
+
+## Pull Request / Change Bar
+
+- Keep changes scoped.
+- Include a short test plan in your final summary.
+- Mention any constraints, follow-ups, or unverified paths explicitly if you could not run the full checks.

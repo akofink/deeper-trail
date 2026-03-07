@@ -1,6 +1,9 @@
 import { defineConfig } from 'vitest/config';
 
+const githubPagesBase = process.env.VITE_BASE_PATH ?? '/';
+
 export default defineConfig({
+  base: githubPagesBase,
   server: {
     port: 5173,
     strictPort: true

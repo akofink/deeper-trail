@@ -16,6 +16,7 @@ Original prompt: Build and iterate the playable web game in the games/202601-2d-
 - Noted environment nuance: headless capture can produce black canvas images for this Pixi/WebGL setup; headed Playwright captures render correctly and were used as visual source of truth.
 
 TODOs / suggestions for next iteration:
+
 - Add Playwright key mapping for `p`, `f`, and `r` in the shared client or use custom actions path so pause/fullscreen/restart-by-R can be automated directly.
 - Add a lightweight in-game start/menu screen (with controls text) before gameplay if desired by product direction.
 - Add unit tests for deterministic reset and hazard damage logic in a pure simulation module to reduce regression risk.
@@ -42,6 +43,7 @@ TODOs / suggestions for next iteration:
   - Playwright headed scenarios confirmed map state transitions, fuel/day updates, route selections, and no console errors.
 
 TODOs / suggestions for next iteration:
+
 - Add explicit on-screen map legend and a dedicated map screenshot capture path (first frame can still render black in this environment).
 - Add a minimal crafting/repair action that spends scrap and modifies one subsystem in map scene.
 - Add deterministic simulation tests for arrival rewards and biome-run layout selection by node type.
@@ -63,6 +65,7 @@ TODOs / suggestions for next iteration:
   - Playwright balance-check confirms hazards are traversable and elevated collectibles are collectable.
 
 TODO:
+
 - Add a deterministic test hook or reduced-difficulty scripted path to verify free-travel charge consumption end-to-end in Playwright without manual play.
 
 - Interest pass: moved beyond pure endless-run feel by adding an objective and a timed ability.
@@ -83,6 +86,7 @@ TODO:
   - Playwright beacon-link check captured successful beacon activation state (`beacons[0].activated=true`, score +15).
 
 TODO next:
+
 - Add a deterministic test action sequence that links all 3 beacons and completes a node in one run for full end-to-end automation.
 - Add biome-specific beacon behaviors (e.g., timed windows in anomaly biome, chain-order constraints in ruins).
 
@@ -106,6 +110,7 @@ TODO next:
   - Visual screenshot `output/web-game-repair-check/shot-0.png` matches map overlay and subsystem condition summary.
 
 TODO next:
+
 - Add a proper module crafting/install action so subsystem levels, not just condition, can change through scrap investment.
 - Add deterministic automation for full node completion (all 3 beacons + exit + travel refund) so the whole core loop is covered end-to-end.
 - Improve map HUD layout on narrower widths; the top status line is close to clipping once controls text grows.
@@ -132,6 +137,7 @@ TODO next:
     - `TMPDIR=/tmp npm run test` passes (15 tests).
 
 TODO next:
+
 - Add deterministic automation for full node completion (all 3 beacons + exit + travel refund) so the whole core loop is covered end-to-end.
 - Improve map HUD layout on narrower widths; module-level text increases clipping pressure.
 - Add at least one puzzle template or mystery beat so module progression unlocks something beyond raw stat improvement.
@@ -153,6 +159,7 @@ TODO next:
   - `TMPDIR=/tmp npm run test` passes (15 tests).
 
 TODO next:
+
 - Manual playtest the new feel pass, especially midair reversals, short-hop control, and non-fullscreen readability on both map and run scenes.
 - Add a first puzzle/interaction template that uses the improved embodiment layer, e.g. timing/positioning around scanner pulses or directional signal alignment.
 - Consider reducing persistent overlay text further by turning map actions into button-like visual chips/icons rather than sentence hints.
@@ -168,6 +175,7 @@ TODO next:
   - `TMPDIR=/tmp npm run test` passes (15 tests).
 
 TODO next:
+
 - Manual playtest the new feel pass with a human in the loop, focusing on whether short hops, midair reversals, and body lean read as satisfying rather than just permissive.
 - Reduce map-overlay sentence text further; the panels are working, but the center-bottom copy still carries too much explanatory load.
 - Add a first embodied puzzle/interaction template so the improved movement and facing can drive actual play decisions.
@@ -183,6 +191,7 @@ TODO next:
   - `TMPDIR=/tmp npm run test` passes (15 tests).
 
 TODO next:
+
 - Re-run a visual playtest to judge whether the panel labels are enough or whether health/fuel/dash also need tiny icons in addition to text.
 - Reduce center-bottom overlay sentences by moving route/install information into smaller tagged UI elements near the relevant panels.
 - Add the first embodied puzzle/interaction template so the clearer HUD and improved movement support actual decision-making rather than just traversal.
@@ -230,6 +239,7 @@ TODO next:
   - Added `tests/exploration.test.ts`; `npm run typecheck` and `TMPDIR=/tmp npm run test` pass (17 tests).
 
 TODO next:
+
 - Human playtest the new map notes layout at normal window sizes; the extra notes card adds information density and may need another spacing pass.
 - Review whether biome effects should become partially legible before first arrival via scanner/module progression, rather than staying fully unknown until experienced.
 - Push the vehicle presentation further with terrain interaction cues or dust/trail effects so momentum reads from the whole machine, not just the silhouette.
@@ -243,6 +253,7 @@ TODO next:
   - Validation: `npm run typecheck` passes; `TMPDIR=/tmp npm run test` passes (17 tests).
 
 TODO next:
+
 - Consider moving the active seed from the main meta strip into a dedicated small chip/card if it starts crowding HUD readability.
 - Add a deliberate "new expedition" affordance so players can reroll the world on demand instead of only via page reload or loss reset.
 - Rebalance med-patch cost/effect after human play; `2 scrap -> 1 HP` is a first pass, not a tuned economy.
@@ -255,9 +266,15 @@ TODO next:
   - Validation: `npm run typecheck` passes; `TMPDIR=/tmp npm run test` passes (18 tests).
 
 Upgrade ideas worth pursuing next:
+
 - `Shielding` overcharge: first hit in a run burns shield charge instead of HP, then recharges on node completion or in anomaly sites.
 - `Storage` magnet rig: scrap pickups arc toward the vehicle from farther away, letting salvage runs feel different from precision runs.
 - `Engine` overdrive: gain a second dash charge or a charge that refills faster on near-miss/hazard traversal.
+
+- Deployment pass:
+  - Added GitHub Pages workflow at `.github/workflows/deploy-pages.yml`.
+  - Updated `vite.config.ts` to honor `VITE_BASE_PATH`, allowing CI builds to publish correctly under the repository subpath.
+  - Documented the GitHub Pages setup in `README.md` for `akofink/deeper-trail`.
 - `Suspension` terrain skip: brief hop-stabilizer or landing shockwave that clears low hazards / keeps pace through rough nodes.
 - `Frame` rig slots: unlock a second site benefit choice so towns/ruins become more strategic than a single deterministic install.
 
@@ -290,6 +307,7 @@ Upgrade ideas worth pursuing next:
   - Validation: `npm run typecheck` passes; `TMPDIR=/tmp npm run test` passes (19 tests).
 
 TODO next:
+
 - Rework vehicle motion so the chassis leads the feel more than the rider body; the current kinematics still read as a person carrying a machine rather than piloting one.
 - Replace the dash teleport with a brief boosted state, wheel stretch, and trailing afterimage so it reads as acceleration instead of snapping.
 - Decide whether the map should stay as an abstract route board or become a pseudo-3D space board; if the latter, add a lightweight projected rotation control rather than trying to turn the current flat graph directly into a physical 3D map.
@@ -301,6 +319,7 @@ TODO next:
   - Validation: `npm run typecheck` passes; `TMPDIR=/tmp npm run test` passes (19 tests).
 
 TODO next:
+
 - Keep pushing embodiment: the dash is smoother, but the overall run motion still needs more chassis-led weight transfer and less rider-led squash to really read as vehicle physics.
 - Decide whether the projected map should become the default presentation or remain a toy/secondary view; if default, its HUD and node glyphs need another readability pass.
 
@@ -335,6 +354,7 @@ TODO next:
     4. Add deterministic full-loop automation once the objectives settle enough to avoid constant brittle script churn.
 
 TODO next:
+
 - Human playtest the new ruin/anomaly relay rules and report whether they read as satisfying constraints or just surprise failure states.
 - Add a simple clue/notebook system tied to node completion so the expedition goal feels like a mystery hunt, not only a far-right win marker.
 - Prototype one more fun-forward vehicle verb from the existing brainstorm list, likely `storage` pickup magnetism or `shielding` first-hit shield burn, whichever feels better in play.
