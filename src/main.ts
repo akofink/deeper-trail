@@ -25,6 +25,14 @@ import {
 import { biomeByNodeType, buildRunLayout, mapNodePalette, MODULE_LABELS } from './game/runtime/runLayout';
 import { buildMapSceneCopy, buildMapSceneHudLayout } from './game/runtime/mapSceneCards';
 import { pullCollectibleTowardTarget } from './game/runtime/collectibleMagnetism';
+import {
+  applyCanopyLiftAssist,
+  CANOPY_LIFT_HOLD_SECONDS,
+  isInsideCanopyLift,
+  totalCanopyLiftProgress,
+  updateCanopyLiftProgress,
+  usesCanopyLifts
+} from './game/runtime/canopyLifts';
 import { applyNodeCompletionState } from './game/runtime/runCompletion';
 import { dashEntryEnergyCost, shouldContinueDash, shouldStartDash } from './game/runtime/runDash';
 import { buildRunHudLayout } from './game/runtime/runHudLayout';
@@ -476,6 +484,7 @@ function makeInitialRuntimeState(canvasHeight: number, seed = createRunSeed()): 
     beacons: run.beacons,
     serviceStops: run.serviceStops,
     syncGates: run.syncGates,
+    canopyLifts: run.canopyLifts,
     sim
   };
 }
@@ -526,6 +535,7 @@ function resetRunFromCurrentNode(state: RuntimeState): void {
   state.beacons = run.beacons;
   state.serviceStops = run.serviceStops;
   state.syncGates = run.syncGates;
+  state.canopyLifts = run.canopyLifts;
   state.dashEnergy = 1;
   state.dashBoost = 0;
   state.wheelRotation = 0;
@@ -548,6 +558,9 @@ function shiftRunSceneVertical(state: RuntimeState, deltaY: number): void {
   }
   for (const beacon of state.beacons) {
     beacon.y += deltaY;
+  }
+  for (const lift of state.canopyLifts) {
+    lift.y += deltaY;
   }
 }
 
@@ -608,6 +621,26 @@ function hasSyncGateInRange(state: RuntimeState): boolean {
   return false;
 }
 
+function hasCanopyLiftInRange(state: RuntimeState): boolean {
+  if (!usesCanopyLifts(currentNodeType(state.sim))) {
+    return false;
+  }
+
+  const bounds = {
+    x: state.player.x,
+    y: state.player.y,
+    w: state.player.w,
+    h: state.player.h
+  };
+  for (const lift of state.canopyLifts) {
+    if (lift.charted) continue;
+    if (isInsideCanopyLift(lift, bounds)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function serviceStopPromptText(state: RuntimeState): string | null {
   if (state.scene !== 'run' || state.mode !== 'playing' || !usesServiceStops(currentNodeType(state.sim))) {
     return null;
@@ -658,6 +691,28 @@ function syncGatePromptText(state: RuntimeState): string | null {
     if (result.reason) {
       return result.reason;
     }
+  }
+
+  return null;
+}
+
+function canopyLiftPromptText(state: RuntimeState): string | null {
+  if (state.scene !== 'run' || state.mode !== 'playing' || !usesCanopyLifts(currentNodeType(state.sim))) {
+    return null;
+  }
+
+  const bounds = {
+    x: state.player.x,
+    y: state.player.y,
+    w: state.player.w,
+    h: state.player.h
+  };
+  for (const lift of state.canopyLifts) {
+    if (lift.charted || !isInsideCanopyLift(lift, bounds)) continue;
+
+    return !state.player.onGround
+      ? `Canopy draft engaged.\nHold in the bloom to chart ${Math.round(lift.progress / CANOPY_LIFT_HOLD_SECONDS * 100)}%.`
+      : 'Canopy draft dormant.\nJump into the bloom and stay airborne to chart it.';
   }
 
   return null;
@@ -749,6 +804,7 @@ function runObjectiveProgress(state: RuntimeState): {
   beaconsRemaining: number;
   serviceStopsRemaining: number;
   syncGatesRemaining: number;
+  canopyLiftsRemaining: number;
 } {
   const beaconProgress = {
     completed: state.beacons.filter((beacon) => beacon.activated).length,
@@ -756,13 +812,15 @@ function runObjectiveProgress(state: RuntimeState): {
   };
   const serviceStopProgress = totalServiceStopProgress(state.serviceStops);
   const syncGateProgress = totalSyncGateProgress(state.syncGates);
+  const canopyLiftProgress = totalCanopyLiftProgress(state.canopyLifts);
 
   return {
-    completed: beaconProgress.completed + serviceStopProgress.completed + syncGateProgress.completed,
-    total: beaconProgress.total + serviceStopProgress.total + syncGateProgress.total,
+    completed: beaconProgress.completed + serviceStopProgress.completed + syncGateProgress.completed + canopyLiftProgress.completed,
+    total: beaconProgress.total + serviceStopProgress.total + syncGateProgress.total + canopyLiftProgress.total,
     beaconsRemaining: beaconProgress.total - beaconProgress.completed,
     serviceStopsRemaining: serviceStopProgress.total - serviceStopProgress.completed,
-    syncGatesRemaining: syncGateProgress.total - syncGateProgress.completed
+    syncGatesRemaining: syncGateProgress.total - syncGateProgress.completed,
+    canopyLiftsRemaining: canopyLiftProgress.total - canopyLiftProgress.completed
   };
 }
 
@@ -1009,6 +1067,18 @@ async function bootstrap(): Promise<void> {
       p.jumpBufferTime = 0;
     }
 
+    const preMoveBounds = {
+      x: p.x,
+      y: p.y,
+      w: p.w,
+      h: p.h
+    };
+    for (const lift of state.canopyLifts) {
+      if (lift.charted || p.onGround || !isInsideCanopyLift(lift, preMoveBounds)) continue;
+      p.vy = applyCanopyLiftAssist(p.vy, dt);
+      break;
+    }
+
     const gravityMultiplier = p.vy > 0 ? FALL_GRAVITY_MULTIPLIER : Math.abs(p.vy) < 90 && spaceDown ? HANG_GRAVITY_MULTIPLIER : 1;
     p.vy += GRAVITY * gravityMultiplier * dt;
     p.x += p.vx * dt;
@@ -1107,6 +1177,16 @@ async function bootstrap(): Promise<void> {
       state.mapMessageTimer = 2.2;
     }
 
+    for (const lift of state.canopyLifts) {
+      const inZone = isInsideCanopyLift(lift, playerBounds);
+      const update = updateCanopyLiftProgress(lift, dt, inZone, !state.player.onGround);
+      if (update.completedNow) {
+        state.score += 20;
+        state.mapMessage = `Canopy lift ${lift.id.toUpperCase()} charted.`;
+        state.mapMessageTimer = 2.2;
+      }
+    }
+
     const objectiveProgress = runObjectiveProgress(state);
     const exitReady = objectiveProgress.completed >= objectiveProgress.total;
     if (p.x + p.w >= state.goalX && !exitReady) {
@@ -1125,6 +1205,11 @@ async function bootstrap(): Promise<void> {
       if (objectiveProgress.syncGatesRemaining > 0) {
         pendingParts.push(
           `${objectiveProgress.syncGatesRemaining} sync ${objectiveProgress.syncGatesRemaining === 1 ? 'gate' : 'gates'}`
+        );
+      }
+      if (objectiveProgress.canopyLiftsRemaining > 0) {
+        pendingParts.push(
+          `${objectiveProgress.canopyLiftsRemaining} canopy ${objectiveProgress.canopyLiftsRemaining === 1 ? 'lift' : 'lifts'}`
         );
       }
       state.mapMessage = `Exit locked: finish ${pendingParts.join(' and ')}.`;
@@ -1383,6 +1468,35 @@ async function bootstrap(): Promise<void> {
       }
     }
 
+    for (const lift of state.canopyLifts) {
+      const left = lift.x - lift.w * 0.5 - cam;
+      const top = lift.y - lift.h * 0.5;
+      const activeAlpha = lift.charted ? 0.24 : 0.18 + Math.sin(state.elapsedSeconds * 3 + lift.x * 0.01) * 0.03;
+      graphics.roundRect(left, top, lift.w, lift.h, 28).fill({ color: '#84cc16', alpha: activeAlpha });
+      graphics.roundRect(left, top, lift.w, lift.h, 28).stroke({
+        color: lift.charted ? '#bef264' : '#4d7c0f',
+        alpha: lift.charted ? 0.72 : 0.45,
+        width: lift.charted ? 2.8 : 1.8
+      });
+      drawGauge(
+        graphics,
+        left + 12,
+        top + 12,
+        lift.w - 24,
+        6,
+        lift.progress / CANOPY_LIFT_HOLD_SECONDS,
+        '#d9f99d',
+        '#365314'
+      );
+      if (!lift.charted) {
+        graphics.circle(lift.x - cam, lift.y, Math.min(lift.w, lift.h) * 0.24 + Math.sin(state.elapsedSeconds * 4 + lift.x * 0.02) * 4).stroke({
+          color: '#ecfccb',
+          alpha: 0.3,
+          width: 2
+        });
+      }
+    }
+
     for (let index = 0; index < state.syncGates.length; index += 1) {
       const gate = state.syncGates[index];
       const open = isPhaseWindowOpen(state.elapsedSeconds, index);
@@ -1535,6 +1649,8 @@ async function bootstrap(): Promise<void> {
       overlay.text = state.mapMessage;
     } else if (hasSyncGateInRange(state)) {
       overlay.text = syncGatePromptText(state) ?? '';
+    } else if (hasCanopyLiftInRange(state)) {
+      overlay.text = canopyLiftPromptText(state) ?? '';
     } else if (hasServiceStopInRange(state)) {
       overlay.text = serviceStopPromptText(state) ?? '';
     } else if (hasBeaconInRange(state)) {
@@ -2084,6 +2200,15 @@ async function bootstrap(): Promise<void> {
           width: gate.w,
           height: gate.h,
           stabilized: gate.stabilized
+        })),
+        canopyLifts: state.canopyLifts.map((lift) => ({
+          id: lift.id,
+          x: Math.round(lift.x),
+          y: Math.round(lift.y),
+          width: lift.w,
+          height: lift.h,
+          progress: Number(lift.progress.toFixed(2)),
+          charted: lift.charted
         })),
         objectiveRule: getBeaconRuleForNodeType(currentNode?.type ?? 'town'),
         objectiveSummary: getObjectiveSummary(currentNode?.type ?? 'town'),

@@ -1,5 +1,5 @@
 import type { GameState as SimState } from '../state/gameState';
-import type { Beacon, ServiceStop, SyncGate } from '../state/runObjectives';
+import type { Beacon, CanopyLift, ServiceStop, SyncGate } from '../state/runObjectives';
 
 export type Mode = 'playing' | 'paused' | 'won' | 'lost';
 export type Scene = 'run' | 'map';
@@ -62,6 +62,7 @@ export interface RuntimeState {
   beacons: Beacon[];
   serviceStops: ServiceStop[];
   syncGates: SyncGate[];
+  canopyLifts: CanopyLift[];
   player: Player;
   cameraX: number;
   goalX: number;

@@ -57,7 +57,7 @@ export function getObjectiveSummary(nodeType: string): string {
   const rule = getBeaconRuleForNodeType(nodeType);
   if (rule === 'steady') return 'Steady relays + service bays';
   if (rule === 'ordered') return 'Ordered relays';
-  if (rule === 'airborne') return 'Airborne relays';
+  if (rule === 'airborne') return 'Air relays + canopy lifts';
   if (rule === 'boosted') return 'Boost-sync relays + sync gates';
   return 'Relay links';
 }

@@ -22,3 +22,13 @@ export interface SyncGate {
   h: number;
   stabilized: boolean;
 }
+
+export interface CanopyLift {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  progress: number;
+  charted: boolean;
+}

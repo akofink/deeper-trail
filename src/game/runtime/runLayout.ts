@@ -1,4 +1,4 @@
-import type { Beacon, ServiceStop, SyncGate } from '../state/runObjectives';
+import type { Beacon, CanopyLift, ServiceStop, SyncGate } from '../state/runObjectives';
 import type { Collectible, Hazard } from './runtimeState';
 
 export const MODULE_LABELS = ['FRAME', 'ENGINE', 'SCAN', 'SUSP', 'STORE', 'SHIELD'] as const;
@@ -36,6 +36,7 @@ export function buildRunLayout(groundY: number, nodeType: string): {
   beacons: Beacon[];
   serviceStops: ServiceStop[];
   syncGates: SyncGate[];
+  canopyLifts: CanopyLift[];
 } {
   const hazardPattern =
     nodeType === 'anomaly'
@@ -119,6 +120,13 @@ export function buildRunLayout(groundY: number, nodeType: string): {
         ? [
             { id: 'sg0', x: 680, y: groundY - 102, w: 62, h: 88, stabilized: false },
             { id: 'sg1', x: 1700, y: groundY - 118, w: 66, h: 94, stabilized: false }
+          ]
+        : [],
+    canopyLifts:
+      nodeType === 'nature'
+        ? [
+            { id: 'cl0', x: 660, y: groundY - 130, w: 120, h: 108, progress: 0, charted: false },
+            { id: 'cl1', x: 1680, y: groundY - 144, w: 126, h: 116, progress: 0, charted: false }
           ]
         : []
   };

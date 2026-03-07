@@ -31,6 +31,7 @@ function buildRuntimeState(): RuntimeState {
     beacons: [],
     serviceStops: [],
     syncGates: [],
+    canopyLifts: [],
     player: {
       x: 0,
       y: 0,
