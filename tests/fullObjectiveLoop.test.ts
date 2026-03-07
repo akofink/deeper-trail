@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   beaconApproachState,
+  findPlaywrightCacheExecutables,
+  isSkippableBrowserLaunchError,
   resolveExecutablePath,
   resolveExecutablePathCandidates,
   withStepTimeout
@@ -47,10 +49,39 @@ describe("fullObjectiveLoop helpers", () => {
     ]);
   });
 
+  it("finds installed Playwright Chromium binaries from the local cache", () => {
+    const readdirSync = vi.fn(() => [
+      { isDirectory: () => true, name: "chromium-1193" },
+      { isDirectory: () => true, name: "firefox-1490" }
+    ]);
+    const existsSync = vi.fn((candidate) =>
+      String(candidate) === "/tmp/ms-playwright" ||
+      String(candidate).endsWith("/chromium-1193/chrome-mac/Chromium.app/Contents/MacOS/Chromium")
+    );
+
+    expect(findPlaywrightCacheExecutables("/tmp/ms-playwright", existsSync, readdirSync)).toEqual([
+      "/tmp/ms-playwright/chromium-1193/chrome-mac/Chromium.app/Contents/MacOS/Chromium"
+    ]);
+  });
+
   it("fails slow operations with a named timeout", async () => {
     await expect(withStepTimeout("test step", () => new Promise(() => {}), 10)).rejects.toThrow(
       "test step exceeded 10ms"
     );
+  });
+
+  it("marks sandboxed browser launch failures as skippable", () => {
+    expect(
+      isSkippableBrowserLaunchError(
+        new Error("open /Users/example/Library/Application Support/Chromium/Crashpad/settings.dat: Operation not permitted")
+      )
+    ).toBe(true);
+    expect(
+      isSkippableBrowserLaunchError(
+        new Error("Looks like Playwright Test or Playwright was just installed or updated. Please run the following command to download new browsers")
+      )
+    ).toBe(true);
+    expect(isSkippableBrowserLaunchError(new Error("some other browser crash"))).toBe(false);
   });
 
   it("keeps creeping toward elevated beacons until the true interact radius is reached", () => {

@@ -38,6 +38,7 @@ Enforce consistent code quality and repository hygiene while keeping iteration f
 - When validating browser visuals, prefer the lightest tool that answers the question: direct `google-chrome --headless --screenshot` capture is a good first pass, while Playwright remains the default for scripted interaction, state setup, or cases where headless Chrome capture is not reliable enough.
 - The committed Playwright smoke path should stay deterministic: prefer fixed seeds plus `window.render_game_to_text` / `window.advanceTime(ms)` over adding separate test-only gameplay controls.
 - The smoke script should prefer Playwright-managed Chromium, then fall back to common local Chrome/Chromium app installs when the managed browser is unavailable. Only force a browser binary with `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` when you need to debug a specific local browser install.
+- If Chromium cannot launch because the local Playwright browser install is missing or the current sandbox blocks browser crash-report/bootstrap setup, the smoke script may emit an explicit `[e2e] skipping browser smoke:` line instead of hanging. Treat that as an environment limitation to fix locally, not as gameplay coverage passing in CI.
 - When a session uncovers actionable follow-up work that will not be fixed immediately, add an open
   report under `docs/issues/` before handoff so the next contributor has a durable queue entry.
 - Name issue files `YYYYMMDD-short-kebab-case-summary.md`.
