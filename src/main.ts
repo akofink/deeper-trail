@@ -15,12 +15,14 @@ import {
   repairMostDamagedSubsystem
 } from './engine/sim/vehicle';
 import { biomeByNodeType, buildRunLayout, mapNodePalette, MODULE_LABELS } from './game/runtime/runLayout';
-import { buildMapSceneCopy } from './game/runtime/mapSceneCards';
+import { buildMapSceneCopy, buildMapSceneHudLayout } from './game/runtime/mapSceneCards';
+import { dashEntryEnergyCost, shouldContinueDash, shouldStartDash } from './game/runtime/runDash';
+import { buildRunHudLayout } from './game/runtime/runHudLayout';
 import { projectMapPoint } from './game/runtime/mapProjection';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
+import { advanceHorizontalVelocity } from './game/runtime/runMotion';
 import type { RuntimeState } from './game/runtime/runtimeState';
 import {
-  buildMapSceneHudLayout,
   beaconInteractRadius,
   dashSpeedForState,
   hazardInvulnerabilitySeconds,
@@ -49,17 +51,14 @@ const DASH_ENERGY_DRAIN_PER_SECOND = 2.6;
 const DASH_ENERGY_RECOVER_PER_SECOND = 0.48;
 const DASH_BOOST_RAMP_PER_SECOND = 8;
 const DASH_BOOST_DECAY_PER_SECOND = 9;
+const DASH_START_BOOST = 0.3;
+const DASH_MIN_SPEED_RATIO = 0.62;
 const MAP_ROTATION_ACCEL = 3.2;
 const MAP_ROTATION_FAST_MULTIPLIER = 2.15;
 const MAP_ROTATION_DAMPING = 0.86;
 const GROUND_Y_RATIO = 0.74;
 const COYOTE_TIME = 0.11;
 const JUMP_BUFFER_TIME = 0.12;
-const RUN_ACCEL = 1500;
-const RUN_DECEL = 1850;
-const AIR_ACCEL = 1050;
-const AIR_TURN_ACCEL = 1550;
-const AIR_DECEL = 700;
 const JUMP_CUT_SPEED = 140;
 const JUMP_CUT_MULTIPLIER = 0.52;
 const FALL_GRAVITY_MULTIPLIER = 1.18;
@@ -75,13 +74,6 @@ let externalStepping = false;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
-}
-
-function approach(value: number, target: number, delta: number): number {
-  if (value < target) {
-    return Math.min(target, value + delta);
-  }
-  return Math.max(target, value - delta);
 }
 
 function intersects(a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }): boolean {
@@ -141,6 +133,20 @@ function layoutChipLabel(label: Text, text: string, x: number, y: number, width:
   label.style.align = 'center';
   label.x = x + Math.round((width - label.width) * 0.5);
   label.y = y + Math.round((height - label.height) * 0.5);
+}
+
+function layoutHudRowLabel(label: Text, text: string, x: number, centerY: number, fill = '#94a3b8'): void {
+  label.text = text;
+  label.style.fill = fill;
+  label.x = x;
+  label.y = Math.round(centerY - label.height * 0.5);
+}
+
+function layoutHudRowValue(label: Text, text: string, rightX: number, centerY: number, fill = '#e2e8f0'): void {
+  label.text = text;
+  label.style.fill = fill;
+  label.x = Math.round(rightX - label.width);
+  label.y = Math.round(centerY - label.height * 0.5);
 }
 
 function drawMapBackdrop(graphics: Graphics, w: number, h: number): void {
@@ -681,6 +687,69 @@ async function bootstrap(): Promise<void> {
   });
   app.stage.addChild(panelValueRight);
 
+  const runLeftRowLabels = Array.from({ length: 3 }, () => {
+    const label = new Text({
+      text: '',
+      style: { fill: '#94a3b8', fontSize: 12, fontFamily: 'monospace', fontWeight: '700' }
+    });
+    app.stage.addChild(label);
+    return label;
+  });
+
+  const runLeftRowValues = Array.from({ length: 3 }, () => {
+    const label = new Text({
+      text: '',
+      style: { fill: '#e2e8f0', fontSize: 12, fontFamily: 'monospace', fontWeight: '700', align: 'right' }
+    });
+    app.stage.addChild(label);
+    return label;
+  });
+
+  const runRightRowLabels = Array.from({ length: 3 }, () => {
+    const label = new Text({
+      text: '',
+      style: { fill: '#94a3b8', fontSize: 12, fontFamily: 'monospace', fontWeight: '700' }
+    });
+    app.stage.addChild(label);
+    return label;
+  });
+
+  const runRightRowValues = Array.from({ length: 2 }, () => {
+    const label = new Text({
+      text: '',
+      style: { fill: '#e2e8f0', fontSize: 12, fontFamily: 'monospace', fontWeight: '700', align: 'right' }
+    });
+    app.stage.addChild(label);
+    return label;
+  });
+
+  const mapLeftRowLabels = Array.from({ length: 2 }, () => {
+    const label = new Text({
+      text: '',
+      style: { fill: '#94a3b8', fontSize: 12, fontFamily: 'monospace', fontWeight: '700' }
+    });
+    app.stage.addChild(label);
+    return label;
+  });
+
+  const mapLeftRowValues = Array.from({ length: 2 }, () => {
+    const label = new Text({
+      text: '',
+      style: { fill: '#e2e8f0', fontSize: 12, fontFamily: 'monospace', fontWeight: '700', align: 'right' }
+    });
+    app.stage.addChild(label);
+    return label;
+  });
+
+  const mapRightHeaderLines = Array.from({ length: 2 }, () => {
+    const label = new Text({
+      text: '',
+      style: { fill: '#94a3b8', fontSize: 12, fontFamily: 'monospace', fontWeight: '700' }
+    });
+    app.stage.addChild(label);
+    return label;
+  });
+
   const moduleLabels = Array.from({ length: 6 }, () => {
     const label = new Text({
       text: '',
@@ -723,11 +792,14 @@ async function bootstrap(): Promise<void> {
     const p = state.player;
     const dashState = dashInputState(keys.has('ShiftLeft'), keys.has('ShiftRight'));
     const dashDown = isDashHeld(dashState);
-    if (dashDown && !previousDashDown && state.dashEnergy > 0.05) {
+    const dashStart = shouldStartDash(dashDown, previousDashDown, state.dashEnergy);
+    if (dashStart) {
       const facing = p.vx === 0 ? p.facing : Math.sign(p.vx);
+      const entryCost = dashEntryEnergyCost(p.vx, runSpeedForState(state));
       state.dashDirection = facing < 0 ? -1 : 1;
+      state.dashBoost = Math.max(state.dashBoost, DASH_START_BOOST);
+      state.dashEnergy = Math.max(0, state.dashEnergy - entryCost);
     }
-    previousDashDown = dashDown;
 
     let move = 0;
     if (keys.has('ArrowLeft')) move -= 1;
@@ -749,27 +821,19 @@ async function bootstrap(): Promise<void> {
     p.coyoteTime = p.onGround ? COYOTE_TIME : Math.max(0, p.coyoteTime - dt);
 
     const targetSpeed = move * runSpeedForState(state);
-    const reversingInAir = !p.onGround && move !== 0 && Math.sign(p.vx || move) !== move;
-    const accel = p.onGround
-      ? move === 0
-        ? RUN_DECEL
-        : RUN_ACCEL
-      : move === 0
-        ? AIR_DECEL
-        : reversingInAir
-          ? AIR_TURN_ACCEL
-          : AIR_ACCEL;
-    p.vx = approach(p.vx, targetSpeed, accel * dt);
+    p.vx = advanceHorizontalVelocity(p.vx, targetSpeed, dt, p.onGround);
 
-    if (dashDown && state.dashEnergy > 0.01) {
+    const dashActive = dashStart || shouldContinueDash(dashDown, state.dashBoost, state.dashEnergy);
+    if (dashActive) {
       state.dashBoost = Math.min(1, state.dashBoost + DASH_BOOST_RAMP_PER_SECOND * dt);
       state.dashEnergy = Math.max(0, state.dashEnergy - DASH_ENERGY_DRAIN_PER_SECOND * dt);
       p.invuln = Math.max(p.invuln, 0.08);
-      p.vx = state.dashDirection * dashSpeedForState(state) * (0.42 + state.dashBoost * 0.58);
+      p.vx = state.dashDirection * dashSpeedForState(state) * (DASH_MIN_SPEED_RATIO + state.dashBoost * (1 - DASH_MIN_SPEED_RATIO));
     } else {
       state.dashBoost = Math.max(0, state.dashBoost - DASH_BOOST_DECAY_PER_SECOND * dt);
       state.dashEnergy = Math.min(1, state.dashEnergy + DASH_ENERGY_RECOVER_PER_SECOND * dt);
     }
+    previousDashDown = dashDown;
 
     const wheelRadius = 8 + Math.max(0, state.sim.vehicle.suspension - 1);
     state.wheelRotation = advanceWheelRotation(state.wheelRotation, p.vx, dt, wheelRadius);
@@ -1039,6 +1103,27 @@ async function bootstrap(): Promise<void> {
     panelSeed.text = '';
     celebrationOverlay.text = '';
     fieldNotesText.text = '';
+    runLeftRowLabels.forEach((label) => {
+      label.text = '';
+    });
+    runLeftRowValues.forEach((label) => {
+      label.text = '';
+    });
+    runRightRowLabels.forEach((label) => {
+      label.text = '';
+    });
+    runRightRowValues.forEach((label) => {
+      label.text = '';
+    });
+    mapLeftRowLabels.forEach((label) => {
+      label.text = '';
+    });
+    mapLeftRowValues.forEach((label) => {
+      label.text = '';
+    });
+    mapRightHeaderLines.forEach((label) => {
+      label.text = '';
+    });
     chipLabels.forEach((label) => {
       label.text = '';
     });
@@ -1104,49 +1189,57 @@ async function bootstrap(): Promise<void> {
 
     const currentNode = findNode(state.sim, state.sim.currentNodeId);
     const activatedBeacons = state.beacons.filter((beacon) => beacon.activated).length;
-    const panelWidth = Math.min(336, w - 24);
-    const statusWidth = Math.min(280, w - 24);
+    const hudLayout = buildRunHudLayout(w);
     const maxHealth = getMaxHealth(state.sim.vehicle);
-    drawPanel(graphics, 12, 10, panelWidth, 146);
-    drawPanel(graphics, w - statusWidth - 12, 10, statusWidth, 156);
-    panelLabelLeft.text = 'HP\nFUEL\nPACE';
-    panelLabelLeft.x = 26;
-    panelLabelLeft.y = 56;
-    panelLabelRight.text = 'LINKS\nBOOST\nSYSTEMS';
-    panelLabelRight.x = w - statusWidth;
-    panelLabelRight.y = 42;
-    panelValueLeft.text = `${state.health}/${maxHealth}\n${state.sim.fuel}/${state.sim.fuelCapacity}\n${Math.round(Math.abs(state.player.vx))}`;
-    panelValueLeft.x = 12 + panelWidth - 42;
-    panelValueLeft.y = 58;
-    panelValueRight.text = `${activatedBeacons}/${state.beacons.length}\n${Math.round(state.dashEnergy * 100)}%`;
-    panelValueRight.x = w - 72;
-    panelValueRight.y = 44;
-    drawPips(graphics, 92, 60, maxHealth, state.health, '#f97316');
-    drawGauge(graphics, 90, 86, panelWidth - 106, 12, state.sim.fuel / state.sim.fuelCapacity, '#38bdf8');
-    drawGauge(graphics, 90, 112, panelWidth - 106, 10, Math.min(1, Math.abs(state.player.vx) / Math.max(1, runSpeedForState(state))), '#f59e0b');
-    drawPips(graphics, w - statusWidth + 64, 46, state.beacons.length, activatedBeacons, '#22c55e');
-    drawGauge(graphics, w - statusWidth + 64, 72, statusWidth - 84, 12, state.dashEnergy, '#a78bfa');
-    drawModuleMeters(graphics, w - statusWidth + 14, 94, state.sim);
+    drawPanel(graphics, hudLayout.leftPanelX, 10, hudLayout.leftPanelWidth, hudLayout.leftPanelHeight);
+    drawPanel(graphics, hudLayout.rightPanelX, 10, hudLayout.rightPanelWidth, hudLayout.rightPanelHeight);
+    const [hpRowY, fuelRowY, paceRowY] = hudLayout.leftRowCenters;
+    const [linksRowY, boostRowY, systemsRowY] = hudLayout.rightRowCenters;
+    layoutHudRowLabel(runLeftRowLabels[0], 'HP', hudLayout.rowLabelX, hpRowY);
+    layoutHudRowLabel(runLeftRowLabels[1], 'FUEL', hudLayout.rowLabelX, fuelRowY);
+    layoutHudRowLabel(runLeftRowLabels[2], 'PACE', hudLayout.rowLabelX, paceRowY);
+    layoutHudRowValue(runLeftRowValues[0], `${state.health}/${maxHealth}`, hudLayout.rowValueX, hpRowY);
+    layoutHudRowValue(runLeftRowValues[1], `${state.sim.fuel}/${state.sim.fuelCapacity}`, hudLayout.rowValueX, fuelRowY);
+    layoutHudRowValue(runLeftRowValues[2], `${Math.round(Math.abs(state.player.vx))}`, hudLayout.rowValueX, paceRowY);
+    layoutHudRowLabel(runRightRowLabels[0], 'LINKS', hudLayout.rightRowLabelX, linksRowY);
+    layoutHudRowLabel(runRightRowLabels[1], 'BOOST', hudLayout.rightRowLabelX, boostRowY);
+    layoutHudRowLabel(runRightRowLabels[2], 'SYSTEMS', hudLayout.rightRowLabelX, systemsRowY);
+    layoutHudRowValue(runRightRowValues[0], `${activatedBeacons}/${state.beacons.length}`, hudLayout.rightRowValueX, linksRowY);
+    layoutHudRowValue(runRightRowValues[1], `${Math.round(state.dashEnergy * 100)}%`, hudLayout.rightRowValueX, boostRowY);
+    drawPips(graphics, hudLayout.leftPipsX, hpRowY - 3, maxHealth, state.health, '#f97316');
+    drawGauge(graphics, hudLayout.leftGaugeX, fuelRowY - 6, hudLayout.leftGaugeWidth, 12, state.sim.fuel / state.sim.fuelCapacity, '#38bdf8');
+    drawGauge(
+      graphics,
+      hudLayout.leftGaugeX,
+      paceRowY - 5,
+      hudLayout.leftGaugeWidth,
+      10,
+      Math.min(1, Math.abs(state.player.vx) / Math.max(1, runSpeedForState(state))),
+      '#f59e0b'
+    );
+    drawPips(graphics, hudLayout.rightPipsX, linksRowY - 3, state.beacons.length, activatedBeacons, '#22c55e');
+    drawGauge(graphics, hudLayout.rightGaugeX, 69, hudLayout.rightGaugeWidth, 12, state.dashEnergy, '#a78bfa');
+    drawModuleMeters(graphics, hudLayout.rightPanelX + 14, hudLayout.rightModuleY, state.sim);
 
     hud.text = `${currentNode?.type ?? 'town'} ${state.sim.currentNodeId}`;
     hud.style.fontSize = 18;
     hud.style.fill = '#e2e8f0';
-    hud.x = 26;
+    hud.x = hudLayout.leftPanelX + 14;
     hud.y = 16;
     panelMeta.text = `SCRAP ${state.sim.scrap}   SCORE ${state.score}   ${objectiveShortLabel(nodeType)}`;
     panelMeta.style.fill = '#cbd5e1';
     panelMeta.style.fontSize = 12;
-    panelMeta.x = 26;
+    panelMeta.x = hudLayout.leftPanelX + 14;
     panelMeta.y = 34;
     panelSeed.text = `SEED ${state.seed}`;
     panelSeed.style.fill = '#94a3b8';
-    panelSeed.x = 26;
+    panelSeed.x = hudLayout.leftPanelX + 14;
     panelSeed.y = 46;
 
     moduleLabels.forEach((label, index) => {
-      const statusX = w - statusWidth + 14;
+      const statusX = hudLayout.rightPanelX + 14;
       const cellX = statusX + (index % 3) * 84;
-      const cellY = 94 + Math.floor(index / 3) * 36;
+      const cellY = hudLayout.rightModuleY + Math.floor(index / 3) * 36;
       label.text = (MODULE_LABELS[index] ?? '').slice(0, 5);
       label.style.fill = '#cbd5e1';
       label.x = cellX + 6;
@@ -1212,6 +1305,27 @@ async function bootstrap(): Promise<void> {
     panelValueRight.text = '';
     panelSeed.text = '';
     fieldNotesText.text = '';
+    runLeftRowLabels.forEach((label) => {
+      label.text = '';
+    });
+    runLeftRowValues.forEach((label) => {
+      label.text = '';
+    });
+    runRightRowLabels.forEach((label) => {
+      label.text = '';
+    });
+    runRightRowValues.forEach((label) => {
+      label.text = '';
+    });
+    mapLeftRowLabels.forEach((label) => {
+      label.text = '';
+    });
+    mapLeftRowValues.forEach((label) => {
+      label.text = '';
+    });
+    mapRightHeaderLines.forEach((label) => {
+      label.text = '';
+    });
     chipLabels.forEach((label) => {
       label.text = '';
     });
@@ -1339,8 +1453,6 @@ async function bootstrap(): Promise<void> {
     }
 
     const completionState = state.expeditionComplete ? 'COMPLETE' : hasCompletedCurrentNode(state) ? 'READY' : 'LOCKED';
-    const topWidth = Math.min(344, w - 40);
-    const rightWidth = Math.min(316, w - 40);
     const routeWidth = Math.min(360, w - 80);
     const routeX = 20;
     const notesWidth = Math.max(280, Math.min(350, w - routeWidth - 120));
@@ -1372,40 +1484,39 @@ async function bootstrap(): Promise<void> {
     fieldNotesText.style.fontSize = 13;
     const notesCardHeight = fieldNotesText.height + 32;
     const notesY = Math.max(150, chipY - 14 - notesCardHeight);
-    drawPanel(graphics, 20, 18, topWidth, 142);
-    drawPanel(graphics, w - rightWidth - 20, 18, rightWidth, 154);
-    panelLabelLeft.text = 'TRIPS\nFUEL';
-    panelLabelLeft.x = 36;
-    panelLabelLeft.y = 72;
-    panelLabelRight.text = 'VEHICLE\nLEVEL / CONDITION';
-    panelLabelRight.x = w - rightWidth + 6;
-    panelLabelRight.y = 56;
-    panelValueLeft.text = `${Math.min(3, state.freeTravelCharges)}\n${state.sim.fuel}/${state.sim.fuelCapacity}`;
-    panelValueLeft.x = 20 + topWidth - 46;
-    panelValueLeft.y = 74;
-    drawGauge(graphics, 104, 104, topWidth - 124, 12, state.sim.fuel / state.sim.fuelCapacity, '#38bdf8');
-    drawPips(graphics, 104, 78, 3, Math.min(3, state.freeTravelCharges), '#facc15');
-    drawModuleMeters(graphics, w - rightWidth + 12, 80, state.sim);
+    const mapHud = buildMapSceneHudLayout(w);
+    drawPanel(graphics, mapHud.leftPanelX, mapHud.leftPanelY, mapHud.leftPanelWidth, mapHud.leftPanelHeight);
+    drawPanel(graphics, mapHud.rightPanelX, mapHud.rightPanelY, mapHud.rightPanelWidth, mapHud.rightPanelHeight);
+    const [tripsRowY, fuelRowY] = mapHud.leftRowCenters;
+    layoutHudRowLabel(mapLeftRowLabels[0], 'TRIPS', mapHud.leftLabelX, tripsRowY);
+    layoutHudRowLabel(mapLeftRowLabels[1], 'FUEL', mapHud.leftLabelX, fuelRowY);
+    layoutHudRowValue(mapLeftRowValues[0], `${Math.min(3, state.freeTravelCharges)}`, mapHud.leftValueX, tripsRowY);
+    layoutHudRowValue(mapLeftRowValues[1], `${state.sim.fuel}/${state.sim.fuelCapacity}`, mapHud.leftValueX, fuelRowY);
+    layoutHudRowLabel(mapRightHeaderLines[0], 'VEHICLE', mapHud.rightLabelX, mapHud.rightHeaderLine1Y);
+    layoutHudRowLabel(mapRightHeaderLines[1], 'LEVEL / CONDITION', mapHud.rightLabelX, mapHud.rightHeaderLine2Y);
+    drawGauge(graphics, mapHud.gaugeX, fuelRowY - 6, mapHud.gaugeWidth, 12, state.sim.fuel / state.sim.fuelCapacity, '#38bdf8');
+    drawPips(graphics, mapHud.pipsX, tripsRowY - 3, 3, Math.min(3, state.freeTravelCharges), '#facc15');
+    drawModuleMeters(graphics, mapHud.moduleX, mapHud.moduleY, state.sim);
 
     hud.text = `map ${state.sim.currentNodeId}`;
     hud.style.fontSize = 18;
     hud.style.fill = '#e2e8f0';
-    hud.x = 36;
-    hud.y = 28;
+    hud.x = mapHud.hudX;
+    hud.y = mapHud.hudY;
     panelMeta.text = `DAY ${state.sim.day}   SCRAP ${state.sim.scrap}   ${completionState}   ${notebookStatusText(state)}`;
     panelMeta.style.fill = '#cbd5e1';
     panelMeta.style.fontSize = 12;
-    panelMeta.x = 36;
-    panelMeta.y = 48;
+    panelMeta.x = mapHud.metaX;
+    panelMeta.y = mapHud.metaY;
     panelSeed.text = `SEED ${state.seed}`;
     panelSeed.style.fill = '#94a3b8';
-    panelSeed.x = 36;
-    panelSeed.y = 60;
+    panelSeed.x = mapHud.seedX;
+    panelSeed.y = mapHud.seedY;
 
     moduleLabels.forEach((label, index) => {
-      const statusX = w - rightWidth + 12;
+      const statusX = mapHud.moduleX;
       const cellX = statusX + (index % 3) * 84;
-      const cellY = 80 + Math.floor(index / 3) * 36;
+      const cellY = mapHud.moduleY + Math.floor(index / 3) * 36;
       label.text = (MODULE_LABELS[index] ?? '').slice(0, 5);
       label.style.fill = '#cbd5e1';
       label.x = cellX + 6;

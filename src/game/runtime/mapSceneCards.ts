@@ -17,25 +17,25 @@ export interface MapSceneCopy {
 }
 
 export interface MapSceneHudLayout {
+  gaugeX: number;
   gaugeWidth: number;
   hudX: number;
   hudY: number;
   leftLabelX: number;
-  leftLabelY: number;
+  leftRowCenters: [number, number];
   leftPanelHeight: number;
   leftPanelWidth: number;
   leftPanelX: number;
   leftPanelY: number;
   leftValueX: number;
-  leftValueY: number;
   metaX: number;
   metaY: number;
   moduleX: number;
   moduleY: number;
+  rightHeaderLine1Y: number;
+  rightHeaderLine2Y: number;
   pipsX: number;
-  pipsY: number;
   rightLabelX: number;
-  rightLabelY: number;
   rightPanelHeight: number;
   rightPanelWidth: number;
   rightPanelX: number;
@@ -52,26 +52,26 @@ export function buildMapSceneHudLayout(screenWidth: number): MapSceneHudLayout {
   const rightPanelX = screenWidth - rightPanelWidth - panelInset;
 
   return {
+    gaugeX: leftPanelX + 84,
     gaugeWidth: leftPanelWidth - 124,
     hudX: leftPanelX + 16,
     hudY: 28,
     leftLabelX: leftPanelX + 16,
-    leftLabelY: 72,
+    leftRowCenters: [79, 105],
     leftPanelHeight: 142,
     leftPanelWidth,
     leftPanelX,
     leftPanelY: 18,
     leftValueX: leftPanelX + leftPanelWidth - 46,
-    leftValueY: 74,
     metaX: leftPanelX + 16,
     metaY: 48,
     moduleX: rightPanelX + 12,
-    moduleY: 80,
+    moduleY: 88,
+    rightHeaderLine1Y: 54,
+    rightHeaderLine2Y: 68,
     pipsX: leftPanelX + 84,
-    pipsY: 78,
     rightLabelX: rightPanelX + 26,
-    rightLabelY: 56,
-    rightPanelHeight: 154,
+    rightPanelHeight: 162,
     rightPanelWidth,
     rightPanelX,
     rightPanelY: 18,
