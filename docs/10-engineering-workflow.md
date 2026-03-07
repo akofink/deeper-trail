@@ -33,6 +33,14 @@ Enforce consistent code quality and repository hygiene while keeping iteration f
 - Update `ARCHITECTURE.md` when adding/changing foundational modules.
 - Update this workflow doc when changing quality gates or branching policy.
 
+## Worktree policy
+
+- The primary checkout at the repo root remains the default workspace for small changes.
+- Larger features, roadmap slices, or parallel Codex sessions should use linked worktrees created under `.worktrees/`.
+- Recommended command: `git worktree add .worktrees/<task-name> -b <branch-name>`.
+- `.worktrees/` must stay gitignored and excluded from recursive repo tooling such as search, lint, and formatting.
+- Do not place live worktree checkouts inside `.git/`; only Git-managed metadata belongs under `.git/worktrees/`.
+
 ## Deployment note
 
 - Static builds should prefer relative asset paths unless a deploy target truly requires a fixed absolute base. This avoids blank-page failures when the same artifact is served from both a repo subpath and a custom-domain root.

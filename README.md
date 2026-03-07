@@ -84,6 +84,14 @@ Alternative: **Phaser 3** also great. If you prefer a more “batteries included
 - Start the game shell: `npm run dev`
 - Run quality gates: `npm run check`
 
+## Worktree workflow
+
+- Use the main worktree for small, local changes.
+- Use repo-local linked worktrees under `.worktrees/` for larger roadmap slices or parallel Codex sessions.
+- Create a linked worktree with `git worktree add .worktrees/<task-name> -b <branch-name>`.
+- `.worktrees/` is intentionally gitignored and excluded from common repo scans so nested checkouts do not pollute normal lint/search/format flows.
+- Do not place linked checkouts under `.git/`; Git already stores linked-worktree metadata in `.git/worktrees/`.
+
 ## GitHub Pages deployment
 
 - This repo is configured for GitHub Pages deployment from GitHub Actions.

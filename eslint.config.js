@@ -5,7 +5,7 @@ import prettierConfig from 'eslint-config-prettier';
 
 export default [
   {
-    ignores: ['dist/**', 'coverage/**', '.playwright-browsers/**']
+    ignores: ['dist/**', 'coverage/**', '.playwright-browsers/**', '.worktrees/**']
   },
   {
     files: ['scripts/**/*.js'],
