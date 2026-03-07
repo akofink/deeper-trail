@@ -1,0 +1,122 @@
+import { asNodeTypeKey, markNodeVisited, noteBiomeArrival } from '../../engine/sim/exploration';
+import { recordNotebookClue, type NotebookUnlockResult } from '../../engine/sim/notebook';
+import { travelToNode, type TravelResult } from '../../engine/sim/travel';
+import { currentNodeType, findNode } from '../../engine/sim/world';
+import { getMaxHealth } from '../../engine/sim/vehicle';
+import type { RuntimeState } from './runtimeState';
+import { applyNodeCompletionState } from './runCompletion';
+import { rechargeShieldCharge } from './shieldCharge';
+import { normalizeRuntimeStateAfterVehicleChange } from './vehicleDerivedStats';
+
+export interface NodeCompletionOutcome {
+  readonly notebookUpdate: NotebookUnlockResult;
+  readonly flawlessRecovery: number;
+  readonly expeditionCompleted: boolean;
+}
+
+export interface RuntimeTravelResult extends TravelResult {
+  readonly usedFreeTravel: boolean;
+  readonly arrivalNodeType?: string;
+}
+
+export function hasCompletedCurrentNode(state: RuntimeState): boolean {
+  return state.completedNodeIds.includes(state.sim.currentNodeId);
+}
+
+export function applyArrivalRewards(state: RuntimeState): string {
+  const node = findNode(state.sim, state.sim.currentNodeId);
+  if (!node) {
+    return '';
+  }
+
+  markNodeVisited(state.sim, node.id);
+  noteBiomeArrival(state.sim, node.type);
+
+  let message = '';
+  if (node.type === 'town') {
+    state.sim.fuel = Math.min(state.sim.fuelCapacity, state.sim.fuel + 8);
+    message = 'Arrived at town: fuel topped up +8.';
+  } else if (node.type === 'ruin') {
+    state.sim.scrap += 2;
+    message = 'Arrived at ruins: scavenged +2 scrap.';
+  } else if (node.type === 'nature') {
+    state.health = Math.min(getMaxHealth(state.sim.vehicle), state.health + 1);
+    message = 'Arrived in nature: stabilized +1 health.';
+  } else {
+    state.sim.vehicle.scanner += 1;
+    message = 'Anomaly pulse: scanner subsystem +1.';
+  }
+
+  normalizeRuntimeStateAfterVehicleChange(state);
+  if (node.type === 'anomaly') {
+    rechargeShieldCharge(state);
+    if (state.shieldChargeAvailable) {
+      message += ' Shield charge restored.';
+    }
+  }
+
+  state.mapMessage = message;
+  state.mapMessageTimer = 3;
+  return message;
+}
+
+export function completeCurrentNodeRun(state: RuntimeState): NodeCompletionOutcome {
+  const completedNodeType = asNodeTypeKey(currentNodeType(state.sim));
+  state.mode = 'won';
+  if (!hasCompletedCurrentNode(state)) {
+    state.completedNodeIds.push(state.sim.currentNodeId);
+  }
+
+  const notebookUpdate = recordNotebookClue(state.sim, {
+    nodeType: completedNodeType,
+    nodeId: state.sim.currentNodeId
+  });
+
+  state.freeTravelCharges += 1;
+  const flawlessRecovery = state.tookDamageThisRun ? 0 : 1;
+  if (flawlessRecovery > 0) {
+    state.health = Math.min(getMaxHealth(state.sim.vehicle), state.health + flawlessRecovery);
+  }
+
+  const expeditionCompleted = state.sim.currentNodeId === state.expeditionGoalNodeId;
+  if (expeditionCompleted) {
+    state.expeditionComplete = true;
+  }
+
+  applyNodeCompletionState(state);
+  state.mapMessageTimer = 4;
+  state.sim.day += 1;
+  state.sim.fuel = Math.min(state.sim.fuelCapacity, state.sim.fuel + 3);
+
+  return {
+    notebookUpdate,
+    flawlessRecovery,
+    expeditionCompleted
+  };
+}
+
+export function travelToNodeWithRuntimeEffects(state: RuntimeState, destinationNodeId: string): RuntimeTravelResult {
+  const result = travelToNode(state.sim, destinationNodeId);
+  if (!result.didTravel) {
+    return {
+      ...result,
+      usedFreeTravel: false
+    };
+  }
+
+  let usedFreeTravel = false;
+  if (state.freeTravelCharges > 0 && result.fuelCost) {
+    state.sim.fuel += result.fuelCost;
+    state.freeTravelCharges -= 1;
+    usedFreeTravel = true;
+  }
+
+  const arrivalNodeType = currentNodeType(state.sim);
+  applyArrivalRewards(state);
+
+  return {
+    ...result,
+    usedFreeTravel,
+    arrivalNodeType
+  };
+}

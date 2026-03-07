@@ -1,6 +1,6 @@
 import { Application, Graphics, Text } from 'pixi.js';
-import { asNodeTypeKey, biomeBenefitLabel, biomeRiskLabel, markNodeVisited, noteBiomeArrival, noteBiomeHazard, visibleBiomeKnowledge } from './engine/sim/exploration';
-import { notebookClueProgress, recordNotebookClue } from './engine/sim/notebook';
+import { asNodeTypeKey, biomeBenefitLabel, biomeRiskLabel, noteBiomeHazard, visibleBiomeKnowledge } from './engine/sim/exploration';
+import { notebookClueProgress } from './engine/sim/notebook';
 import { connectedNeighbors, currentNodeType, expeditionGoalNodeId, findNode } from './engine/sim/world';
 import {
   canActivateBeacon,
@@ -11,7 +11,6 @@ import {
   isSteadyLinkReady,
   nextRequiredBeaconIndex
 } from './engine/sim/runObjectives';
-import { travelToNode } from './engine/sim/travel';
 import {
   FIELD_REPAIR_SCRAP_COST,
   damageSubsystemForNodeType,
@@ -33,8 +32,12 @@ import {
   updateCanopyLiftProgress,
   usesCanopyLifts
 } from './game/runtime/canopyLifts';
+import {
+  completeCurrentNodeRun,
+  hasCompletedCurrentNode,
+  travelToNodeWithRuntimeEffects
+} from './game/runtime/expeditionFlow';
 import { canShatterImpactPlate, impactPlatePrompt, totalImpactPlateProgress, usesImpactPlates } from './game/runtime/impactPlates';
-import { applyNodeCompletionState } from './game/runtime/runCompletion';
 import { dashEntryEnergyCost, shouldContinueDash, shouldStartDash } from './game/runtime/runDash';
 import { buildRunHudLayout } from './game/runtime/runHudLayout';
 import { projectMapPoint } from './game/runtime/mapProjection';
@@ -491,35 +494,6 @@ function makeInitialRuntimeState(canvasHeight: number, seed = createRunSeed()): 
   };
 }
 
-function applyArrivalRewards(state: RuntimeState): void {
-  const node = findNode(state.sim, state.sim.currentNodeId);
-  if (!node) return;
-
-  markNodeVisited(state.sim, node.id);
-  noteBiomeArrival(state.sim, node.type);
-  if (node.type === 'town') {
-    state.sim.fuel = Math.min(state.sim.fuelCapacity, state.sim.fuel + 8);
-    state.mapMessage = 'Arrived at town: fuel topped up +8.';
-  } else if (node.type === 'ruin') {
-    state.sim.scrap += 2;
-    state.mapMessage = 'Arrived at ruins: scavenged +2 scrap.';
-  } else if (node.type === 'nature') {
-    state.health = Math.min(getMaxHealth(state.sim.vehicle), state.health + 1);
-    state.mapMessage = 'Arrived in nature: stabilized +1 health.';
-  } else {
-    state.sim.vehicle.scanner += 1;
-    state.mapMessage = 'Anomaly pulse: scanner subsystem +1.';
-  }
-  normalizeRuntimeStateAfterVehicleChange(state);
-  if (node.type === 'anomaly') {
-    rechargeShieldCharge(state);
-    if (state.shieldChargeAvailable) {
-      state.mapMessage += ' Shield charge restored.';
-    }
-  }
-  state.mapMessageTimer = 3;
-}
-
 function resetRunFromCurrentNode(state: RuntimeState): void {
   const nodeType = currentNodeType(state.sim);
   const run = buildRunLayout(state.groundY, nodeType);
@@ -565,10 +539,6 @@ function shiftRunSceneVertical(state: RuntimeState, deltaY: number): void {
   for (const lift of state.canopyLifts) {
     lift.y += deltaY;
   }
-}
-
-function hasCompletedCurrentNode(state: RuntimeState): boolean {
-  return state.completedNodeIds.includes(state.sim.currentNodeId);
 }
 
 function hasBeaconInRange(state: RuntimeState): boolean {
@@ -1277,36 +1247,19 @@ async function bootstrap(): Promise<void> {
       state.mapMessage = `Exit locked: finish ${pendingParts.join(' and ')}.`;
       state.mapMessageTimer = 2.5;
     } else if (p.x + p.w >= state.goalX) {
-      const completedNodeType = asNodeTypeKey(currentNodeType(state.sim));
-      state.mode = 'won';
-      if (!hasCompletedCurrentNode(state)) {
-        state.completedNodeIds.push(state.sim.currentNodeId);
-      }
-      const notebookUpdate = recordNotebookClue(state.sim, {
-        nodeType: completedNodeType,
-        nodeId: state.sim.currentNodeId
-      });
-      state.freeTravelCharges += 1;
-      const flawlessRecovery = state.tookDamageThisRun ? 0 : 1;
-      if (flawlessRecovery > 0) {
-        state.health = Math.min(getMaxHealth(state.sim.vehicle), state.health + flawlessRecovery);
-      }
+      const completion = completeCurrentNodeRun(state);
       state.mapMessage =
-        flawlessRecovery > 0
+        completion.flawlessRecovery > 0
           ? 'Trail complete: route data synced. Clean run restored +1 HP and unlocked +1 free trip.'
           : 'Trail complete: route data synced. +1 free travel charge unlocked.';
-      if (notebookUpdate.newEntries.length > 0) {
-        const latestTitle = notebookUpdate.newEntries[notebookUpdate.newEntries.length - 1]?.title ?? 'new clue';
+      if (completion.notebookUpdate.newEntries.length > 0) {
+        const latestTitle = completion.notebookUpdate.newEntries[completion.notebookUpdate.newEntries.length - 1]?.title ?? 'new clue';
         state.mapMessage += ` Notebook updated: ${latestTitle}.`;
       }
-      if (state.sim.currentNodeId === state.expeditionGoalNodeId) {
-        state.expeditionComplete = true;
+      if (completion.expeditionCompleted) {
         state.mapMessage = 'Signal source reached. Expedition complete. Press N for a new expedition.';
       }
-      applyNodeCompletionState(state);
       state.mapMessageTimer = 4;
-      state.sim.day += 1;
-      state.sim.fuel = Math.min(state.sim.fuelCapacity, state.sim.fuel + 3);
     }
 
     const maxCamera = Math.max(0, state.goalX - screenWidth() * 0.5);
@@ -1389,21 +1342,13 @@ async function bootstrap(): Promise<void> {
     const selected = options[state.mapSelectionIndex] ?? options[0];
     if (!selected) return;
 
-    const result = travelToNode(state.sim, selected.nodeId);
+    const result = travelToNodeWithRuntimeEffects(state, selected.nodeId);
     if (!result.didTravel) {
       state.mapMessage = result.reason ?? 'Travel failed';
       state.mapMessageTimer = 3;
       return;
     }
 
-    if (state.freeTravelCharges > 0 && result.fuelCost) {
-      state.sim.fuel += result.fuelCost;
-      state.freeTravelCharges -= 1;
-      state.mapMessage = `Momentum travel used: refunded ${result.fuelCost} fuel (no fuel cost).`;
-      state.mapMessageTimer = 3;
-    }
-
-    applyArrivalRewards(state);
     resetRunFromCurrentNode(state);
     state.scene = 'run';
   }
