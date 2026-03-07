@@ -28,23 +28,21 @@ import {
   applyCanopyLiftAssist,
   CANOPY_LIFT_HOLD_SECONDS,
   isInsideCanopyLift,
-  updateCanopyLiftProgress,
 } from './game/runtime/canopyLifts';
 import {
   completeCurrentNodeRun,
   hasCompletedCurrentNode,
   travelToNodeWithRuntimeEffects
 } from './game/runtime/expeditionFlow';
-import { canShatterImpactPlate } from './game/runtime/impactPlates';
 import { objectiveShortLabel, runObjectiveProgress, runObjectivePrompt } from './game/runtime/runObjectiveUi';
+import { updateRunObjectives } from './game/runtime/runObjectiveUpdates';
 import { dashEntryEnergyCost, shouldContinueDash, shouldStartDash } from './game/runtime/runDash';
 import { buildRunHudLayout } from './game/runtime/runHudLayout';
 import { projectMapPoint } from './game/runtime/mapProjection';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import { advanceHorizontalVelocity } from './game/runtime/runMotion';
-import { SERVICE_STOP_HOLD_SECONDS, updateServiceStopProgress } from './game/runtime/serviceStops';
+import { SERVICE_STOP_HOLD_SECONDS } from './game/runtime/serviceStops';
 import { rechargeShieldCharge, tryConsumeShieldCharge } from './game/runtime/shieldCharge';
-import { canStabilizeSyncGate } from './game/runtime/syncGates';
 import type { RuntimeState } from './game/runtime/runtimeState';
 import {
   beaconInteractRadius,
@@ -879,50 +877,14 @@ async function bootstrap(): Promise<void> {
       }
     }
 
-    const steadyReady = isSteadyLinkReady(Math.abs(state.player.vx), !state.player.onGround);
-    for (const stop of state.serviceStops) {
-      const inZone = Math.abs(px - stop.x) <= stop.w * 0.5;
-      const update = updateServiceStopProgress(stop, dt, inZone, steadyReady);
-      if (update.completedNow) {
-        state.score += 20;
-        state.mapMessage = `Service bay ${stop.id.toUpperCase()} calibrated.`;
-        state.mapMessageTimer = 2.2;
-      }
-    }
-
-    const playerBounds = {
-      x: state.player.x,
-      y: state.player.y,
-      w: state.player.w,
-      h: state.player.h
-    };
-    for (let index = 0; index < state.syncGates.length; index += 1) {
-      const gate = state.syncGates[index];
-      if (gate.stabilized) continue;
-      const result = canStabilizeSyncGate(gate, index, playerBounds, Math.abs(state.player.vx), state.dashBoost, state.elapsedSeconds);
-      if (!result.canStabilize) continue;
-      gate.stabilized = true;
-      state.score += 20;
-      state.mapMessage = `Sync gate ${gate.id.toUpperCase()} stabilized.`;
-      state.mapMessageTimer = 2.2;
-    }
-
-    for (const lift of state.canopyLifts) {
-      const inZone = isInsideCanopyLift(lift, playerBounds);
-      const update = updateCanopyLiftProgress(lift, dt, inZone, !state.player.onGround);
-      if (update.completedNow) {
-        state.score += 20;
-        state.mapMessage = `Canopy lift ${lift.id.toUpperCase()} charted.`;
-        state.mapMessageTimer = 2.2;
-      }
-    }
-
-    for (const plate of state.impactPlates) {
-      if (!canShatterImpactPlate(plate, px, landingSpeed, landedThisFrame)) continue;
-      plate.shattered = true;
-      state.score += 20;
-      state.mapMessage = `Impact plate ${plate.id.toUpperCase()} shattered.`;
-      state.mapMessageTimer = 2.2;
+    const objectiveUpdate = updateRunObjectives(state, {
+      dt,
+      landedThisFrame,
+      landingSpeed
+    });
+    if (objectiveUpdate.message) {
+      state.mapMessage = objectiveUpdate.message;
+      state.mapMessageTimer = objectiveUpdate.durationSeconds;
     }
 
     const objectiveProgress = runObjectiveProgress(state);
