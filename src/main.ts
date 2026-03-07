@@ -15,10 +15,12 @@ import {
   repairMostDamagedSubsystem
 } from './engine/sim/vehicle';
 import { biomeByNodeType, buildRunLayout, mapNodePalette, MODULE_LABELS } from './game/runtime/runLayout';
+import { buildMapSceneCopy } from './game/runtime/mapSceneCards';
 import { projectMapPoint } from './game/runtime/mapProjection';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import type { RuntimeState } from './game/runtime/runtimeState';
 import {
+  buildMapSceneHudLayout,
   beaconInteractRadius,
   dashSpeedForState,
   hazardInvulnerabilitySeconds,
@@ -622,6 +624,12 @@ async function bootstrap(): Promise<void> {
   });
   app.stage.addChild(overlay);
 
+  const celebrationOverlay = new Text({
+    text: '',
+    style: { fill: '#f8fafc', fontSize: 18, fontFamily: 'monospace', fontWeight: '700', align: 'center' }
+  });
+  app.stage.addChild(celebrationOverlay);
+
   const chipLabels = Array.from({ length: 6 }, () => {
     const label = new Text({
       text: '',
@@ -1029,6 +1037,7 @@ async function bootstrap(): Promise<void> {
     panelValueLeft.text = '';
     panelValueRight.text = '';
     panelSeed.text = '';
+    celebrationOverlay.text = '';
     fieldNotesText.text = '';
     chipLabels.forEach((label) => {
       label.text = '';
@@ -1330,8 +1339,8 @@ async function bootstrap(): Promise<void> {
     }
 
     const completionState = state.expeditionComplete ? 'COMPLETE' : hasCompletedCurrentNode(state) ? 'READY' : 'LOCKED';
-    const topWidth = Math.min(356, w - 24);
-    const rightWidth = Math.min(300, w - 24);
+    const topWidth = Math.min(344, w - 40);
+    const rightWidth = Math.min(316, w - 40);
     const routeWidth = Math.min(360, w - 80);
     const routeX = 20;
     const notesWidth = Math.max(280, Math.min(350, w - routeWidth - 120));
@@ -1339,10 +1348,18 @@ async function bootstrap(): Promise<void> {
     const chipStartX = Math.round(w * 0.5 - 292);
     const chipY = h - 58;
     const chipHeight = 34;
-    const routeText = `${routeDetail}\n${installHint}\n${scannerHint}\n${repairHint}\n${
-      state.mapMessageTimer > 0 ? state.mapMessage : state.expeditionComplete ? 'Expedition complete. Press N for a new world.' : 'Complete this node to travel.'
-    }`;
-    overlay.text = routeText;
+    const mapSceneCopy = buildMapSceneCopy({
+      expeditionComplete: state.expeditionComplete,
+      installHint,
+      mapMessage: state.mapMessage,
+      mapMessageTimer: state.mapMessageTimer,
+      repairHint,
+      routeDetail,
+      scannerHint,
+      score: state.score,
+      seed: state.seed
+    });
+    overlay.text = mapSceneCopy.routeText;
     overlay.style.wordWrap = true;
     overlay.style.wordWrapWidth = Math.max(120, routeWidth - 36);
     overlay.style.fontSize = 15;
@@ -1355,58 +1372,62 @@ async function bootstrap(): Promise<void> {
     fieldNotesText.style.fontSize = 13;
     const notesCardHeight = fieldNotesText.height + 32;
     const notesY = Math.max(150, chipY - 14 - notesCardHeight);
-    drawPanel(graphics, 16, 14, topWidth, 136);
-    drawPanel(graphics, w - rightWidth - 16, 14, rightWidth, 148);
+    drawPanel(graphics, 20, 18, topWidth, 142);
+    drawPanel(graphics, w - rightWidth - 20, 18, rightWidth, 154);
     panelLabelLeft.text = 'TRIPS\nFUEL';
-    panelLabelLeft.x = 30;
-    panelLabelLeft.y = 58;
+    panelLabelLeft.x = 36;
+    panelLabelLeft.y = 72;
     panelLabelRight.text = 'VEHICLE\nLEVEL / CONDITION';
-    panelLabelRight.x = w - rightWidth + 4;
-    panelLabelRight.y = 48;
+    panelLabelRight.x = w - rightWidth + 6;
+    panelLabelRight.y = 56;
     panelValueLeft.text = `${Math.min(3, state.freeTravelCharges)}\n${state.sim.fuel}/${state.sim.fuelCapacity}`;
-    panelValueLeft.x = 16 + topWidth - 44;
-    panelValueLeft.y = 60;
-    drawGauge(graphics, 96, 88, topWidth - 114, 12, state.sim.fuel / state.sim.fuelCapacity, '#38bdf8');
-    drawPips(graphics, 96, 62, 3, Math.min(3, state.freeTravelCharges), '#facc15');
-    drawModuleMeters(graphics, w - rightWidth + 12, 70, state.sim);
+    panelValueLeft.x = 20 + topWidth - 46;
+    panelValueLeft.y = 74;
+    drawGauge(graphics, 104, 104, topWidth - 124, 12, state.sim.fuel / state.sim.fuelCapacity, '#38bdf8');
+    drawPips(graphics, 104, 78, 3, Math.min(3, state.freeTravelCharges), '#facc15');
+    drawModuleMeters(graphics, w - rightWidth + 12, 80, state.sim);
 
     hud.text = `map ${state.sim.currentNodeId}`;
     hud.style.fontSize = 18;
     hud.style.fill = '#e2e8f0';
-    hud.x = 30;
-    hud.y = 20;
+    hud.x = 36;
+    hud.y = 28;
     panelMeta.text = `DAY ${state.sim.day}   SCRAP ${state.sim.scrap}   ${completionState}   ${notebookStatusText(state)}`;
     panelMeta.style.fill = '#cbd5e1';
     panelMeta.style.fontSize = 12;
-    panelMeta.x = 30;
-    panelMeta.y = 38;
+    panelMeta.x = 36;
+    panelMeta.y = 48;
     panelSeed.text = `SEED ${state.seed}`;
     panelSeed.style.fill = '#94a3b8';
-    panelSeed.x = 30;
-    panelSeed.y = 50;
+    panelSeed.x = 36;
+    panelSeed.y = 60;
 
     moduleLabels.forEach((label, index) => {
       const statusX = w - rightWidth + 12;
       const cellX = statusX + (index % 3) * 84;
-      const cellY = 70 + Math.floor(index / 3) * 36;
+      const cellY = 80 + Math.floor(index / 3) * 36;
       label.text = (MODULE_LABELS[index] ?? '').slice(0, 5);
       label.style.fill = '#cbd5e1';
       label.x = cellX + 6;
       label.y = cellY + 9;
     });
 
-    layoutTextCard(graphics, overlay, routeText, {
-      tone: 'dark',
-      x: routeX,
-      y: routeY,
-      maxWidth: routeWidth,
-      minWidth: 330,
-      paddingX: 18,
-      paddingY: 16,
-      align: 'left',
-      fill: '#e2e8f0',
-      fontSize: 15
-    });
+    if (mapSceneCopy.showRouteCard) {
+      layoutTextCard(graphics, overlay, mapSceneCopy.routeText, {
+        tone: 'dark',
+        x: routeX,
+        y: routeY,
+        maxWidth: routeWidth,
+        minWidth: 330,
+        paddingX: 18,
+        paddingY: 16,
+        align: 'left',
+        fill: '#e2e8f0',
+        fontSize: 15
+      });
+    } else {
+      overlay.text = '';
+    }
     layoutTextCard(graphics, fieldNotesText, fieldNotes.join('\n'), {
       tone: 'light',
       x: notesX,
@@ -1420,9 +1441,9 @@ async function bootstrap(): Promise<void> {
       fontSize: 13
     });
 
-    if (state.expeditionComplete) {
-      const celebrationText = `SIGNAL SOURCE REACHED\nSeed ${state.seed} complete  •  Score ${state.score}\nPress N to launch a new expedition`;
-      layoutTextCard(graphics, overlay, celebrationText, {
+    celebrationOverlay.text = '';
+    if (mapSceneCopy.celebrationText) {
+      layoutTextCard(graphics, celebrationOverlay, mapSceneCopy.celebrationText, {
         tone: 'dark',
         x: Math.round(w * 0.5 - 220),
         y: 150,
