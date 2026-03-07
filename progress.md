@@ -413,8 +413,14 @@ TODO next:
   - Updated anomaly objective summaries in route-card/UI copy so the node no longer reads as boost-relays only.
   - Added `tests/syncGates.test.ts` plus runtime fixture updates; `npm run check` passes.
 
+- Nature canopy-lift pass:
+  - Added deterministic nature-only canopy lifts via `src/game/runtime/canopyLifts.ts` and `src/game/runtime/runLayout.ts`, creating a second nature verb based on sustained airborne control inside vertical draft zones.
+  - Extended `src/main.ts` so canopy lifts provide a light upward assist, render their hold/progress state in-scene, contribute to exit locks, surface prompts, and export through `render_game_to_text`.
+  - Updated objective summaries in `src/engine/sim/runObjectives.ts`, plus architecture/design docs, so nature nodes no longer read as airborne-relays only.
+  - Added `tests/canopyLifts.test.ts` plus runtime fixture updates; targeted typecheck and runtime tests pass.
+
 TODO next:
 
-- Add a ruin- or nature-specific interaction template so at least one more non-town biome gains a second verb beyond relay linking.
+- Add a ruin-specific secondary interaction template so at least one more non-town biome gains a second verb beyond relay linking.
 - Decide whether notebook clues should start affecting route choice mechanically, for example by revealing pre-arrival scanner/map intel or unlocking authored encounter outcomes.
-- Consider extracting run-objective bookkeeping out of `src/main.ts` now that objectives include both relays and service bays.
+- Consider extracting run-objective bookkeeping out of `src/main.ts` now that objectives include relays, service bays, sync gates, and canopy lifts.

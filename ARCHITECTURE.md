@@ -56,9 +56,9 @@ docs/
   - action chips should be spatially separate from the detail card so the two layers do not compete.
 - Biome objectives should be authored as explicit rule variants in deterministic sim helpers:
   - `ruin`: ordered relay links,
-  - `nature`: airborne relay links,
-  - `anomaly`: boost-linked relays,
-  - `town`: standard relay links unless future content overrides them.
+  - `nature`: airborne relay links plus canopy-lift hold zones,
+  - `anomaly`: boost-linked relays plus sync gates,
+  - `town`: steady relay links plus service bays.
 
 ## Content packs
 

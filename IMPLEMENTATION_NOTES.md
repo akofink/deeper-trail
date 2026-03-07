@@ -42,7 +42,7 @@
   - current relay rule set is a good baseline pattern:
   - `town` uses steady relay links plus service bays that reward grounded low-speed holding,
   - `ruin` uses ordered links,
-  - `nature` uses airborne links,
+  - `nature` uses airborne links plus canopy lifts that reward sustained jump control in vertical draft zones,
   - `anomaly` uses boost-linked relays gated by deterministic sync windows plus fly-through sync gates.
 
 ## Current modularity guidance

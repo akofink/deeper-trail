@@ -53,6 +53,7 @@ Use a “mystery graph”:
 
 - The game now has a lightweight deterministic notebook layer.
 - Town runs now use a simple positioning puzzle set: settle beside relays at low speed and hold steady inside marked service bays.
+- Nature runs now add canopy lifts: vertical draft blooms that must be charted by staying airborne inside them long enough to stabilize the route.
 - Anomaly runs now add sync gates: phase-timed fields that stabilize only when the player cuts through them with enough speed or boost.
 - Completing the first `ruin`, `nature`, and `anomaly` runs logs one seed-stable clue each.
 - Finding all three clue families auto-adds a synthesis note so the expedition reads like a small mystery arc rather than isolated route clears.

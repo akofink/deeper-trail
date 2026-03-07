@@ -10,13 +10,15 @@
 - [x] Biome-aware map intel with visited/completed state and discovered benefits/risks
 - [x] Expedition goal node and explicit macro completion state
 - [x] First biome-specific objective rules:
+  - town nodes require steady low-speed relay linking and service bays
   - ruin nodes require ordered relay linking
-  - anomaly nodes require boosted/high-momentum relay linking
+  - nature nodes require airborne relay linking and canopy-lift holds
+  - anomaly nodes require boosted/high-momentum relay linking and sync gates
 
 ## Highest-priority gaps
 
 - [x] Add one lightweight mystery/notebook layer so node completion yields clues, not just resources
-- [ ] Add one more biome-specific objective/puzzle template so runs vary beyond relay rules
+- [x] Add one more biome-specific objective/puzzle template so runs vary beyond relay rules
 - [ ] Cover a full node-completion-and-travel loop with deterministic automation
 - [ ] Break more simulation rules out of `src/main.ts` into testable engine modules
 
@@ -25,7 +27,7 @@
 - [ ] Add pickup magnetism or storage-driven salvage pull so collection runs feel juicier
 - [ ] Add chassis-led terrain response: landing compression, wheel kick, dust/trail feedback
 - [ ] Make scanner progression reveal more route intel before arrival, not only after discovery
-- [ ] Tune anomaly/ruin objective difficulty from human playtest feedback
+- [ ] Tune biome objective difficulty from human playtest feedback
 
 ## Content / progression priorities
 
