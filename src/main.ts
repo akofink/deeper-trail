@@ -33,6 +33,7 @@ import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import { advanceHorizontalVelocity } from './game/runtime/runMotion';
 import { SERVICE_STOP_HOLD_SECONDS, totalServiceStopProgress, updateServiceStopProgress, usesServiceStops } from './game/runtime/serviceStops';
 import { rechargeShieldCharge, tryConsumeShieldCharge } from './game/runtime/shieldCharge';
+import { canStabilizeSyncGate, totalSyncGateProgress, usesSyncGates } from './game/runtime/syncGates';
 import type { RuntimeState } from './game/runtime/runtimeState';
 import {
   beaconInteractRadius,
@@ -474,6 +475,7 @@ function makeInitialRuntimeState(canvasHeight: number, seed = createRunSeed()): 
     hazards: run.hazards,
     beacons: run.beacons,
     serviceStops: run.serviceStops,
+    syncGates: run.syncGates,
     sim
   };
 }
@@ -523,6 +525,7 @@ function resetRunFromCurrentNode(state: RuntimeState): void {
   state.hazards = run.hazards;
   state.beacons = run.beacons;
   state.serviceStops = run.serviceStops;
+  state.syncGates = run.syncGates;
   state.dashEnergy = 1;
   state.dashBoost = 0;
   state.wheelRotation = 0;
@@ -577,6 +580,34 @@ function hasServiceStopInRange(state: RuntimeState): boolean {
   return false;
 }
 
+function hasSyncGateInRange(state: RuntimeState): boolean {
+  if (!usesSyncGates(currentNodeType(state.sim))) {
+    return false;
+  }
+
+  const bounds = {
+    x: state.player.x,
+    y: state.player.y,
+    w: state.player.w,
+    h: state.player.h
+  };
+  for (let index = 0; index < state.syncGates.length; index += 1) {
+    const gate = state.syncGates[index];
+    const result = canStabilizeSyncGate(
+      gate,
+      index,
+      bounds,
+      Math.abs(state.player.vx),
+      state.dashBoost,
+      state.elapsedSeconds
+    );
+    if (result.canStabilize || result.reason) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function serviceStopPromptText(state: RuntimeState): string | null {
   if (state.scene !== 'run' || state.mode !== 'playing' || !usesServiceStops(currentNodeType(state.sim))) {
     return null;
@@ -593,6 +624,40 @@ function serviceStopPromptText(state: RuntimeState): string | null {
       : !state.player.onGround
         ? 'Service bay unstable.\nSettle on the road to start inspection.'
         : 'Service bay unstable.\nEase off and hold a low speed to start inspection.';
+  }
+
+  return null;
+}
+
+function syncGatePromptText(state: RuntimeState): string | null {
+  if (state.scene !== 'run' || state.mode !== 'playing' || !usesSyncGates(currentNodeType(state.sim))) {
+    return null;
+  }
+
+  const bounds = {
+    x: state.player.x,
+    y: state.player.y,
+    w: state.player.w,
+    h: state.player.h
+  };
+  for (let index = 0; index < state.syncGates.length; index += 1) {
+    const gate = state.syncGates[index];
+    const result = canStabilizeSyncGate(
+      gate,
+      index,
+      bounds,
+      Math.abs(state.player.vx),
+      state.dashBoost,
+      state.elapsedSeconds
+    );
+
+    if (result.canStabilize) {
+      return `Sync gate open.\nCut through ${gate.id.toUpperCase()} with speed or boost.`;
+    }
+
+    if (result.reason) {
+      return result.reason;
+    }
   }
 
   return null;
@@ -678,18 +743,26 @@ function objectiveShortLabel(nodeType: string): string {
   return 'OBJ LINK';
 }
 
-function runObjectiveProgress(state: RuntimeState): { completed: number; total: number; beaconsRemaining: number; serviceStopsRemaining: number } {
+function runObjectiveProgress(state: RuntimeState): {
+  completed: number;
+  total: number;
+  beaconsRemaining: number;
+  serviceStopsRemaining: number;
+  syncGatesRemaining: number;
+} {
   const beaconProgress = {
     completed: state.beacons.filter((beacon) => beacon.activated).length,
     total: state.beacons.length
   };
   const serviceStopProgress = totalServiceStopProgress(state.serviceStops);
+  const syncGateProgress = totalSyncGateProgress(state.syncGates);
 
   return {
-    completed: beaconProgress.completed + serviceStopProgress.completed,
-    total: beaconProgress.total + serviceStopProgress.total,
+    completed: beaconProgress.completed + serviceStopProgress.completed + syncGateProgress.completed,
+    total: beaconProgress.total + serviceStopProgress.total + syncGateProgress.total,
     beaconsRemaining: beaconProgress.total - beaconProgress.completed,
-    serviceStopsRemaining: serviceStopProgress.total - serviceStopProgress.completed
+    serviceStopsRemaining: serviceStopProgress.total - serviceStopProgress.completed,
+    syncGatesRemaining: syncGateProgress.total - syncGateProgress.completed
   };
 }
 
@@ -1017,6 +1090,23 @@ async function bootstrap(): Promise<void> {
       }
     }
 
+    const playerBounds = {
+      x: state.player.x,
+      y: state.player.y,
+      w: state.player.w,
+      h: state.player.h
+    };
+    for (let index = 0; index < state.syncGates.length; index += 1) {
+      const gate = state.syncGates[index];
+      if (gate.stabilized) continue;
+      const result = canStabilizeSyncGate(gate, index, playerBounds, Math.abs(state.player.vx), state.dashBoost, state.elapsedSeconds);
+      if (!result.canStabilize) continue;
+      gate.stabilized = true;
+      state.score += 20;
+      state.mapMessage = `Sync gate ${gate.id.toUpperCase()} stabilized.`;
+      state.mapMessageTimer = 2.2;
+    }
+
     const objectiveProgress = runObjectiveProgress(state);
     const exitReady = objectiveProgress.completed >= objectiveProgress.total;
     if (p.x + p.w >= state.goalX && !exitReady) {
@@ -1030,6 +1120,11 @@ async function bootstrap(): Promise<void> {
       if (objectiveProgress.serviceStopsRemaining > 0) {
         pendingParts.push(
           `${objectiveProgress.serviceStopsRemaining} service ${objectiveProgress.serviceStopsRemaining === 1 ? 'bay' : 'bays'}`
+        );
+      }
+      if (objectiveProgress.syncGatesRemaining > 0) {
+        pendingParts.push(
+          `${objectiveProgress.syncGatesRemaining} sync ${objectiveProgress.syncGatesRemaining === 1 ? 'gate' : 'gates'}`
         );
       }
       state.mapMessage = `Exit locked: finish ${pendingParts.join(' and ')}.`;
@@ -1288,6 +1383,20 @@ async function bootstrap(): Promise<void> {
       }
     }
 
+    for (let index = 0; index < state.syncGates.length; index += 1) {
+      const gate = state.syncGates[index];
+      const open = isPhaseWindowOpen(state.elapsedSeconds, index);
+      graphics.roundRect(gate.x - gate.w * 0.5 - cam, gate.y - gate.h * 0.5, gate.w, gate.h, 20).stroke({
+        color: gate.stabilized ? '#22d3ee' : open ? '#fbbf24' : '#8b5cf6',
+        alpha: gate.stabilized ? 0.8 : open ? 0.7 : 0.32,
+        width: gate.stabilized ? 3 : open ? 2.6 : 1.4
+      });
+      graphics.roundRect(gate.x - gate.w * 0.5 + 8 - cam, gate.y - 6, gate.w - 16, 12, 6).fill({
+        color: gate.stabilized ? '#67e8f9' : '#312e81',
+        alpha: gate.stabilized ? 0.45 : 0.18
+      });
+    }
+
     for (let index = 0; index < state.beacons.length; index += 1) {
       const beacon = state.beacons[index];
       const isNextRequired = beaconRule === 'ordered' && !beacon.activated && index === nextBeaconIndex;
@@ -1424,6 +1533,8 @@ async function bootstrap(): Promise<void> {
       overlay.text = 'Trail lost.\nPress Enter or R to restart';
     } else if (state.mapMessageTimer > 0 && state.mapMessage) {
       overlay.text = state.mapMessage;
+    } else if (hasSyncGateInRange(state)) {
+      overlay.text = syncGatePromptText(state) ?? '';
     } else if (hasServiceStopInRange(state)) {
       overlay.text = serviceStopPromptText(state) ?? '';
     } else if (hasBeaconInRange(state)) {
@@ -1919,7 +2030,7 @@ async function bootstrap(): Promise<void> {
         dashEnergy: Number(state.dashEnergy.toFixed(2)),
         installOffer: getInstallOffer(state.sim, currentNodeType(state.sim)),
         connectedRoutes: options,
-        selectedRoute: selectedOption
+            selectedRoute: selectedOption
           ? {
               nodeId: selectedOption.nodeId,
               nodeType: selectedNode?.type ?? null,
@@ -1965,6 +2076,14 @@ async function bootstrap(): Promise<void> {
           width: stop.w,
           progress: Number(stop.progress.toFixed(2)),
           serviced: stop.serviced
+        })),
+        syncGates: state.syncGates.map((gate) => ({
+          id: gate.id,
+          x: Math.round(gate.x),
+          y: Math.round(gate.y),
+          width: gate.w,
+          height: gate.h,
+          stabilized: gate.stabilized
         })),
         objectiveRule: getBeaconRuleForNodeType(currentNode?.type ?? 'town'),
         objectiveSummary: getObjectiveSummary(currentNode?.type ?? 'town'),

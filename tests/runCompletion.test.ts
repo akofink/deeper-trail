@@ -30,6 +30,7 @@ function buildRuntimeState(): RuntimeState {
     shieldChargeAvailable: false,
     beacons: [],
     serviceStops: [],
+    syncGates: [],
     player: {
       x: 0,
       y: 0,

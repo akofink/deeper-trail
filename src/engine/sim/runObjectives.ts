@@ -58,7 +58,7 @@ export function getObjectiveSummary(nodeType: string): string {
   if (rule === 'steady') return 'Steady relays + service bays';
   if (rule === 'ordered') return 'Ordered relays';
   if (rule === 'airborne') return 'Airborne relays';
-  if (rule === 'boosted') return 'Boost-sync relays';
+  if (rule === 'boosted') return 'Boost-sync relays + sync gates';
   return 'Relay links';
 }
 

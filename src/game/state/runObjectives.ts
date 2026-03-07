@@ -13,3 +13,12 @@ export interface ServiceStop {
   progress: number;
   serviced: boolean;
 }
+
+export interface SyncGate {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  stabilized: boolean;
+}

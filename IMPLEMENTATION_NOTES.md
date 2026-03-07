@@ -43,7 +43,7 @@
   - `town` uses steady relay links plus service bays that reward grounded low-speed holding,
   - `ruin` uses ordered links,
   - `nature` uses airborne links,
-  - `anomaly` uses boost-linked relays gated by deterministic sync windows.
+  - `anomaly` uses boost-linked relays gated by deterministic sync windows plus fly-through sync gates.
 
 ## Current modularity guidance
 

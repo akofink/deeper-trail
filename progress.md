@@ -407,8 +407,14 @@ TODO next:
   - Updated `render_game_to_text` and map route details so automation and route cards expose the richer town objective summary instead of only relay rules.
   - Added `tests/serviceStops.test.ts` plus fixture updates in runtime tests; `npm run check` passes.
 
+- Anomaly sync-gate pass:
+  - Added deterministic anomaly-only sync gates via `src/game/runtime/syncGates.ts` and `src/game/runtime/runLayout.ts`, creating a non-relay fly-through objective that reuses the existing phase-window timing model.
+  - Extended `src/main.ts` so sync gates render in-scene, show prompt/failure messaging when crossed, contribute to exit locks, and export through `render_game_to_text`.
+  - Updated anomaly objective summaries in route-card/UI copy so the node no longer reads as boost-relays only.
+  - Added `tests/syncGates.test.ts` plus runtime fixture updates; `npm run check` passes.
+
 TODO next:
 
-- Add a non-town biome-specific interaction template so ruin, nature, or anomaly runs gain a second verb beyond relay linking.
+- Add a ruin- or nature-specific interaction template so at least one more non-town biome gains a second verb beyond relay linking.
 - Decide whether notebook clues should start affecting route choice mechanically, for example by revealing pre-arrival scanner/map intel or unlocking authored encounter outcomes.
 - Consider extracting run-objective bookkeeping out of `src/main.ts` now that objectives include both relays and service bays.
