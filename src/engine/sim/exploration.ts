@@ -3,6 +3,7 @@ import { getDamageSubsystemForNodeType } from './vehicle';
 
 export interface VisibleBiomeKnowledge {
   benefitKnown: boolean;
+  objectiveKnown: boolean;
   riskKnown: boolean;
 }
 
@@ -46,6 +47,7 @@ export function visibleBiomeKnowledge(state: GameState, nodeType: string): Visib
 
   return {
     benefitKnown: learned.benefitKnown || scannerLevel >= 2,
+    objectiveKnown: learned.visits > 0 || scannerLevel >= 3,
     riskKnown: learned.riskKnown || scannerLevel >= 4
   };
 }
