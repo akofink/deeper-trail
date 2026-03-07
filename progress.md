@@ -236,8 +236,14 @@ TODO next:
 
 - Continue breaking `src/main.ts` into scene-oriented modules, with HUD/card rendering helpers as the next high-value extraction point.
 - Add deterministic automation or test coverage for a full nature-node completion path so the airborne relay rule is covered beyond unit activation checks.
-- Consider whether town nodes should keep the standard relay rule or become the home for a different low-complexity puzzle verb.
+  - Consider whether town nodes should keep the standard relay rule or become the home for a different low-complexity puzzle verb.
   - Added a reusable text-card layout helper in `src/main.ts` so run/map message cards size themselves from measured text content plus padding.
+
+- Browser regression coverage pass:
+  - Added `?seed=` boot support in `src/main.ts` so browser runs can replay a deterministic world directly from the URL.
+  - Added committed Playwright smoke automation in `scripts/e2e/fullObjectiveLoop.js`.
+  - The smoke path builds `dist/`, opens the static app via `file://`, completes the fixed-seed town node objective loop, returns to map, then travels once and asserts shell/state synchronization through `window.render_game_to_text`.
+  - Wired the browser smoke into `package.json` as `npm run test:e2e` and folded it into `npm run check`.
   - Replaced the fixed-size run banner and map detail card layout with wrapped content-aware cards to prevent text spill/overlap as strings change.
   - Added matching implementation guidance in `IMPLEMENTATION_NOTES.md` so future UI tweaks follow the same rule instead of returning to guessed dimensions.
 
