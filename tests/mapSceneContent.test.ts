@@ -56,7 +56,7 @@ function buildRuntimeState(): RuntimeState {
 }
 
 describe('map scene content helper', () => {
-  it('builds route details and hints for a selected node', () => {
+  it('gates selected-route objective intel behind scanner progression', () => {
     const state = buildRuntimeState();
     const destination = state.sim.world.nodes.find((node) => node.id === 'n1');
     if (!destination) throw new Error('Expected destination node');
@@ -74,10 +74,24 @@ describe('map scene content helper', () => {
     expect(content.completionState).toBe('LOCKED');
     expect(content.routeDetail).toContain('NATURE');
     expect(content.routeDetail).toContain('dist 7  fuel 7');
-    expect(content.routeDetail).toContain('Air relays + canopy lifts');
+    expect(content.routeDetail).toContain('Objective pattern ?');
     expect(content.installHint.length).toBeGreaterThan(0);
     expect(content.scannerHint).toContain('phase-lock online');
+    expect(content.scannerHint).toContain('objective scan at lv.3');
     expect(content.repairHint).toContain('repair modules');
+
+    state.sim.vehicle.scanner = 3;
+    const upgradedContent = buildMapSceneContent(state, 'n1', 7, {
+      canUseMedPatch: false,
+      medPatchHealAmount: 1,
+      medPatchScrapCost: 2,
+      hasAutoLinkScanner: true,
+      hasCompletedCurrentNode: false
+    });
+
+    expect(upgradedContent.routeDetail).toContain('Air relays + canopy lifts');
+    expect(upgradedContent.scannerHint).toContain('objective scan');
+    expect(upgradedContent.scannerHint).toContain('auto-link online');
   });
 
   it('builds notebook field notes and completion state for explored progress', () => {
@@ -108,9 +122,10 @@ describe('map scene content helper', () => {
     expect(content.completionState).toBe('COMPLETE');
     expect(content.routeDetail).toContain('Select a connected route');
     expect(content.repairHint).toContain('+1 HP');
-    expect(content.scannerHint).toContain('phase-lock and auto-link online');
+    expect(content.scannerHint).toContain('auto-link online');
     expect(content.fieldNotes.join('\n')).toContain('NOTEBOOK');
     expect(content.fieldNotes.join('\n')).toContain('SYNTH');
     expect(content.fieldNotes.join('\n')).toContain('RELAY MASONRY');
+    expect(content.fieldNotes.join('\n')).toContain('Ordered relays + impact plates');
   });
 });

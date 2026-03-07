@@ -42,7 +42,7 @@ export function buildMapSceneContent(
           `${selectedKnowledge.benefitKnown ? biomeBenefitLabel(selectedNodeType).replace(' on arrival', '') : 'benefit ?'} / ${
             selectedKnowledge.riskKnown ? biomeRiskLabel(selectedNodeType).replace('Hazards strain ', '') : 'risk ?'
           }`,
-          getObjectiveSummary(selectedNode.type)
+          selectedKnowledge.objectiveKnown ? getObjectiveSummary(selectedNode.type) : 'Objective pattern ?'
         ].join('\n')
       : 'Select a connected route.';
 
@@ -53,10 +53,10 @@ export function buildMapSceneContent(
       : 'Vehicle: fully maxed.';
 
   const scannerHint = options.hasAutoLinkScanner
-    ? `Scanner lv.${state.sim.vehicle.scanner}: phase-lock and auto-link online.`
+    ? `Scanner lv.${state.sim.vehicle.scanner}: route preview, objective scan, phase-lock, and auto-link online.`
     : state.sim.vehicle.scanner >= 2
-      ? `Scanner lv.${state.sim.vehicle.scanner}: route preview and phase-lock online${state.sim.vehicle.scanner >= 4 ? ', hazard preview online.' : ', hazard preview at lv.4.'}`
-      : `Scanner lv.${state.sim.vehicle.scanner}: route preview and phase-lock at lv.2, auto-link at lv.3.`;
+      ? `Scanner lv.${state.sim.vehicle.scanner}: route preview online${state.sim.vehicle.scanner >= 3 ? ', objective scan online' : ', objective scan at lv.3'}; phase-lock online${state.sim.vehicle.scanner >= 4 ? ', hazard preview online.' : ', hazard preview at lv.4.'}`
+      : `Scanner lv.${state.sim.vehicle.scanner}: route preview + phase-lock at lv.2, objective scan + auto-link at lv.3.`;
 
   const repairHint = options.canUseMedPatch
     ? `B: +${options.medPatchHealAmount} HP for ${options.medPatchScrapCost} scrap.`
@@ -69,8 +69,9 @@ export function buildMapSceneContent(
     const visibleKnowledge = visibleBiomeKnowledge(state.sim, type);
     const name = mapNodePalette(type).label.padEnd(6, ' ');
     const benefit = visibleKnowledge.benefitKnown ? biomeBenefitLabel(type).replace(' on arrival', '') : '+?';
+    const objective = visibleKnowledge.objectiveKnown ? getObjectiveSummary(type) : 'pattern ?';
     const risk = visibleKnowledge.riskKnown ? biomeRiskLabel(type).replace('Hazards strain ', '') : '?';
-    fieldNotes.push(`${name} ${knowledge.visits}x  ${benefit}  /  ${risk}`);
+    fieldNotes.push(`${name} ${knowledge.visits}x  ${benefit}  /  ${objective}  /  ${risk}`);
   }
   fieldNotes.push('');
   fieldNotes.push(`NOTEBOOK ${notebookProgress.discovered}/${notebookProgress.total}${state.sim.notebook.synthesisUnlocked ? '  SYNTH' : ''}`);

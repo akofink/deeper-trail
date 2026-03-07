@@ -31,19 +31,41 @@ describe('exploration notes', () => {
 
     expect(visibleBiomeKnowledge(state, 'ruin')).toEqual({
       benefitKnown: false,
+      objectiveKnown: false,
       riskKnown: false
     });
 
     state.vehicle.scanner = 2;
     expect(visibleBiomeKnowledge(state, 'ruin')).toEqual({
       benefitKnown: true,
+      objectiveKnown: false,
+      riskKnown: false
+    });
+
+    state.vehicle.scanner = 3;
+    expect(visibleBiomeKnowledge(state, 'ruin')).toEqual({
+      benefitKnown: true,
+      objectiveKnown: true,
       riskKnown: false
     });
 
     state.vehicle.scanner = 4;
     expect(visibleBiomeKnowledge(state, 'ruin')).toEqual({
       benefitKnown: true,
+      objectiveKnown: true,
       riskKnown: true
+    });
+  });
+
+  it('reveals biome objective intel after the first visit even without scanner upgrades', () => {
+    const state = createInitialGameState('exploration-objective-memory');
+
+    noteBiomeArrival(state, 'nature');
+
+    expect(visibleBiomeKnowledge(state, 'nature')).toEqual({
+      benefitKnown: true,
+      objectiveKnown: true,
+      riskKnown: false
     });
   });
 });
