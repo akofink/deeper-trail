@@ -54,6 +54,7 @@ export interface RuntimeState {
   dashEnergy: number;
   dashBoost: number;
   dashDirection: -1 | 1;
+  wheelRotation: number;
   mapRotation: number;
   mapRotationVelocity: number;
   tookDamageThisRun: boolean;

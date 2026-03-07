@@ -15,6 +15,8 @@ import {
   repairMostDamagedSubsystem
 } from './engine/sim/vehicle';
 import { biomeByNodeType, buildRunLayout, mapNodePalette, MODULE_LABELS } from './game/runtime/runLayout';
+import { clampMapRotation, projectMapPoint } from './game/runtime/mapProjection';
+import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import type { RuntimeState } from './game/runtime/runtimeState';
 import {
   beaconInteractRadius,
@@ -25,6 +27,7 @@ import {
   runSpeedForState,
   scrapGainPerCollectible
 } from './game/runtime/vehicleDerivedStats';
+import { advanceWheelRotation } from './game/runtime/vehiclePresentation';
 import { createInitialGameState, type GameState as SimState } from './game/state/gameState';
 import './styles.css';
 
@@ -145,25 +148,6 @@ function drawMapBackdrop(graphics: Graphics, w: number, h: number): void {
   graphics.roundRect(80, h * 0.28, w - 160, 1, 0).stroke({ color: '#cbd5e1', alpha: 0.4, width: 1 });
   graphics.roundRect(120, h * 0.52, w - 240, 1, 0).stroke({ color: '#cbd5e1', alpha: 0.28, width: 1 });
   graphics.roundRect(160, h * 0.76, w - 320, 1, 0).stroke({ color: '#cbd5e1', alpha: 0.22, width: 1 });
-}
-
-function projectMapPoint(x: number, y: number, bounds: { minX: number; maxX: number; minY: number; maxY: number }, w: number, h: number, margin: number, rotation: number): {
-  x: number;
-  y: number;
-  depth: number;
-} {
-  const cx = (bounds.minX + bounds.maxX) * 0.5;
-  const cy = (bounds.minY + bounds.maxY) * 0.5;
-  const dx = x - cx;
-  const dy = y - cy;
-  const cos = Math.cos(rotation);
-  const sin = Math.sin(rotation);
-  const rx = dx * cos - dy * sin;
-  const rz = dx * sin + dy * cos;
-  const perspective = 1 + rz / 1800;
-  const px = margin + ((rx + (bounds.maxX - bounds.minX) * 0.5) / Math.max(1, bounds.maxX - bounds.minX)) * (w - margin * 2);
-  const py = margin + ((dy * (0.72 + perspective * 0.18) + (bounds.maxY - bounds.minY) * 0.5) / Math.max(1, bounds.maxY - bounds.minY)) * (h - margin * 2);
-  return { x: px, y: py, depth: rz };
 }
 
 function drawMessageCard(graphics: Graphics, x: number, y: number, w: number, h: number, tone: 'dark' | 'light' = 'dark'): void {
@@ -338,7 +322,7 @@ function drawVehicleAvatar(graphics: Graphics, state: RuntimeState, cameraX: num
   graphics.ellipse(0, p.h * 0.46, 24 + speedRatio * 6 + dashRatio * 10, 6).fill({ color: '#020617', alpha: 0.2 + dashRatio * 0.05 });
 
   const wheelOffset = chassisW * 0.32;
-  const wheelSpin = state.elapsedSeconds * (4 + speedRatio * 10 + dashRatio * 22);
+  const wheelSpin = state.wheelRotation;
   graphics.circle(-wheelOffset, chassisH * 0.85, wheelR).fill('#0f172a');
   graphics.circle(wheelOffset, chassisH * 0.85, wheelR).fill('#0f172a');
   graphics.circle(-wheelOffset, chassisH * 0.85, wheelR - 3).fill('#94a3b8');
@@ -439,6 +423,7 @@ function makeInitialRuntimeState(canvasHeight: number, seed = createRunSeed()): 
     dashEnergy: 1,
     dashBoost: 0,
     dashDirection: 1,
+    wheelRotation: 0,
     mapRotation: -0.22,
     mapRotationVelocity: 0,
     tookDamageThisRun: false,
@@ -505,6 +490,7 @@ function resetRunFromCurrentNode(state: RuntimeState): void {
   state.beacons = run.beacons;
   state.dashEnergy = 1;
   state.dashBoost = 0;
+  state.wheelRotation = 0;
   state.tookDamageThisRun = false;
   if (!state.expeditionComplete) {
     state.mode = 'playing';
@@ -727,7 +713,8 @@ async function bootstrap(): Promise<void> {
     }
 
     const p = state.player;
-    const dashDown = keys.has('ShiftLeft') || keys.has('ShiftRight');
+    const dashState = dashInputState(keys.has('ShiftLeft'), keys.has('ShiftRight'));
+    const dashDown = isDashHeld(dashState);
     if (dashDown && !previousDashDown && state.dashEnergy > 0.05) {
       const facing = p.vx === 0 ? p.facing : Math.sign(p.vx);
       state.dashDirection = facing < 0 ? -1 : 1;
@@ -775,6 +762,9 @@ async function bootstrap(): Promise<void> {
       state.dashBoost = Math.max(0, state.dashBoost - DASH_BOOST_DECAY_PER_SECOND * dt);
       state.dashEnergy = Math.min(1, state.dashEnergy + DASH_ENERGY_RECOVER_PER_SECOND * dt);
     }
+
+    const wheelRadius = 8 + Math.max(0, state.sim.vehicle.suspension - 1);
+    state.wheelRotation = advanceWheelRotation(state.wheelRotation, p.vx, dt, wheelRadius);
 
     if (p.jumpBufferTime > 0 && (p.onGround || p.coyoteTime > 0)) {
       p.vy = -jumpSpeedForState(state);
@@ -1020,7 +1010,7 @@ async function bootstrap(): Promise<void> {
     const rotateAccel = MAP_ROTATION_ACCEL * (fastRotate ? MAP_ROTATION_FAST_MULTIPLIER : 1);
     state.mapRotationVelocity += rotateInput * rotateAccel * dt;
     state.mapRotationVelocity *= Math.pow(MAP_ROTATION_DAMPING, dt * 60);
-    state.mapRotation += state.mapRotationVelocity * dt;
+    state.mapRotation = clampMapRotation(state.mapRotation + state.mapRotationVelocity * dt);
   }
 
   function drawRunScene(): void {
