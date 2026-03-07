@@ -50,6 +50,7 @@
 - `main.ts` is still the Pixi app shell, but runtime state types, deterministic run layout data, and derived vehicle stat formulas should continue moving into `src/game/runtime/*` or `src/engine/sim/*` instead of accreting inline.
 - Node-completion and post-travel side effects now belong in dedicated runtime helpers (`game/runtime/expeditionFlow.ts`) so the full core loop can be regression-tested without driving the Pixi shell.
 - Prompt-priority, compact objective labels, and aggregate objective progress now belong in `game/runtime/runObjectiveUi.ts` so run-scene objective messaging stays testable outside Pixi.
+- Per-frame objective mutation now belongs in `game/runtime/runObjectiveUpdates.ts` so service-bay/sync-gate/canopy-lift/impact-plate advancement can be tested without the render loop.
 - World-node helper lookups belong in deterministic helpers (`engine/sim/world.ts`) so map travel, route cards, and automation all read the same node/neighbor logic.
 
 ## Current practical world-render guidance

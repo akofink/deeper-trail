@@ -437,7 +437,13 @@ TODO next:
   - Added `tests/runObjectiveUi.test.ts` to cover prompt priority across sync gates, impact plates, canopy lifts, and relay prompts plus aggregate progress totals.
   - Validation: targeted typecheck and objective-ui test slice pass.
 
+- Run-objective update extraction pass:
+  - Added `src/game/runtime/runObjectiveUpdates.ts` to own per-frame service-bay, sync-gate, canopy-lift, and impact-plate advancement instead of mutating those systems inline in `stepRun()`.
+  - Updated `src/main.ts` to consume one helper result for objective completions/messages during the run step.
+  - Added `tests/runObjectiveUpdates.test.ts` to cover combined objective advancement and completion-message ordering in a deterministic runtime fixture.
+  - Validation: targeted typecheck and update-helper test slice pass.
+
 TODO next:
 
 - Decide whether notebook clues should start affecting route choice mechanically, for example by revealing pre-arrival scanner/map intel or unlocking authored encounter outcomes.
-- Continue breaking remaining run-objective bookkeeping and scene orchestration out of `src/main.ts`, especially the per-frame objective update/mutation branches and draw-pass special cases.
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially the draw-pass special cases for biome objective rendering and prompt-adjacent visual treatments.
