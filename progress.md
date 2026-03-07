@@ -351,8 +351,9 @@ TODO next:
   - Validation: `npm run typecheck` passes; `TMPDIR=/tmp npm run test` passes (20 tests).
 
 - Rotation-speed follow-up:
-  - Increased base map rotation speed slightly and added a fast-rotate modifier: holding `Shift` with `Q`/`E` now spins the projected board faster.
-  - Validation: `npm run typecheck` passes; `TMPDIR=/tmp npm run test` passes (20 tests).
+  - Removed the hidden `Shift+Q` / `Shift+E` fast-rotate modifier after promoting it to a tracked issue report. Map rotation now uses stronger default responsiveness plus hold-based acceleration without any undocumented key combo.
+  - Extracted the rotation stepping into `src/game/runtime/mapRotation.ts` with focused coverage in `tests/mapRotation.test.ts`, keeping the behavior easier to tune without growing `src/main.ts`.
+  - Validation: `npm run typecheck` passes; `npm run test -- --run tests/mapRotation.test.ts tests/mapProjection.test.ts tests/mapSceneContent.test.ts` passes.
 
 - Checkpoint + run-objective pass:
   - Committed the previously unstaged clustered world-shape work as `f240384` (`Refine world graph clustering`) so the roadmap pass starts from a clean repo checkpoint.
