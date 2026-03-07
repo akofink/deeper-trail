@@ -203,6 +203,35 @@ describe('map scene content helper', () => {
     state.sim.notebook.discoveredClues.ruin = true;
     state.sim.notebook.discoveredClues.nature = true;
     state.sim.notebook.discoveredClues.anomaly = true;
+    state.sim.notebook.entries.push(
+      {
+        id: 'clue-nature',
+        clueKey: 'nature',
+        sourceNodeType: 'nature',
+        sourceNodeId: 'n1',
+        dayDiscovered: 1,
+        title: 'Nature',
+        body: 'Nature'
+      },
+      {
+        id: 'clue-anomaly',
+        clueKey: 'anomaly',
+        sourceNodeType: 'anomaly',
+        sourceNodeId: 'n2',
+        dayDiscovered: 2,
+        title: 'Anomaly',
+        body: 'Anomaly'
+      },
+      {
+        id: 'clue-ruin',
+        clueKey: 'ruin',
+        sourceNodeType: 'ruin',
+        sourceNodeId: 'n3',
+        dayDiscovered: 3,
+        title: 'Ruin',
+        body: 'Ruin'
+      }
+    );
     state.sim.notebook.synthesisUnlocked = true;
     const goalNode = state.sim.world.nodes.find((node) => node.id === state.expeditionGoalNodeId);
     if (!goalNode) {
@@ -218,6 +247,8 @@ describe('map scene content helper', () => {
     });
 
     expect(content.routeDetail).toContain('SIGNAL');
-    expect(content.routeDetail).toContain('pre-linked');
+    expect(content.routeDetail).toContain('B1 pre-linked');
+    expect(content.routeDetail).toContain('phase reserve: +4 fuel on arrival');
+    expect(content.routeDetail).toContain('ruin line: first barrier collapsed');
   });
 });

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { latestNotebookEntry, notebookClueProgress, notebookSignalRouteIntel, recordNotebookClue } from '../src/engine/sim/notebook';
+import {
+  latestNotebookEntry,
+  notebookClueProgress,
+  notebookCoreClueSequence,
+  notebookSignalRouteIntel,
+  recordNotebookClue
+} from '../src/engine/sim/notebook';
 import { createInitialGameState } from '../src/game/state/gameState';
 
 describe('notebook clues', () => {
@@ -39,6 +45,7 @@ describe('notebook clues', () => {
     expect(anomalyResult.newEntries[1]?.clueKey).toBe('synthesis');
     expect(state.notebook.synthesisUnlocked).toBe(true);
     expect(notebookClueProgress(state)).toEqual({ discovered: 3, total: 3 });
+    expect(notebookCoreClueSequence(state)).toEqual(['ruin', 'nature', 'anomaly']);
     expect(latestNotebookEntry(state)?.clueKey).toBe('synthesis');
   });
 

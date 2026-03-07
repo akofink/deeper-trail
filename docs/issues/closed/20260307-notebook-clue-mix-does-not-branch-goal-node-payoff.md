@@ -1,5 +1,7 @@
 Discovery date: 2026-03-07
 
+Resolution note (2026-03-07): fixed by making the synthesized goal payoff depend on ordered core clue discovery. Goal routes now preview a profile that branches relay priming, arrival reward, and one run-layout assist.
+
 # Notebook clue mix does not yet branch the goal-node payoff
 
 ## What is wrong or missing

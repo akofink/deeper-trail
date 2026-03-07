@@ -254,6 +254,86 @@ describe('expedition flow runtime helpers', () => {
     expect(state.mode).toBe('won');
   });
 
+  it('branches expedition-goal arrival rewards from the ordered notebook clue sequence', () => {
+    const healthState = buildRuntimeState('goal-arrival-health');
+    healthState.sim.currentNodeId = healthState.expeditionGoalNodeId;
+    healthState.sim.notebook.entries.push(
+      {
+        id: 'clue-ruin',
+        clueKey: 'ruin',
+        sourceNodeType: 'ruin',
+        sourceNodeId: 'n1',
+        dayDiscovered: 1,
+        title: 'Ruin',
+        body: 'Ruin'
+      },
+      {
+        id: 'clue-nature',
+        clueKey: 'nature',
+        sourceNodeType: 'nature',
+        sourceNodeId: 'n2',
+        dayDiscovered: 2,
+        title: 'Nature',
+        body: 'Nature'
+      },
+      {
+        id: 'clue-anomaly',
+        clueKey: 'anomaly',
+        sourceNodeType: 'anomaly',
+        sourceNodeId: 'n3',
+        dayDiscovered: 3,
+        title: 'Anomaly',
+        body: 'Anomaly'
+      }
+    );
+    healthState.sim.notebook.synthesisUnlocked = true;
+    healthState.health = 1;
+
+    const healthMessage = applyArrivalRewards(healthState);
+
+    expect(healthState.health).toBe(2);
+    expect(healthMessage).toContain('Goal decode: shelter bloom: +1 health on arrival.');
+
+    const fuelState = buildRuntimeState('goal-arrival-fuel');
+    fuelState.sim.currentNodeId = fuelState.expeditionGoalNodeId;
+    fuelState.sim.notebook.entries.push(
+      {
+        id: 'clue-ruin',
+        clueKey: 'ruin',
+        sourceNodeType: 'ruin',
+        sourceNodeId: 'n1',
+        dayDiscovered: 1,
+        title: 'Ruin',
+        body: 'Ruin'
+      },
+      {
+        id: 'clue-anomaly',
+        clueKey: 'anomaly',
+        sourceNodeType: 'anomaly',
+        sourceNodeId: 'n2',
+        dayDiscovered: 2,
+        title: 'Anomaly',
+        body: 'Anomaly'
+      },
+      {
+        id: 'clue-nature',
+        clueKey: 'nature',
+        sourceNodeType: 'nature',
+        sourceNodeId: 'n3',
+        dayDiscovered: 3,
+        title: 'Nature',
+        body: 'Nature'
+      }
+    );
+    fuelState.sim.notebook.synthesisUnlocked = true;
+    fuelState.sim.fuel = 10;
+
+    const fuelMessage = applyArrivalRewards(fuelState);
+
+    expect(fuelState.sim.fuel).toBeGreaterThanOrEqual(14);
+    expect(fuelMessage).toContain('Goal decode: phase reserve: +4 fuel on arrival.');
+  });
+
   it('reports arrival messages even when called directly', () => {
     const state = buildRuntimeState('arrival-direct');
     const node = findNode(state.sim, state.sim.currentNodeId);

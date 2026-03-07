@@ -4,6 +4,7 @@ import { travelToNode, type TravelResult } from '../../engine/sim/travel';
 import { currentNodeType, findNode } from '../../engine/sim/world';
 import { getMaxHealth } from '../../engine/sim/vehicle';
 import { resolveArrivalEncounter } from './arrivalEncounters';
+import { goalSignalProfile } from './goalSignal';
 import type { RuntimeState } from './runtimeState';
 import { applyNodeCompletionState } from './runCompletion';
 import { rechargeShieldCharge } from './shieldCharge';
@@ -55,6 +56,18 @@ export function applyArrivalRewards(state: RuntimeState): string {
     if (state.shieldChargeAvailable) {
       message += ' Shield charge restored.';
     }
+  }
+
+  const goalSignal = goalSignalProfile(state);
+  if (goalSignal) {
+    if (goalSignal.arrivalBonusType === 'scrap') {
+      state.sim.scrap += 2;
+    } else if (goalSignal.arrivalBonusType === 'health') {
+      state.health = Math.min(getMaxHealth(state.sim.vehicle), state.health + 1);
+    } else {
+      state.sim.fuel = Math.min(state.sim.fuelCapacity, state.sim.fuel + 4);
+    }
+    message += ` Goal decode: ${goalSignal.arrivalBonusNote}.`;
   }
 
   message += resolveArrivalEncounter(state, asNodeTypeKey(node.type), firstVisit).message;

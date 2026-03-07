@@ -23,7 +23,7 @@ import { buildMapSceneContent } from './game/runtime/mapSceneContent';
 import { buildMapSceneHudViewModel } from './game/runtime/mapSceneHudView';
 import { buildMapSceneLayout } from './game/runtime/mapSceneLayout';
 import { pullCollectibleTowardTarget } from './game/runtime/collectibleMagnetism';
-import { applyGoalSignalPrimer } from './game/runtime/goalSignal';
+import { applyGoalSignalPrimer, applyGoalSignalRunBonus } from './game/runtime/goalSignal';
 import {
   applyCanopyLiftAssist,
   isInsideCanopyLift,
@@ -528,6 +528,7 @@ function resetRunFromCurrentNode(state: RuntimeState): void {
   state.canopyLifts = run.canopyLifts;
   state.impactPlates = run.impactPlates;
   applyGoalSignalPrimer(state);
+  applyGoalSignalRunBonus(state);
   state.dashEnergy = 1;
   state.dashBoost = 0;
   state.wheelRotation = 0;

@@ -50,6 +50,12 @@ export interface NotebookSignalRouteIntel {
   revealsRisk: boolean;
 }
 
+export function notebookCoreClueSequence(state: GameState): CoreNotebookClueKey[] {
+  return state.notebook.entries
+    .filter((entry): entry is NotebookEntry & { clueKey: CoreNotebookClueKey } => NOTEBOOK_CLUE_ORDER.includes(entry.clueKey as CoreNotebookClueKey))
+    .map((entry) => entry.clueKey);
+}
+
 function makeEntry(seed: string, clueKey: CoreNotebookClueKey, nodeId: string, day: number): NotebookEntry {
   const templates = CLUE_TEMPLATES[clueKey];
   const rng = createSeededRng(`${seed}:notebook:${clueKey}`);
