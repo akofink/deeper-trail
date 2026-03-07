@@ -37,7 +37,9 @@ Current high-value files:
 ## Working Style For This Repo
 
 - Start by reading the relevant docs before making broad gameplay or architecture changes.
+- Start every code or docs task in a dedicated linked git worktree on its own branch, even for small changes, unless the user explicitly instructs otherwise.
 - Prefer small, scoped edits over sweeping rewrites.
+- Commit incrementally as you go. Prefer multiple small commits that keep the branch history easy to review over one large end-of-session commit.
 - Follow the existing split:
   - `src/engine/*` for deterministic rules and generation.
   - `src/game/state/*` for state shaping and simulation state transitions.
@@ -56,6 +58,16 @@ Current high-value files:
 - Full quality gate: `npm run check`
 
 Before finishing substantial code changes, run `npm run check` when feasible.
+
+## Branch And Worktree Workflow
+
+- Do not work directly in the primary checkout when making repo changes. Create a linked worktree and branch first.
+- Create the branch and worktree together with `git worktree add .worktrees/<task-name> -b <branch-name>`.
+- Keep one task per branch/worktree so cleanup and review stay simple.
+- Commit incrementally during the task rather than batching all changes into one final commit.
+- When the task is complete, merge the worktree branch back into `main` with a non-interactive git command.
+- After the merge, remove the linked worktree and delete the now-merged branch when feasible.
+- Before removing a worktree with unfinished work, capture any follow-up items in [docs/issues](/home/akofink/dev/repos/deeper-trail/docs/issues) so nothing is stranded in local history.
 
 ## Test Expectations
 
