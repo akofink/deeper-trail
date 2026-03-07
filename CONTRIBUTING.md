@@ -22,11 +22,8 @@
 ## Commit hooks
 
 - `pre-commit`: runs lint-staged for fast lint/format and related tests on staged files.
-- `pre-push`: runs `npm run check` (lint + typecheck + full tests).
-- The push hook includes the Playwright smoke path. On a healthy machine it should usually finish in under 15 seconds total.
-- The smoke path prefers Playwright's managed Chromium, then falls back to common local Chrome/Chromium app installs if that browser download is missing.
-- After the nested `npm run build` output, look for `[e2e] ...` log lines while the browser replay is running.
-- If the smoke run goes more than about 45 seconds without a new `[e2e]` line or an explicit failure, treat it as stuck and inspect the browser smoke output.
+- `pre-push`: runs `npm run check:prepush` (lint + typecheck + unit tests).
+- Run `npm run check` manually before substantial changes are considered complete so the browser smoke path still gets exercised outside the push hook.
 
 If hooks are not active locally, run `npm run prepare` after cloning.
 If this repo has not been initialized yet, run `git init` first so Husky can install hooks.

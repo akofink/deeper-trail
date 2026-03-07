@@ -18,6 +18,7 @@
     "test": "TMPDIR=${TMPDIR:-/tmp} vitest run",
     "test:e2e": "npm run build && node scripts/e2e/fullObjectiveLoop.js",
     "test:watch": "TMPDIR=${TMPDIR:-/tmp} vitest",
+    "check:prepush": "npm run lint && npm run typecheck && npm run test",
     "check": "npm run lint && npm run typecheck && npm run test && npm run test:e2e",
     "prepare": "husky",
     "lint-staged": "lint-staged"

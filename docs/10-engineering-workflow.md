@@ -14,9 +14,8 @@ Enforce consistent code quality and repository hygiene while keeping iteration f
    - Unified command: `npm run check`.
 2. **Phase 2: Local automation (now)**
    - Pre-commit hook: lint/format staged files and run related tests.
-   - Pre-push hook: full check (`lint + typecheck + tests`).
-   - The browser smoke step should emit `[e2e]` progress logs so long-running push hooks do not look stalled after the nested build completes.
-   - On a healthy local setup, the full pre-push quality gate should usually finish in under 15 seconds. If the browser smoke has not printed a new `[e2e]` line or failed within about 45 seconds, treat it as stuck.
+   - Pre-push hook: `npm run check:prepush` (`lint + typecheck + unit tests`).
+   - Run `npm run check` manually before substantial changes are considered done so the deterministic browser smoke remains part of the local quality bar without blocking every push.
 3. **Phase 3: PR discipline (next)**
    - PR template + checklist for tests/docs updates.
    - Require status checks to pass before merge.
