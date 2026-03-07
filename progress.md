@@ -419,8 +419,14 @@ TODO next:
   - Updated objective summaries in `src/engine/sim/runObjectives.ts`, plus architecture/design docs, so nature nodes no longer read as airborne-relays only.
   - Added `tests/canopyLifts.test.ts` plus runtime fixture updates; targeted typecheck and runtime tests pass.
 
+- Ruin impact-plate pass:
+  - Added deterministic ruin-only impact plates via `src/game/runtime/impactPlates.ts` and `src/game/runtime/runLayout.ts`, creating a second ruin verb based on hard landings over marked slabs.
+  - Extended `src/main.ts` so ruin runs surface impact-plate prompts, detect landing-speed shatters, render slab state in-scene, contribute to exit locks, and export through `render_game_to_text`.
+  - Updated objective summaries plus architecture/design docs so ruin nodes no longer read as ordered-relays only.
+  - Added `tests/impactPlates.test.ts` plus runtime fixture updates; targeted typecheck and runtime tests pass.
+
 TODO next:
 
-- Add a ruin-specific secondary interaction template so at least one more non-town biome gains a second verb beyond relay linking.
 - Decide whether notebook clues should start affecting route choice mechanically, for example by revealing pre-arrival scanner/map intel or unlocking authored encounter outcomes.
-- Consider extracting run-objective bookkeeping out of `src/main.ts` now that objectives include relays, service bays, sync gates, and canopy lifts.
+- Consider extracting run-objective bookkeeping out of `src/main.ts` now that objectives include relays, impact plates, service bays, sync gates, and canopy lifts.
+- Cover a full node-completion-and-travel loop with deterministic automation now that the main biome objective set is broader.

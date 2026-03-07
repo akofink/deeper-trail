@@ -55,7 +55,7 @@ docs/
   - route/install/travel details should live in a dedicated readable card rather than loose bottom text,
   - action chips should be spatially separate from the detail card so the two layers do not compete.
 - Biome objectives should be authored as explicit rule variants in deterministic sim helpers:
-  - `ruin`: ordered relay links,
+  - `ruin`: ordered relay links plus impact plates,
   - `nature`: airborne relay links plus canopy-lift hold zones,
   - `anomaly`: boost-linked relays plus sync gates,
   - `town`: steady relay links plus service bays.

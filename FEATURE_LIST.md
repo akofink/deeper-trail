@@ -11,7 +11,7 @@
 - [x] Expedition goal node and explicit macro completion state
 - [x] First biome-specific objective rules:
   - town nodes require steady low-speed relay linking and service bays
-  - ruin nodes require ordered relay linking
+  - ruin nodes require ordered relay linking and impact-plate landings
   - nature nodes require airborne relay linking and canopy-lift holds
   - anomaly nodes require boosted/high-momentum relay linking and sync gates
 

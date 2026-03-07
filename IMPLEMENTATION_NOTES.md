@@ -41,7 +41,7 @@
   - biome variation should prefer changing the player's verbs or timing requirements over just changing colors or hazard spacing,
   - current relay rule set is a good baseline pattern:
   - `town` uses steady relay links plus service bays that reward grounded low-speed holding,
-  - `ruin` uses ordered links,
+  - `ruin` uses ordered links plus impact plates that reward hard landings on marked slabs,
   - `nature` uses airborne links plus canopy lifts that reward sustained jump control in vertical draft zones,
   - `anomaly` uses boost-linked relays gated by deterministic sync windows plus fly-through sync gates.
 
