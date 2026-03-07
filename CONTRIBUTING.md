@@ -23,6 +23,7 @@
 
 - `pre-commit`: runs lint-staged for fast lint/format and related tests on staged files.
 - `pre-push`: runs `npm run check` (lint + typecheck + full tests).
+- The push hook includes the Playwright smoke path. After the nested `npm run build` output, look for `[e2e] ...` log lines while the browser replay is running.
 
 If hooks are not active locally, run `npm run prepare` after cloning.
 If this repo has not been initialized yet, run `git init` first so Husky can install hooks.

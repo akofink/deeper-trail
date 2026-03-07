@@ -15,6 +15,7 @@ Enforce consistent code quality and repository hygiene while keeping iteration f
 2. **Phase 2: Local automation (now)**
    - Pre-commit hook: lint/format staged files and run related tests.
    - Pre-push hook: full check (`lint + typecheck + tests`).
+   - The browser smoke step should emit `[e2e]` progress logs so long-running push hooks do not look stalled after the nested build completes.
 3. **Phase 3: PR discipline (next)**
    - PR template + checklist for tests/docs updates.
    - Require status checks to pass before merge.
