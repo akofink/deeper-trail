@@ -1,6 +1,5 @@
 import { Application, Graphics, Text } from 'pixi.js';
 import { noteBiomeHazard } from './engine/sim/exploration';
-import { notebookClueProgress } from './engine/sim/notebook';
 import { connectedNeighbors, currentNodeType, expeditionGoalNodeId, findNode } from './engine/sim/world';
 import {
   canActivateBeacon,
@@ -17,7 +16,7 @@ import {
   installUpgradeForNodeType,
   repairMostDamagedSubsystem
 } from './engine/sim/vehicle';
-import { biomeByNodeType, buildRunLayout, MODULE_LABELS } from './game/runtime/runLayout';
+import { biomeByNodeType, buildRunLayout } from './game/runtime/runLayout';
 import { buildMapActionChips, buildMapBoardView } from './game/runtime/mapBoardView';
 import { buildMapSceneCopy, buildMapSceneHudLayout } from './game/runtime/mapSceneCards';
 import { buildMapSceneContent } from './game/runtime/mapSceneContent';
@@ -32,12 +31,13 @@ import {
   hasCompletedCurrentNode,
   travelToNodeWithRuntimeEffects
 } from './game/runtime/expeditionFlow';
-import { objectiveShortLabel, runObjectiveProgress, runObjectivePrompt } from './game/runtime/runObjectiveUi';
+import { runObjectiveProgress, runObjectivePrompt } from './game/runtime/runObjectiveUi';
 import { updateRunObjectives } from './game/runtime/runObjectiveUpdates';
 import { buildRunObjectiveVisualState } from './game/runtime/runObjectiveVisuals';
 import { dashEntryEnergyCost, shouldContinueDash, shouldStartDash } from './game/runtime/runDash';
 import { buildRunHudLayout } from './game/runtime/runHudLayout';
 import { updateMapRotation } from './game/runtime/mapRotation';
+import { buildMapHudContent, buildRunHudContent } from './game/runtime/sceneHudContent';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import { advanceHorizontalVelocity } from './game/runtime/runMotion';
 import { rechargeShieldCharge, tryConsumeShieldCharge } from './game/runtime/shieldCharge';
@@ -537,12 +537,6 @@ function hasBeaconAutoLink(state: RuntimeState): boolean {
   return hasAutoLinkScanner(state.sim.vehicle);
 }
 
-function notebookStatusText(state: RuntimeState): string {
-  const progress = notebookClueProgress(state.sim);
-  const synthesisTag = state.sim.notebook.synthesisUnlocked ? ' SYNTH' : '';
-  return `NB ${progress.discovered}/${progress.total}${synthesisTag}`;
-}
-
 async function bootstrap(): Promise<void> {
   const app = new Application();
   await app.init({ background: '#89c3f0', resizeTo: window, antialias: true });
@@ -586,18 +580,6 @@ async function bootstrap(): Promise<void> {
     return label;
   });
 
-  const panelLabelLeft = new Text({
-    text: '',
-    style: { fill: '#94a3b8', fontSize: 12, fontFamily: 'monospace', fontWeight: '700' }
-  });
-  app.stage.addChild(panelLabelLeft);
-
-  const panelLabelRight = new Text({
-    text: '',
-    style: { fill: '#94a3b8', fontSize: 12, fontFamily: 'monospace', fontWeight: '700' }
-  });
-  app.stage.addChild(panelLabelRight);
-
   const panelMeta = new Text({
     text: '',
     style: { fill: '#cbd5e1', fontSize: 14, fontFamily: 'monospace', fontWeight: '700' }
@@ -615,18 +597,6 @@ async function bootstrap(): Promise<void> {
     style: { fill: '#0f172a', fontSize: 13, fontFamily: 'monospace', fontWeight: '700' }
   });
   app.stage.addChild(fieldNotesText);
-
-  const panelValueLeft = new Text({
-    text: '',
-    style: { fill: '#e2e8f0', fontSize: 12, fontFamily: 'monospace', fontWeight: '700', align: 'right' }
-  });
-  app.stage.addChild(panelValueLeft);
-
-  const panelValueRight = new Text({
-    text: '',
-    style: { fill: '#e2e8f0', fontSize: 12, fontFamily: 'monospace', fontWeight: '700', align: 'right' }
-  });
-  app.stage.addChild(panelValueRight);
 
   const runLeftRowLabels = Array.from({ length: 3 }, () => {
     const label = new Text({
@@ -1075,10 +1045,6 @@ async function bootstrap(): Promise<void> {
 
     graphics.clear();
     playerGraphics.clear();
-    panelLabelLeft.text = '';
-    panelLabelRight.text = '';
-    panelValueLeft.text = '';
-    panelValueRight.text = '';
     panelSeed.text = '';
     celebrationOverlay.text = '';
     fieldNotesText.text = '';
@@ -1261,25 +1227,24 @@ async function bootstrap(): Promise<void> {
 
     drawVehicleAvatar(playerGraphics, state, cam);
 
-    const currentNode = findNode(state.sim, state.sim.currentNodeId);
+    const runHudContent = buildRunHudContent(state);
     const hudLayout = buildRunHudLayout(w);
-    const maxHealth = getMaxHealth(state.sim.vehicle);
     drawPanel(graphics, hudLayout.leftPanelX, 10, hudLayout.leftPanelWidth, hudLayout.leftPanelHeight);
     drawPanel(graphics, hudLayout.rightPanelX, 10, hudLayout.rightPanelWidth, hudLayout.rightPanelHeight);
     const [hpRowY, fuelRowY, paceRowY] = hudLayout.leftRowCenters;
     const [linksRowY, boostRowY, systemsRowY] = hudLayout.rightRowCenters;
-    layoutHudRowLabel(runLeftRowLabels[0], 'HP', hudLayout.rowLabelX, hpRowY);
-    layoutHudRowLabel(runLeftRowLabels[1], 'FUEL', hudLayout.rowLabelX, fuelRowY);
-    layoutHudRowLabel(runLeftRowLabels[2], 'PACE', hudLayout.rowLabelX, paceRowY);
-    layoutHudRowValue(runLeftRowValues[0], `${state.health}/${maxHealth}`, hudLayout.rowValueX, hpRowY);
-    layoutHudRowValue(runLeftRowValues[1], `${state.sim.fuel}/${state.sim.fuelCapacity}`, hudLayout.rowValueX, fuelRowY);
-    layoutHudRowValue(runLeftRowValues[2], `${Math.round(Math.abs(state.player.vx))}`, hudLayout.rowValueX, paceRowY);
-    layoutHudRowLabel(runRightRowLabels[0], 'GOALS', hudLayout.rightRowLabelX, linksRowY);
-    layoutHudRowLabel(runRightRowLabels[1], 'BOOST', hudLayout.rightRowLabelX, boostRowY);
-    layoutHudRowLabel(runRightRowLabels[2], 'SYSTEMS', hudLayout.rightRowLabelX, systemsRowY);
-    layoutHudRowValue(runRightRowValues[0], `${objectiveProgress.completed}/${objectiveProgress.total}`, hudLayout.rightRowValueX, linksRowY);
-    layoutHudRowValue(runRightRowValues[1], `${Math.round(state.dashEnergy * 100)}%`, hudLayout.rightRowValueX, boostRowY);
-    drawPips(graphics, hudLayout.leftPipsX, hpRowY - 3, maxHealth, state.health, '#f97316');
+    layoutHudRowLabel(runLeftRowLabels[0], runHudContent.leftRows[0].label, hudLayout.rowLabelX, hpRowY);
+    layoutHudRowLabel(runLeftRowLabels[1], runHudContent.leftRows[1].label, hudLayout.rowLabelX, fuelRowY);
+    layoutHudRowLabel(runLeftRowLabels[2], runHudContent.leftRows[2].label, hudLayout.rowLabelX, paceRowY);
+    layoutHudRowValue(runLeftRowValues[0], runHudContent.leftRows[0].value, hudLayout.rowValueX, hpRowY);
+    layoutHudRowValue(runLeftRowValues[1], runHudContent.leftRows[1].value, hudLayout.rowValueX, fuelRowY);
+    layoutHudRowValue(runLeftRowValues[2], runHudContent.leftRows[2].value, hudLayout.rowValueX, paceRowY);
+    layoutHudRowLabel(runRightRowLabels[0], runHudContent.rightRows[0].label, hudLayout.rightRowLabelX, linksRowY);
+    layoutHudRowLabel(runRightRowLabels[1], runHudContent.rightRows[1].label, hudLayout.rightRowLabelX, boostRowY);
+    layoutHudRowLabel(runRightRowLabels[2], runHudContent.rightRows[2].label, hudLayout.rightRowLabelX, systemsRowY);
+    layoutHudRowValue(runRightRowValues[0], runHudContent.rightRows[0].value, hudLayout.rightRowValueX, linksRowY);
+    layoutHudRowValue(runRightRowValues[1], runHudContent.rightRows[1].value, hudLayout.rightRowValueX, boostRowY);
+    drawPips(graphics, hudLayout.leftPipsX, hpRowY - 3, getMaxHealth(state.sim.vehicle), state.health, '#f97316');
     drawGauge(graphics, hudLayout.leftGaugeX, fuelRowY - 6, hudLayout.leftGaugeWidth, 12, state.sim.fuel / state.sim.fuelCapacity, '#38bdf8');
     drawGauge(
       graphics,
@@ -1294,17 +1259,17 @@ async function bootstrap(): Promise<void> {
     drawGauge(graphics, hudLayout.rightGaugeX, 69, hudLayout.rightGaugeWidth, 12, state.dashEnergy, '#a78bfa');
     drawModuleMeters(graphics, hudLayout.rightPanelX + 14, hudLayout.rightModuleY, state.sim);
 
-    hud.text = `${currentNode?.type ?? 'town'} ${state.sim.currentNodeId}`;
+    hud.text = runHudContent.title;
     hud.style.fontSize = 18;
     hud.style.fill = '#e2e8f0';
     hud.x = hudLayout.leftPanelX + 14;
     hud.y = 16;
-    panelMeta.text = `SCRAP ${state.sim.scrap}   SCORE ${state.score}   ${objectiveShortLabel(nodeType)}`;
+    panelMeta.text = runHudContent.meta;
     panelMeta.style.fill = '#cbd5e1';
     panelMeta.style.fontSize = 12;
     panelMeta.x = hudLayout.leftPanelX + 14;
     panelMeta.y = 34;
-    panelSeed.text = `SEED ${state.seed}`;
+    panelSeed.text = runHudContent.seed;
     panelSeed.style.fill = '#94a3b8';
     panelSeed.x = hudLayout.leftPanelX + 14;
     panelSeed.y = 46;
@@ -1313,7 +1278,7 @@ async function bootstrap(): Promise<void> {
       const statusX = hudLayout.rightPanelX + 14;
       const cellX = statusX + (index % 3) * 84;
       const cellY = hudLayout.rightModuleY + Math.floor(index / 3) * 36;
-      label.text = (MODULE_LABELS[index] ?? '').slice(0, 5);
+      label.text = runHudContent.moduleLabels[index] ?? '';
       label.style.fill = '#cbd5e1';
       label.x = cellX + 6;
       label.y = cellY + 9;
@@ -1372,10 +1337,6 @@ async function bootstrap(): Promise<void> {
 
     graphics.clear();
     playerGraphics.clear();
-    panelLabelLeft.text = '';
-    panelLabelRight.text = '';
-    panelValueLeft.text = '';
-    panelValueRight.text = '';
     panelSeed.text = '';
     fieldNotesText.text = '';
     runLeftRowLabels.forEach((label) => {
@@ -1456,6 +1417,7 @@ async function bootstrap(): Promise<void> {
       hasAutoLinkScanner: hasBeaconAutoLink(state),
       hasCompletedCurrentNode: hasCompletedCurrentNode(state)
     });
+    const mapHudContent = buildMapHudContent(state, mapSceneContent.completionState);
     const mapSceneCopy = buildMapSceneCopy({
       expeditionComplete: state.expeditionComplete,
       installHint: mapSceneContent.installHint,
@@ -1481,27 +1443,27 @@ async function bootstrap(): Promise<void> {
     drawPanel(graphics, mapHud.leftPanelX, mapHud.leftPanelY, mapHud.leftPanelWidth, mapHud.leftPanelHeight);
     drawPanel(graphics, mapHud.rightPanelX, mapHud.rightPanelY, mapHud.rightPanelWidth, mapHud.rightPanelHeight);
     const [tripsRowY, fuelRowY] = mapHud.leftRowCenters;
-    layoutHudRowLabel(mapLeftRowLabels[0], 'TRIPS', mapHud.leftLabelX, tripsRowY);
-    layoutHudRowLabel(mapLeftRowLabels[1], 'FUEL', mapHud.leftLabelX, fuelRowY);
-    layoutHudRowValue(mapLeftRowValues[0], `${Math.min(3, state.freeTravelCharges)}`, mapHud.leftValueX, tripsRowY);
-    layoutHudRowValue(mapLeftRowValues[1], `${state.sim.fuel}/${state.sim.fuelCapacity}`, mapHud.leftValueX, fuelRowY);
-    layoutHudRowLabel(mapRightHeaderLines[0], 'VEHICLE', mapHud.rightLabelX, mapHud.rightHeaderLine1Y);
-    layoutHudRowLabel(mapRightHeaderLines[1], 'LEVEL / CONDITION', mapHud.rightLabelX, mapHud.rightHeaderLine2Y);
+    layoutHudRowLabel(mapLeftRowLabels[0], mapHudContent.leftRows[0].label, mapHud.leftLabelX, tripsRowY);
+    layoutHudRowLabel(mapLeftRowLabels[1], mapHudContent.leftRows[1].label, mapHud.leftLabelX, fuelRowY);
+    layoutHudRowValue(mapLeftRowValues[0], mapHudContent.leftRows[0].value, mapHud.leftValueX, tripsRowY);
+    layoutHudRowValue(mapLeftRowValues[1], mapHudContent.leftRows[1].value, mapHud.leftValueX, fuelRowY);
+    layoutHudRowLabel(mapRightHeaderLines[0], mapHudContent.rightHeaderLines[0], mapHud.rightLabelX, mapHud.rightHeaderLine1Y);
+    layoutHudRowLabel(mapRightHeaderLines[1], mapHudContent.rightHeaderLines[1], mapHud.rightLabelX, mapHud.rightHeaderLine2Y);
     drawGauge(graphics, mapHud.gaugeX, fuelRowY - 6, mapHud.gaugeWidth, 12, state.sim.fuel / state.sim.fuelCapacity, '#38bdf8');
     drawPips(graphics, mapHud.pipsX, tripsRowY - 3, 3, Math.min(3, state.freeTravelCharges), '#facc15');
     drawModuleMeters(graphics, mapHud.moduleX, mapHud.moduleY, state.sim);
 
-    hud.text = `map ${state.sim.currentNodeId}`;
+    hud.text = mapHudContent.title;
     hud.style.fontSize = 18;
     hud.style.fill = '#e2e8f0';
     hud.x = mapHud.hudX;
     hud.y = mapHud.hudY;
-    panelMeta.text = `DAY ${state.sim.day}   SCRAP ${state.sim.scrap}   ${mapSceneContent.completionState}   ${notebookStatusText(state)}`;
+    panelMeta.text = mapHudContent.meta;
     panelMeta.style.fill = '#cbd5e1';
     panelMeta.style.fontSize = 12;
     panelMeta.x = mapHud.metaX;
     panelMeta.y = mapHud.metaY;
-    panelSeed.text = `SEED ${state.seed}`;
+    panelSeed.text = mapHudContent.seed;
     panelSeed.style.fill = '#94a3b8';
     panelSeed.x = mapHud.seedX;
     panelSeed.y = mapHud.seedY;
@@ -1510,7 +1472,7 @@ async function bootstrap(): Promise<void> {
       const statusX = mapHud.moduleX;
       const cellX = statusX + (index % 3) * 84;
       const cellY = mapHud.moduleY + Math.floor(index / 3) * 36;
-      label.text = (MODULE_LABELS[index] ?? '').slice(0, 5);
+      label.text = mapHudContent.moduleLabels[index] ?? '';
       label.style.fill = '#cbd5e1';
       label.x = cellX + 6;
       label.y = cellY + 9;
