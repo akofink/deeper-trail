@@ -12,10 +12,15 @@ const JUMP_MAX_DISTANCE = 108;
 const LOW_SPEED = 80;
 const SERVICE_HOLD_FRAMES = 48;
 const MAX_TICKS = 9000;
+const PLAYWRIGHT_STEP_TIMEOUT_MS = 30_000;
 const CHROME_CANDIDATES = [
   process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 ].filter(Boolean);
+
+function logStep(message) {
+  console.log(`[e2e] ${message}`);
+}
 
 function assert(condition, message, state) {
   if (condition) return;
@@ -182,6 +187,7 @@ async function completeTownRun(page) {
 
 async function main() {
   const executablePath = resolveExecutablePath();
+  logStep(`launching browser smoke for seed ${E2E_SEED}`);
   const browser = await chromium.launch({
     headless: process.env.E2E_HEADLESS !== "0",
     executablePath,
@@ -202,8 +208,12 @@ async function main() {
     const url = pathToFileURL(distIndex);
     url.searchParams.set("seed", E2E_SEED);
 
-    await page.goto(url.toString(), { waitUntil: "load" });
-    await page.waitForFunction(() => typeof window.render_game_to_text === "function" && typeof window.advanceTime === "function");
+    logStep("opening built client bundle");
+    await page.goto(url.toString(), { waitUntil: "load", timeout: PLAYWRIGHT_STEP_TIMEOUT_MS });
+    logStep("waiting for debug replay hooks");
+    await page.waitForFunction(() => typeof window.render_game_to_text === "function" && typeof window.advanceTime === "function", {
+      timeout: PLAYWRIGHT_STEP_TIMEOUT_MS
+    });
     await advanceFrames(page, 10);
 
     const initialState = await readState(page);
@@ -212,6 +222,7 @@ async function main() {
     assert(initialState.sim.currentNodeType === "town", "Smoke seed must start on a town node", initialState);
     assert(initialState.run.serviceStops.length === 2, "Town smoke expects service-bay objectives", initialState);
 
+    logStep("running fixed-seed objective loop");
     const completedState = await completeTownRun(page);
     assert(completedState.scene === "map", "Node completion should return to the map scene", completedState);
     assert(completedState.map.travelUnlockedAtCurrentNode, "Completed node should unlock outbound travel", completedState);
@@ -226,6 +237,7 @@ async function main() {
     await tapKey(page, "Enter", 2);
     await advanceFrames(page, 10);
 
+    logStep("verifying post-travel state");
     const traveledState = await readState(page);
     assert(traveledState.scene === "run", "Travel should return the runtime shell to the run scene", traveledState);
     assert(traveledState.sim.currentNodeId !== completedState.sim.currentNodeId, "Travel should move to a connected node", traveledState);
@@ -260,6 +272,7 @@ async function main() {
         2
       )
     );
+    logStep("browser smoke passed");
   } finally {
     await browser.close();
   }

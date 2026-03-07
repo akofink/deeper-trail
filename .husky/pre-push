@@ -1,2 +1,5 @@
 #!/usr/bin/env sh
+set -e
+
+echo "pre-push: running full quality gate (lint, typecheck, unit tests, browser smoke)"
 npm run check
