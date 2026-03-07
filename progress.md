@@ -383,6 +383,7 @@ TODO next:
   - Updated `vite.config.ts` to default production builds to relative asset paths (`./`) instead of an absolute `/` base.
   - Removed the hardcoded `/deeper-trail/` CI base-path override from `.github/workflows/deploy-pages.yml` so the generated artifact works on both the GitHub Pages project URL and the custom domain root.
   - Updated deployment docs in `README.md` and `docs/10-engineering-workflow.md`.
+  - Post-deploy follow-up: the direct custom-domain URL worked immediately after the fix, while the GitHub Pages redirect path showed one stale white-page load until cached HTML expired; a refresh then loaded correctly. Treat that as cache propagation noise, not a remaining code bug.
   - Validation:
     - `npm run build` passes.
     - Built `dist/index.html` now references `./assets/...` instead of `/deeper-trail/assets/...`.

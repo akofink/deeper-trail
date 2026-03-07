@@ -91,6 +91,7 @@ Alternative: **Phaser 3** also great. If you prefer a more “batteries included
 - Production builds now use relative asset paths so the same `dist/` artifact works both on the GitHub Pages project URL and on the custom domain root.
 - In GitHub repo settings, set Pages to use `GitHub Actions` as the source.
 - After pushes to `main`, the site will deploy to GitHub Pages and can be served from `https://akofink.github.io/deeper-trail/` or the configured custom domain `https://deeper-trail.akofink.com/`.
+- If the GitHub Pages URL redirects to the custom domain but shows a white page briefly after a deploy, check again after cache expiry or in a private window before assuming the deploy is still broken.
 
 ## Current code structure
 
@@ -100,11 +101,11 @@ src/
     data/      # content pack types + validation
     gen/       # deterministic graph generation
     rng/       # seeded RNG utilities
-    sim/       # simulation actions/rules
+    sim/       # deterministic simulation actions/rules
   game/
-    scenes/    # rendering scenes (placeholder)
+    runtime/   # runtime-facing scene state, layout data, derived stats
     state/     # game state and initialization
-    ui/        # UI modules (placeholder)
+  main.ts      # Pixi app shell, input handling, scene rendering
 tests/         # unit tests for engine + state behavior
 ```
 
