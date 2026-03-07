@@ -39,6 +39,11 @@
   - objective rules should live in deterministic sim helpers rather than being embedded entirely in the render/input layer,
   - if a beacon/objective has special activation constraints, surface that rule both on the map route card and in the in-run prompt before the player fails it,
   - biome variation should prefer changing the player's verbs or timing requirements over just changing colors or hazard spacing,
+  - scanner route intel should unlock in readable tiers instead of dumping every route detail from the start:
+  - lv.2 reveals biome benefits on unvisited routes,
+  - lv.3 reveals biome objective patterns on unvisited routes and completes the scanner's route-reading loop alongside auto-link,
+  - lv.4 reveals biome wear-risk previews on unvisited routes,
+  - once a biome has been visited, its objective pattern should stay visible even without later scanner upgrades because that knowledge is now experiential,
   - current relay rule set is a good baseline pattern:
   - `town` uses steady relay links plus service bays that reward grounded low-speed holding,
   - `ruin` uses ordered links plus impact plates that reward hard landings on marked slabs,

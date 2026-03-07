@@ -472,3 +472,9 @@ TODO next:
 
 - Decide whether notebook clues should start affecting route choice mechanically, for example by revealing pre-arrival scanner/map intel or unlocking authored encounter outcomes.
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially repeated HUD text-reset / draw-primitive plumbing and any remaining scene-specific card layout or module-meter setup.
+
+- Scanner intel pass:
+  - Tightened pre-arrival route knowledge so scanner progression now reveals meaningful map decisions in tiers instead of leaking full objective text from the start.
+  - `src/engine/sim/exploration.ts` now exposes biome objective visibility alongside benefit/risk visibility; first visits permanently teach that biome's objective pattern.
+  - `src/game/runtime/mapSceneContent.ts` now hides selected-route objective summaries behind scanner lv.3 or prior biome experience, and field notes now include the same objective-pattern knowledge tier.
+  - Updated `tests/exploration.test.ts` and `tests/mapSceneContent.test.ts`; targeted typecheck plus `tests/exploration.test.ts` and `tests/mapSceneContent.test.ts` pass.

@@ -26,7 +26,7 @@
 
 - [ ] Add pickup magnetism or storage-driven salvage pull so collection runs feel juicier
 - [ ] Add chassis-led terrain response: landing compression, wheel kick, dust/trail feedback
-- [ ] Make scanner progression reveal more route intel before arrival, not only after discovery
+- [x] Make scanner progression reveal more route intel before arrival, not only after discovery
 - [ ] Tune biome objective difficulty from human playtest feedback
 
 ## Content / progression priorities
