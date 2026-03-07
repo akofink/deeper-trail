@@ -7,9 +7,6 @@ import {
   getBeaconRuleForNodeType,
   getBeaconRuleLabel,
   getObjectiveSummary,
-  isPhaseWindowOpen,
-  isSteadyLinkReady,
-  nextRequiredBeaconIndex
 } from './engine/sim/runObjectives';
 import {
   FIELD_REPAIR_SCRAP_COST,
@@ -26,7 +23,6 @@ import { buildMapSceneCopy, buildMapSceneHudLayout } from './game/runtime/mapSce
 import { pullCollectibleTowardTarget } from './game/runtime/collectibleMagnetism';
 import {
   applyCanopyLiftAssist,
-  CANOPY_LIFT_HOLD_SECONDS,
   isInsideCanopyLift,
 } from './game/runtime/canopyLifts';
 import {
@@ -36,12 +32,12 @@ import {
 } from './game/runtime/expeditionFlow';
 import { objectiveShortLabel, runObjectiveProgress, runObjectivePrompt } from './game/runtime/runObjectiveUi';
 import { updateRunObjectives } from './game/runtime/runObjectiveUpdates';
+import { buildRunObjectiveVisualState } from './game/runtime/runObjectiveVisuals';
 import { dashEntryEnergyCost, shouldContinueDash, shouldStartDash } from './game/runtime/runDash';
 import { buildRunHudLayout } from './game/runtime/runHudLayout';
 import { projectMapPoint } from './game/runtime/mapProjection';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import { advanceHorizontalVelocity } from './game/runtime/runMotion';
-import { SERVICE_STOP_HOLD_SECONDS } from './game/runtime/serviceStops';
 import { rechargeShieldCharge, tryConsumeShieldCharge } from './game/runtime/shieldCharge';
 import type { RuntimeState } from './game/runtime/runtimeState';
 import {
@@ -1079,8 +1075,7 @@ async function bootstrap(): Promise<void> {
     const cam = state.cameraX;
     const nodeType = findNode(state.sim, state.sim.currentNodeId)?.type ?? 'town';
     const colors = biomeByNodeType(nodeType);
-    const beaconRule = getBeaconRuleForNodeType(nodeType);
-    const nextBeaconIndex = nextRequiredBeaconIndex(state.beacons);
+    const objectiveVisuals = buildRunObjectiveVisualState(state);
 
     graphics.clear();
     playerGraphics.clear();
@@ -1128,34 +1123,34 @@ async function bootstrap(): Promise<void> {
       graphics.rect(hazard.x - cam, hazard.y, hazard.w, hazard.h).fill(colors.hazard);
     }
 
-    for (const stop of state.serviceStops) {
-      const left = stop.x - stop.w * 0.5 - cam;
+    for (const stop of objectiveVisuals.serviceStops) {
+      const left = stop.x - stop.width * 0.5 - cam;
       const bayColor = stop.serviced ? '#14b8a6' : '#0f766e';
-      graphics.roundRect(left, state.groundY - 14, stop.w, 14, 6).fill({ color: bayColor, alpha: stop.serviced ? 0.45 : 0.24 });
-      graphics.roundRect(left, state.groundY - 14, stop.w, 14, 6).stroke({ color: '#ccfbf1', alpha: stop.serviced ? 0.55 : 0.28, width: 1.2 });
+      graphics.roundRect(left, state.groundY - 14, stop.width, 14, 6).fill({ color: bayColor, alpha: stop.serviced ? 0.45 : 0.24 });
+      graphics.roundRect(left, state.groundY - 14, stop.width, 14, 6).stroke({ color: '#ccfbf1', alpha: stop.serviced ? 0.55 : 0.28, width: 1.2 });
       drawGauge(
         graphics,
         left + 8,
         state.groundY - 28,
-        stop.w - 16,
+        stop.width - 16,
         6,
-        stop.progress / SERVICE_STOP_HOLD_SECONDS,
+        stop.progressRatio,
         '#2dd4bf',
         '#0f172a'
       );
       if (!stop.serviced) {
-        graphics.roundRect(left + 10, state.groundY - 10, stop.w - 20, 6, 3).fill({ color: '#99f6e4', alpha: 0.24 });
+        graphics.roundRect(left + 10, state.groundY - 10, stop.width - 20, 6, 3).fill({ color: '#99f6e4', alpha: 0.24 });
       }
     }
 
-    for (const plate of state.impactPlates) {
-      const left = plate.x - plate.w * 0.5 - cam;
+    for (const plate of objectiveVisuals.impactPlates) {
+      const left = plate.x - plate.width * 0.5 - cam;
       const top = state.groundY - 12;
-      graphics.roundRect(left, top, plate.w, 12, 4).fill({
+      graphics.roundRect(left, top, plate.width, 12, 4).fill({
         color: plate.shattered ? '#78716c' : '#a16207',
         alpha: plate.shattered ? 0.38 : 0.72
       });
-      graphics.roundRect(left, top, plate.w, 12, 4).stroke({
+      graphics.roundRect(left, top, plate.width, 12, 4).stroke({
         color: plate.shattered ? '#d6d3d1' : '#fcd34d',
         alpha: plate.shattered ? 0.45 : 0.7,
         width: 1.4
@@ -1163,19 +1158,19 @@ async function bootstrap(): Promise<void> {
       if (!plate.shattered) {
         graphics
           .moveTo(left + 10, top + 4)
-          .lineTo(left + plate.w * 0.4, top + 8)
-          .lineTo(left + plate.w * 0.72, top + 3)
-          .lineTo(left + plate.w - 12, top + 8)
+          .lineTo(left + plate.width * 0.4, top + 8)
+          .lineTo(left + plate.width * 0.72, top + 3)
+          .lineTo(left + plate.width - 12, top + 8)
           .stroke({ color: '#fef3c7', alpha: 0.55, width: 1.1 });
       }
     }
 
-    for (const lift of state.canopyLifts) {
-      const left = lift.x - lift.w * 0.5 - cam;
-      const top = lift.y - lift.h * 0.5;
+    for (const lift of objectiveVisuals.canopyLifts) {
+      const left = lift.x - lift.width * 0.5 - cam;
+      const top = lift.y - lift.height * 0.5;
       const activeAlpha = lift.charted ? 0.24 : 0.18 + Math.sin(state.elapsedSeconds * 3 + lift.x * 0.01) * 0.03;
-      graphics.roundRect(left, top, lift.w, lift.h, 28).fill({ color: '#84cc16', alpha: activeAlpha });
-      graphics.roundRect(left, top, lift.w, lift.h, 28).stroke({
+      graphics.roundRect(left, top, lift.width, lift.height, 28).fill({ color: '#84cc16', alpha: activeAlpha });
+      graphics.roundRect(left, top, lift.width, lift.height, 28).stroke({
         color: lift.charted ? '#bef264' : '#4d7c0f',
         alpha: lift.charted ? 0.72 : 0.45,
         width: lift.charted ? 2.8 : 1.8
@@ -1184,14 +1179,14 @@ async function bootstrap(): Promise<void> {
         graphics,
         left + 12,
         top + 12,
-        lift.w - 24,
+        lift.width - 24,
         6,
-        lift.progress / CANOPY_LIFT_HOLD_SECONDS,
+        lift.progressRatio,
         '#d9f99d',
         '#365314'
       );
       if (!lift.charted) {
-        graphics.circle(lift.x - cam, lift.y, Math.min(lift.w, lift.h) * 0.24 + Math.sin(state.elapsedSeconds * 4 + lift.x * 0.02) * 4).stroke({
+        graphics.circle(lift.x - cam, lift.y, lift.pulseRadius).stroke({
           color: '#ecfccb',
           alpha: 0.3,
           width: 2
@@ -1199,64 +1194,49 @@ async function bootstrap(): Promise<void> {
       }
     }
 
-    for (let index = 0; index < state.syncGates.length; index += 1) {
-      const gate = state.syncGates[index];
-      const open = isPhaseWindowOpen(state.elapsedSeconds, index);
-      graphics.roundRect(gate.x - gate.w * 0.5 - cam, gate.y - gate.h * 0.5, gate.w, gate.h, 20).stroke({
-        color: gate.stabilized ? '#22d3ee' : open ? '#fbbf24' : '#8b5cf6',
-        alpha: gate.stabilized ? 0.8 : open ? 0.7 : 0.32,
-        width: gate.stabilized ? 3 : open ? 2.6 : 1.4
+    for (const gate of objectiveVisuals.syncGates) {
+      graphics.roundRect(gate.x - gate.width * 0.5 - cam, gate.y - gate.height * 0.5, gate.width, gate.height, 20).stroke({
+        color: gate.stabilized ? '#22d3ee' : gate.phaseOpen ? '#fbbf24' : '#8b5cf6',
+        alpha: gate.stabilized ? 0.8 : gate.phaseOpen ? 0.7 : 0.32,
+        width: gate.stabilized ? 3 : gate.phaseOpen ? 2.6 : 1.4
       });
-      graphics.roundRect(gate.x - gate.w * 0.5 + 8 - cam, gate.y - 6, gate.w - 16, 12, 6).fill({
+      graphics.roundRect(gate.x - gate.width * 0.5 + 8 - cam, gate.y - 6, gate.width - 16, 12, 6).fill({
         color: gate.stabilized ? '#67e8f9' : '#312e81',
         alpha: gate.stabilized ? 0.45 : 0.18
       });
     }
 
-    for (let index = 0; index < state.beacons.length; index += 1) {
-      const beacon = state.beacons[index];
-      const isNextRequired = beaconRule === 'ordered' && !beacon.activated && index === nextBeaconIndex;
-      const steadyReady =
-        beaconRule === 'steady' && !beacon.activated && isSteadyLinkReady(Math.abs(state.player.vx), !state.player.onGround);
-      const ringColor = beacon.activated ? '#22c55e' : isNextRequired ? '#f59e0b' : '#64748b';
+    for (let index = 0; index < objectiveVisuals.beacons.length; index += 1) {
+      const beacon = objectiveVisuals.beacons[index];
+      const ringColor = beacon.activated ? '#22c55e' : beacon.isNextRequired ? '#f59e0b' : '#64748b';
       const coreColor = beacon.activated ? '#bbf7d0' : '#cbd5e1';
-      const anomalyWindowOpen = nodeType === 'anomaly' && isPhaseWindowOpen(state.elapsedSeconds, index);
-      graphics.circle(beacon.x - cam, beacon.y, beacon.r).fill(ringColor);
-      graphics.circle(beacon.x - cam, beacon.y, beacon.r - 5).fill(coreColor);
-      if (!beacon.activated && beaconRule === 'boosted') {
-        graphics.circle(beacon.x - cam, beacon.y, beacon.r + 7 + Math.sin(state.elapsedSeconds * 5 + index) * 2).stroke({
-          color: anomalyWindowOpen ? '#fbbf24' : '#8b5cf6',
-          alpha: anomalyWindowOpen ? 0.75 : 0.35,
-          width: anomalyWindowOpen ? 3 : 2
+      graphics.circle(beacon.x - cam, beacon.y, beacon.radius).fill(ringColor);
+      graphics.circle(beacon.x - cam, beacon.y, beacon.radius - 5).fill(coreColor);
+      if (!beacon.activated && objectiveVisuals.beaconRule === 'boosted') {
+        graphics.circle(beacon.x - cam, beacon.y, beacon.radius + 7 + Math.sin(state.elapsedSeconds * 5 + index) * 2).stroke({
+          color: beacon.anomalyWindowOpen ? '#fbbf24' : '#8b5cf6',
+          alpha: beacon.anomalyWindowOpen ? 0.75 : 0.35,
+          width: beacon.anomalyWindowOpen ? 3 : 2
         });
       }
-      if (!beacon.activated && beaconRule === 'ordered') {
-        graphics.circle(beacon.x - cam, beacon.y, beacon.r + 6).stroke({
-          color: isNextRequired ? '#fbbf24' : '#475569',
-          alpha: isNextRequired ? 0.85 : 0.35,
-          width: isNextRequired ? 2.5 : 1.2
+      if (!beacon.activated && objectiveVisuals.beaconRule === 'ordered') {
+        graphics.circle(beacon.x - cam, beacon.y, beacon.radius + 6).stroke({
+          color: beacon.isNextRequired ? '#fbbf24' : '#475569',
+          alpha: beacon.isNextRequired ? 0.85 : 0.35,
+          width: beacon.isNextRequired ? 2.5 : 1.2
         });
       }
-      if (!beacon.activated && beaconRule === 'steady') {
-        graphics.circle(beacon.x - cam, beacon.y, beacon.r + 6).stroke({
-          color: steadyReady ? '#14b8a6' : '#0f766e',
-          alpha: steadyReady ? 0.85 : 0.32,
-          width: steadyReady ? 2.8 : 1.4
+      if (!beacon.activated && objectiveVisuals.beaconRule === 'steady') {
+        graphics.circle(beacon.x - cam, beacon.y, beacon.radius + 6).stroke({
+          color: beacon.steadyReady ? '#14b8a6' : '#0f766e',
+          alpha: beacon.steadyReady ? 0.85 : 0.32,
+          width: beacon.steadyReady ? 2.8 : 1.4
         });
       }
       const label = beaconLabels[index];
-      if (label && !beacon.activated && beaconRule !== 'standard') {
-        label.text = beaconRule === 'steady' ? 'S' : `${index + 1}`;
-        label.style.fill =
-          beaconRule === 'boosted'
-            ? '#312e81'
-            : beaconRule === 'steady'
-              ? steadyReady
-                ? '#134e4a'
-                : '#115e59'
-              : isNextRequired
-                ? '#92400e'
-                : '#111827';
+      if (label && !beacon.activated && objectiveVisuals.beaconRule !== 'standard') {
+        label.text = beacon.labelText;
+        label.style.fill = beacon.labelFill;
         label.x = beacon.x - cam - Math.round(label.width * 0.5);
         label.y = beacon.y - Math.round(label.height * 0.5);
       }
