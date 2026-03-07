@@ -1,4 +1,5 @@
 import type fs from "node:fs";
+import type { Browser, Page } from "playwright";
 
 export interface BeaconApproachTarget {
   kind: "beacon";
@@ -27,6 +28,79 @@ export interface BeaconApproachResult {
   shouldCreep: boolean;
 }
 
+export interface AirborneBeaconApproachTarget {
+  kind: "beacon";
+  id: string;
+  x: number;
+  y: number;
+}
+
+export interface AirborneBeaconApproachStateInput {
+  run: {
+    player: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      onGround: boolean;
+      vx: number;
+    };
+  };
+}
+
+export interface AirborneBeaconApproachResult {
+  dx: number;
+  dy: number;
+  distance: number;
+  inRange: boolean;
+  nearX: boolean;
+  shouldJump: boolean;
+  shouldActivate: boolean;
+  shouldBrake: boolean;
+  shouldCreep: boolean;
+}
+
+export interface SyncGateApproachTarget {
+  kind: "syncGate";
+  id: string;
+  x: number;
+  width: number;
+  height: number;
+}
+
+export interface SyncGateApproachStateInput {
+  run: {
+    player: {
+      x: number;
+      width: number;
+    };
+  };
+  stats: {
+    elapsedSeconds: number;
+  };
+}
+
+export interface SyncGateApproachResult {
+  dx: number;
+  beforeGate: boolean;
+  windowOpen: boolean;
+}
+
+export interface ImpactPlateJumpStateInput {
+  run: {
+    player: {
+      x: number;
+      width: number;
+    };
+    impactPlates: Array<{
+      id: string;
+      x: number;
+      width: number;
+      shattered: boolean;
+    }>;
+  };
+}
+
 export interface DirectoryEntryLike {
   isDirectory(): boolean;
   name: string;
@@ -43,3 +117,11 @@ export function isSkippableBrowserLaunchError(error: unknown): boolean;
 export function resolveExecutablePath(explicitPath?: string, managedPath?: string, fallbackCandidates?: string[]): string | undefined;
 export function resolveExecutablePathCandidates(explicitPath?: string, managedPath?: string, fallbackCandidates?: string[]): string[];
 export function beaconApproachState(target: BeaconApproachTarget, state: BeaconApproachStateInput): BeaconApproachResult;
+export function isPhaseWindowOpen(elapsedSeconds: number, objectiveIndex: number): boolean;
+export function impactPlateJumpWindow(state: ImpactPlateJumpStateInput): ImpactPlateJumpStateInput["run"]["impactPlates"][number] | undefined;
+export function airborneBeaconApproachState(target: AirborneBeaconApproachTarget, state: AirborneBeaconApproachStateInput): AirborneBeaconApproachResult;
+export function syncGateApproachState(target: SyncGateApproachTarget, state: SyncGateApproachStateInput, gateIndex: number): SyncGateApproachResult;
+export function assert(condition: boolean, message: string, state?: unknown): void;
+export function advanceFrames(page: Page, frames: number): Promise<void>;
+export function tapKey(page: Page, key: string, frames?: number): Promise<void>;
+export function launchBrowserWithFallback(candidatePaths: string[]): Promise<Browser>;

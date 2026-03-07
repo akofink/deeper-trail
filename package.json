@@ -16,7 +16,7 @@
     "format": "prettier --check .",
     "format:write": "prettier --write .",
     "test": "TMPDIR=${TMPDIR:-/tmp} vitest run",
-    "test:e2e": "npm run build && node scripts/e2e/fullObjectiveLoop.js",
+    "test:e2e": "npm run build && node scripts/e2e/fullObjectiveLoop.js && node scripts/e2e/ruinSmoke.js && node scripts/e2e/natureSmoke.js && node scripts/e2e/anomalySmoke.js",
     "test:watch": "TMPDIR=${TMPDIR:-/tmp} vitest",
     "check:prepush": "npm run lint && npm run typecheck && npm run test",
     "check": "npm run lint && npm run typecheck && npm run test && npm run test:e2e",
