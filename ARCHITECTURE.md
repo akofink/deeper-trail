@@ -50,6 +50,7 @@ docs/
 - Terrain can begin as non-colliding visual structure, but should still communicate biome and movement context.
 - The map scene should read like a navigable route board, not a raw graph debug view:
   - edges should be continuous and legible,
+  - node layout should be generated as a 3D cloud and projected back into the 2D render so rotation adds depth instead of collapsing into a flat line,
   - selected routes should be visually singled out,
   - route/install/travel details should live in a dedicated readable card rather than loose bottom text,
   - action chips should be spatially separate from the detail card so the two layers do not compete.

@@ -15,7 +15,7 @@ import {
   repairMostDamagedSubsystem
 } from './engine/sim/vehicle';
 import { biomeByNodeType, buildRunLayout, mapNodePalette, MODULE_LABELS } from './game/runtime/runLayout';
-import { clampMapRotation, projectMapPoint } from './game/runtime/mapProjection';
+import { projectMapPoint } from './game/runtime/mapProjection';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import type { RuntimeState } from './game/runtime/runtimeState';
 import {
@@ -1010,7 +1010,7 @@ async function bootstrap(): Promise<void> {
     const rotateAccel = MAP_ROTATION_ACCEL * (fastRotate ? MAP_ROTATION_FAST_MULTIPLIER : 1);
     state.mapRotationVelocity += rotateInput * rotateAccel * dt;
     state.mapRotationVelocity *= Math.pow(MAP_ROTATION_DAMPING, dt * 60);
-    state.mapRotation = clampMapRotation(state.mapRotation + state.mapRotationVelocity * dt);
+    state.mapRotation += state.mapRotationVelocity * dt;
   }
 
   function drawRunScene(): void {
@@ -1215,10 +1215,12 @@ async function bootstrap(): Promise<void> {
     const maxX = Math.max(...state.sim.world.nodes.map((node) => node.x));
     const minY = Math.min(...state.sim.world.nodes.map((node) => node.y));
     const maxY = Math.max(...state.sim.world.nodes.map((node) => node.y));
+    const minZ = Math.min(...state.sim.world.nodes.map((node) => node.z));
+    const maxZ = Math.max(...state.sim.world.nodes.map((node) => node.z));
 
-    const bounds = { minX, maxX, minY, maxY };
-    const project = (x: number, y: number): { x: number; y: number; depth: number } =>
-      projectMapPoint(x, y, bounds, w, h, margin, state.mapRotation);
+    const bounds = { minX, maxX, minY, maxY, minZ, maxZ };
+    const project = (x: number, y: number, z: number): { x: number; y: number; depth: number } =>
+      projectMapPoint(x, y, z, bounds, w, h, margin, state.mapRotation);
 
     const options = connectedNeighbors(state.sim);
     const selectedOption = options[state.mapSelectionIndex] ?? null;
@@ -1228,8 +1230,8 @@ async function bootstrap(): Promise<void> {
       const from = state.sim.world.nodes.find((node) => node.id === edge.from);
       const to = state.sim.world.nodes.find((node) => node.id === edge.to);
       if (!from || !to) continue;
-      const p1 = project(from.x, from.y);
-      const p2 = project(to.x, to.y);
+      const p1 = project(from.x, from.y, from.z);
+      const p2 = project(to.x, to.y, to.z);
       const edgeWidth = clamp(1.5 + edge.distance * 0.12, 1.5, 4);
       const isSelectedEdge =
         (edge.from === state.sim.currentNodeId && edge.to === selectedNodeId) ||
@@ -1241,7 +1243,7 @@ async function bootstrap(): Promise<void> {
     }
 
     const projectedNodes = state.sim.world.nodes
-      .map((node) => ({ node, projected: project(node.x, node.y) }))
+      .map((node) => ({ node, projected: project(node.x, node.y, node.z) }))
       .sort((a, b) => a.projected.depth - b.projected.depth);
 
     for (const { node, projected } of projectedNodes) {

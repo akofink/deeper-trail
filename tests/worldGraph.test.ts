@@ -21,11 +21,14 @@ describe('generateWorldGraph', () => {
     const graph = generateWorldGraph('cloud-test', 12);
     const xs = graph.nodes.map((node) => node.x);
     const ys = graph.nodes.map((node) => node.y);
+    const zs = graph.nodes.map((node) => node.z);
     const xSpan = Math.max(...xs) - Math.min(...xs);
     const ySpan = Math.max(...ys) - Math.min(...ys);
+    const zSpan = Math.max(...zs) - Math.min(...zs);
 
     expect(xSpan).toBeGreaterThan(350);
     expect(ySpan).toBeGreaterThan(220);
+    expect(zSpan).toBeGreaterThan(260);
 
     const quadrants = new Set(
       graph.nodes.map((node) => `${node.x > 500 ? 'R' : 'L'}${node.y > 350 ? 'B' : 'T'}`)

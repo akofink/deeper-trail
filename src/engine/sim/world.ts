@@ -27,7 +27,7 @@ export function expeditionGoalNodeId(state: GameState): string {
 
   for (const node of state.world.nodes) {
     if (node.id === startId) continue;
-    if (node.x > selected.x || (node.x === selected.x && node.y < selected.y)) {
+    if (node.x + node.z * 0.35 > selected.x + selected.z * 0.35 || (node.x === selected.x && node.y < selected.y)) {
       selected = node;
     }
   }

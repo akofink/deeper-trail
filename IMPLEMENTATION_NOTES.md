@@ -55,6 +55,7 @@
 - Even before gameplay terrain becomes mechanically rich, the run scene should have layered visual terrain so the player does not feel stranded in empty space.
 - Biome differentiation should come from palette, skyline/backdrop shapes, and repeated terrain motifs, not just hazard color swaps.
 - The player avatar should read as rider + machine. If a render pass can be mistaken for a lone creature, add chassis/wheels/tools/modules before adding more abstract motion polish.
+- 2.5D projection techniques are now part of the visual toolbox: the route board uses a depth-aware 3D node cloud projected into the 2D map scene, and similar tricks are worth revisiting later for other readable, simulation-safe presentation layers.
 
 ## Deployment
 
