@@ -16,6 +16,7 @@ import {
 } from './engine/sim/vehicle';
 import { biomeByNodeType, buildRunLayout, mapNodePalette, MODULE_LABELS } from './game/runtime/runLayout';
 import { buildMapSceneCopy, buildMapSceneHudLayout } from './game/runtime/mapSceneCards';
+import { pullCollectibleTowardTarget } from './game/runtime/collectibleMagnetism';
 import { applyNodeCompletionState } from './game/runtime/runCompletion';
 import { dashEntryEnergyCost, shouldContinueDash, shouldStartDash } from './game/runtime/runDash';
 import { buildRunHudLayout } from './game/runtime/runHudLayout';
@@ -25,6 +26,8 @@ import { advanceHorizontalVelocity } from './game/runtime/runMotion';
 import type { RuntimeState } from './game/runtime/runtimeState';
 import {
   beaconInteractRadius,
+  collectibleMagnetRadius,
+  collectibleMagnetSpeed,
   dashSpeedForState,
   hazardInvulnerabilitySeconds,
   jumpSpeedForState,
@@ -899,8 +902,11 @@ async function bootstrap(): Promise<void> {
     if (hasBeaconAutoLink(state)) {
       tryActivateBeacon('auto');
     }
+    const magnetRadius = collectibleMagnetRadius(state);
+    const magnetSpeed = collectibleMagnetSpeed(state);
     for (const item of state.collectibles) {
       if (item.collected) continue;
+      pullCollectibleTowardTarget(item, px, py, dt, magnetRadius, magnetSpeed);
       const rr = (item.r + 16) * (item.r + 16);
       if (distanceSq(px, py, item.x, item.y) <= rr) {
         item.collected = true;

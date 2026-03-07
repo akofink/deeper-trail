@@ -25,6 +25,14 @@ export function hazardInvulnerabilitySeconds(state: RuntimeState): number {
   return 1 + Math.max(0, state.sim.vehicle.shielding - 1) * 0.2;
 }
 
+export function collectibleMagnetRadius(state: RuntimeState): number {
+  return state.sim.vehicle.storage >= 2 ? 52 + Math.max(0, state.sim.vehicle.storage - 2) * 18 : 0;
+}
+
+export function collectibleMagnetSpeed(state: RuntimeState): number {
+  return state.sim.vehicle.storage >= 2 ? 145 + Math.max(0, state.sim.vehicle.storage - 2) * 55 : 0;
+}
+
 export function scrapGainPerCollectible(state: RuntimeState): number {
   return state.sim.vehicle.storage >= 3 ? 2 : 1;
 }
