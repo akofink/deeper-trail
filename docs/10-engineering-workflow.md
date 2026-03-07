@@ -32,6 +32,13 @@ Enforce consistent code quality and repository hygiene while keeping iteration f
 - Keep docs and code aligned in the same PR.
 - Update `ARCHITECTURE.md` when adding/changing foundational modules.
 - Update this workflow doc when changing quality gates or branching policy.
+- When a session uncovers actionable follow-up work that will not be fixed immediately, add an open
+  report under `docs/issues/` before handoff so the next contributor has a durable queue entry.
+- Name issue files `YYYYMMDD-short-kebab-case-summary.md`.
+- Keep each issue report brief but operational: describe the problem, reproduction/observation,
+  impact, and any likely starting points or constraints for the next agent.
+- When the issue is resolved, append a short resolution note and move the file to
+  `docs/issues/closed/`.
 
 ## Worktree policy
 
@@ -40,6 +47,8 @@ Enforce consistent code quality and repository hygiene while keeping iteration f
 - Recommended command: `git worktree add .worktrees/<task-name> -b <branch-name>`.
 - `.worktrees/` must stay gitignored and excluded from recursive repo tooling such as search, lint, and formatting.
 - Do not place live worktree checkouts inside `.git/`; only Git-managed metadata belongs under `.git/worktrees/`.
+- Before deleting a worktree or handing off its branch, capture any unfinished actionable findings in
+  `docs/issues/` so they are not stranded in local branch history.
 
 ## Deployment note
 

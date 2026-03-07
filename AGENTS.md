@@ -85,6 +85,11 @@ Update these files when relevant:
 - Design docs under [docs](/home/akofink/dev/repos/deeper-trail/docs) when gameplay systems move materially.
 - [IMPLEMENTATION_NOTES.md](/home/akofink/dev/repos/deeper-trail/IMPLEMENTATION_NOTES.md) or [progress.md](/home/akofink/dev/repos/deeper-trail/progress.md) when carrying forward implementation status or follow-up notes.
 
+When you discover follow-up work that should survive the current session, record it in
+[docs/issues](/home/akofink/dev/repos/deeper-trail/docs/issues) before handing off. This includes
+bugs, UX problems, balancing problems, determinism risks, missing tests, tooling gaps, and design
+debt that is concrete enough for another agent to pick up later.
+
 ## Docs Triage And Next-Work Order
 
 - Treat [docs/issues](/home/akofink/dev/repos/deeper-trail/docs/issues) as the first stop for follow-on work. This directory is for concrete issue reports, bugs, UX problems, and playtest findings that should be evaluated before broader roadmap work.
@@ -99,6 +104,15 @@ Update these files when relevant:
   - [progress.md](/home/akofink/dev/repos/deeper-trail/progress.md) / [IMPLEMENTATION_NOTES.md](/home/akofink/dev/repos/deeper-trail/IMPLEMENTATION_NOTES.md) = implementation history, constraints, and carry-forward notes.
 - When closing an issue report, add a short resolution note in the file before moving it so future contributors can see why it stopped being actionable.
 - If an issue report changes the roadmap, fix or annotate the issue first, then update the relevant design doc so future contributors see both the immediate problem and the longer-term plan.
+- Issue filenames should follow `YYYYMMDD-short-kebab-case-summary.md` so reports sort by discovery date and remain easy to scan.
+- Each new open issue should be a short handoff note that covers:
+  - what is wrong or missing
+  - how to reproduce or observe it
+  - why it matters to the project goals or player experience
+  - any known constraints, suspected cause, or likely file/module starting points
+  - the discovery date so later agents know the report's age
+- Create an issue report before ending a session whenever you leave behind known actionable work that you are not fixing in the same change.
+- Do not move speculative ideas or broad roadmap brainstorming into [docs/issues](/home/akofink/dev/repos/deeper-trail/docs/issues); keep that material in the numbered design docs or progress notes unless there is a concrete problem to hand off.
 
 ## Gameplay And Architecture Guidance
 
