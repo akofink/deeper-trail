@@ -35,10 +35,11 @@ import { runObjectiveProgress } from './game/runtime/runObjectiveUi';
 import { updateRunObjectives } from './game/runtime/runObjectiveUpdates';
 import { buildRunObjectiveVisualState } from './game/runtime/runObjectiveVisuals';
 import { dashEntryEnergyCost, shouldContinueDash, shouldStartDash } from './game/runtime/runDash';
-import { buildRunHudLayout } from './game/runtime/runHudLayout';
 import { updateMapRotation } from './game/runtime/mapRotation';
+import { buildRunSceneHudViewModel } from './game/runtime/runSceneHudView';
+import { buildBeaconLabelViews, drawRunExitFlag, drawRunObjectiveVisuals } from './game/runtime/runSceneObjectiveView';
 import { buildRunActionChips, buildRunSceneOverlayCard } from './game/runtime/runSceneView';
-import { buildMapHudContent, buildRunHudContent } from './game/runtime/sceneHudContent';
+import { buildMapHudContent } from './game/runtime/sceneHudContent';
 import { buildModuleLabelLayouts, buildPanelHeaderLayout } from './game/runtime/sceneHudView';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import { advanceHorizontalVelocity } from './game/runtime/runMotion';
@@ -1086,130 +1087,16 @@ async function bootstrap(): Promise<void> {
     for (const hazard of state.hazards) {
       graphics.rect(hazard.x - cam, hazard.y, hazard.w, hazard.h).fill(colors.hazard);
     }
-
-    for (const stop of objectiveVisuals.serviceStops) {
-      const left = stop.x - stop.width * 0.5 - cam;
-      const bayColor = stop.serviced ? '#14b8a6' : '#0f766e';
-      graphics.roundRect(left, state.groundY - 14, stop.width, 14, 6).fill({ color: bayColor, alpha: stop.serviced ? 0.45 : 0.24 });
-      graphics.roundRect(left, state.groundY - 14, stop.width, 14, 6).stroke({ color: '#ccfbf1', alpha: stop.serviced ? 0.55 : 0.28, width: 1.2 });
-      drawGauge(
-        graphics,
-        left + 8,
-        state.groundY - 28,
-        stop.width - 16,
-        6,
-        stop.progressRatio,
-        '#2dd4bf',
-        '#0f172a'
-      );
-      if (!stop.serviced) {
-        graphics.roundRect(left + 10, state.groundY - 10, stop.width - 20, 6, 3).fill({ color: '#99f6e4', alpha: 0.24 });
-      }
-    }
-
-    for (const plate of objectiveVisuals.impactPlates) {
-      const left = plate.x - plate.width * 0.5 - cam;
-      const top = state.groundY - 12;
-      graphics.roundRect(left, top, plate.width, 12, 4).fill({
-        color: plate.shattered ? '#78716c' : '#a16207',
-        alpha: plate.shattered ? 0.38 : 0.72
-      });
-      graphics.roundRect(left, top, plate.width, 12, 4).stroke({
-        color: plate.shattered ? '#d6d3d1' : '#fcd34d',
-        alpha: plate.shattered ? 0.45 : 0.7,
-        width: 1.4
-      });
-      if (!plate.shattered) {
-        graphics
-          .moveTo(left + 10, top + 4)
-          .lineTo(left + plate.width * 0.4, top + 8)
-          .lineTo(left + plate.width * 0.72, top + 3)
-          .lineTo(left + plate.width - 12, top + 8)
-          .stroke({ color: '#fef3c7', alpha: 0.55, width: 1.1 });
-      }
-    }
-
-    for (const lift of objectiveVisuals.canopyLifts) {
-      const left = lift.x - lift.width * 0.5 - cam;
-      const top = lift.y - lift.height * 0.5;
-      const activeAlpha = lift.charted ? 0.24 : 0.18 + Math.sin(state.elapsedSeconds * 3 + lift.x * 0.01) * 0.03;
-      graphics.roundRect(left, top, lift.width, lift.height, 28).fill({ color: '#84cc16', alpha: activeAlpha });
-      graphics.roundRect(left, top, lift.width, lift.height, 28).stroke({
-        color: lift.charted ? '#bef264' : '#4d7c0f',
-        alpha: lift.charted ? 0.72 : 0.45,
-        width: lift.charted ? 2.8 : 1.8
-      });
-      drawGauge(
-        graphics,
-        left + 12,
-        top + 12,
-        lift.width - 24,
-        6,
-        lift.progressRatio,
-        '#d9f99d',
-        '#365314'
-      );
-      if (!lift.charted) {
-        graphics.circle(lift.x - cam, lift.y, lift.pulseRadius).stroke({
-          color: '#ecfccb',
-          alpha: 0.3,
-          width: 2
-        });
-      }
-    }
-
-    for (const gate of objectiveVisuals.syncGates) {
-      graphics.roundRect(gate.x - gate.width * 0.5 - cam, gate.y - gate.height * 0.5, gate.width, gate.height, 20).stroke({
-        color: gate.stabilized ? '#22d3ee' : gate.phaseOpen ? '#fbbf24' : '#8b5cf6',
-        alpha: gate.stabilized ? 0.8 : gate.phaseOpen ? 0.7 : 0.32,
-        width: gate.stabilized ? 3 : gate.phaseOpen ? 2.6 : 1.4
-      });
-      graphics.roundRect(gate.x - gate.width * 0.5 + 8 - cam, gate.y - 6, gate.width - 16, 12, 6).fill({
-        color: gate.stabilized ? '#67e8f9' : '#312e81',
-        alpha: gate.stabilized ? 0.45 : 0.18
-      });
-    }
-
-    for (let index = 0; index < objectiveVisuals.beacons.length; index += 1) {
-      const beacon = objectiveVisuals.beacons[index];
-      const ringColor = beacon.activated ? '#22c55e' : beacon.isNextRequired ? '#f59e0b' : '#64748b';
-      const coreColor = beacon.activated ? '#bbf7d0' : '#cbd5e1';
-      graphics.circle(beacon.x - cam, beacon.y, beacon.radius).fill(ringColor);
-      graphics.circle(beacon.x - cam, beacon.y, beacon.radius - 5).fill(coreColor);
-      if (!beacon.activated && objectiveVisuals.beaconRule === 'boosted') {
-        graphics.circle(beacon.x - cam, beacon.y, beacon.radius + 7 + Math.sin(state.elapsedSeconds * 5 + index) * 2).stroke({
-          color: beacon.anomalyWindowOpen ? '#fbbf24' : '#8b5cf6',
-          alpha: beacon.anomalyWindowOpen ? 0.75 : 0.35,
-          width: beacon.anomalyWindowOpen ? 3 : 2
-        });
-        graphics.circle(beacon.x - cam, beacon.y, beacon.radius + 12).stroke({
-          color: '#22d3ee',
-          alpha: beacon.anomalyScanLocked ? 0.9 : 0.18 + beacon.anomalyScanProgressRatio * 0.55,
-          width: beacon.anomalyScanLocked ? 3.2 : 1 + beacon.anomalyScanProgressRatio * 2.4
-        });
-      }
-      if (!beacon.activated && objectiveVisuals.beaconRule === 'ordered') {
-        graphics.circle(beacon.x - cam, beacon.y, beacon.radius + 6).stroke({
-          color: beacon.isNextRequired ? '#fbbf24' : '#475569',
-          alpha: beacon.isNextRequired ? 0.85 : 0.35,
-          width: beacon.isNextRequired ? 2.5 : 1.2
-        });
-      }
-      if (!beacon.activated && objectiveVisuals.beaconRule === 'steady') {
-        graphics.circle(beacon.x - cam, beacon.y, beacon.radius + 6).stroke({
-          color: beacon.steadyReady ? '#14b8a6' : '#0f766e',
-          alpha: beacon.steadyReady ? 0.85 : 0.32,
-          width: beacon.steadyReady ? 2.8 : 1.4
-        });
-      }
+    drawRunObjectiveVisuals(graphics, objectiveVisuals, state.groundY, state.elapsedSeconds, cam);
+    const beaconLabelViews = buildBeaconLabelViews(objectiveVisuals, cam);
+    beaconLabelViews.forEach((view, index) => {
       const label = beaconLabels[index];
-      if (label && !beacon.activated && objectiveVisuals.beaconRule !== 'standard') {
-        label.text = beacon.labelText;
-        label.style.fill = beacon.labelFill;
-        label.x = beacon.x - cam - Math.round(label.width * 0.5);
-        label.y = beacon.y - Math.round(label.height * 0.5);
-      }
-    }
+      if (!label) return;
+      label.text = view.text;
+      label.style.fill = view.fill;
+      label.x = view.x - Math.round(label.width * 0.5);
+      label.y = view.y - Math.round(label.height * 0.5);
+    });
 
     for (const item of state.collectibles) {
       if (item.collected) continue;
@@ -1217,70 +1104,60 @@ async function bootstrap(): Promise<void> {
       graphics.circle(item.x - cam, item.y, item.r - 4).fill('#fff8d6');
     }
 
-    graphics.rect(state.goalX - cam, state.groundY - 130, 8, 130).fill('#334e68');
     const objectiveProgress = runObjectiveProgress(state);
     const exitReady = objectiveProgress.completed >= objectiveProgress.total;
-    graphics
-      .moveTo(state.goalX - cam + 8, state.groundY - 130)
-      .lineTo(state.goalX - cam + 78, state.groundY - 110)
-      .lineTo(state.goalX - cam + 8, state.groundY - 90)
-      .closePath()
-      .fill(exitReady ? '#22c55e' : '#f97316');
+    drawRunExitFlag(graphics, state.goalX, state.groundY, cam, exitReady);
 
     drawVehicleAvatar(playerGraphics, state, cam);
 
-    const runHudContent = buildRunHudContent(state);
-    const hudLayout = buildRunHudLayout(w);
+    const runHudView = buildRunSceneHudViewModel(state, w, moduleLabels.length);
+    const hudLayout = runHudView.layout;
     drawPanel(graphics, hudLayout.leftPanelX, 10, hudLayout.leftPanelWidth, hudLayout.leftPanelHeight);
     drawPanel(graphics, hudLayout.rightPanelX, 10, hudLayout.rightPanelWidth, hudLayout.rightPanelHeight);
-    const [hpRowY, fuelRowY, paceRowY] = hudLayout.leftRowCenters;
-    const [linksRowY, boostRowY, systemsRowY] = hudLayout.rightRowCenters;
-    layoutHudRowLabel(runLeftRowLabels[0], runHudContent.leftRows[0].label, hudLayout.rowLabelX, hpRowY);
-    layoutHudRowLabel(runLeftRowLabels[1], runHudContent.leftRows[1].label, hudLayout.rowLabelX, fuelRowY);
-    layoutHudRowLabel(runLeftRowLabels[2], runHudContent.leftRows[2].label, hudLayout.rowLabelX, paceRowY);
-    layoutHudRowValue(runLeftRowValues[0], runHudContent.leftRows[0].value, hudLayout.rowValueX, hpRowY);
-    layoutHudRowValue(runLeftRowValues[1], runHudContent.leftRows[1].value, hudLayout.rowValueX, fuelRowY);
-    layoutHudRowValue(runLeftRowValues[2], runHudContent.leftRows[2].value, hudLayout.rowValueX, paceRowY);
-    layoutHudRowLabel(runRightRowLabels[0], runHudContent.rightRows[0].label, hudLayout.rightRowLabelX, linksRowY);
-    layoutHudRowLabel(runRightRowLabels[1], runHudContent.rightRows[1].label, hudLayout.rightRowLabelX, boostRowY);
-    layoutHudRowLabel(runRightRowLabels[2], runHudContent.rightRows[2].label, hudLayout.rightRowLabelX, systemsRowY);
-    layoutHudRowValue(runRightRowValues[0], runHudContent.rightRows[0].value, hudLayout.rightRowValueX, linksRowY);
-    layoutHudRowValue(runRightRowValues[1], runHudContent.rightRows[1].value, hudLayout.rightRowValueX, boostRowY);
-    drawPips(graphics, hudLayout.leftPipsX, hpRowY - 3, getMaxHealth(state.sim.vehicle), state.health, '#f97316');
-    drawGauge(graphics, hudLayout.leftGaugeX, fuelRowY - 6, hudLayout.leftGaugeWidth, 12, state.sim.fuel / state.sim.fuelCapacity, '#38bdf8');
+    runHudView.leftRows.forEach((row, index) => {
+      layoutHudRowLabel(runLeftRowLabels[index], row.label, hudLayout.rowLabelX, row.y);
+      layoutHudRowValue(runLeftRowValues[index], row.value, hudLayout.rowValueX, row.y);
+    });
+    runHudView.rightRows.forEach((row, index) => {
+      layoutHudRowLabel(runRightRowLabels[index], row.label, hudLayout.rightRowLabelX, row.y);
+      if (index < 2) {
+        layoutHudRowValue(runRightRowValues[index], row.value, hudLayout.rightRowValueX, row.y);
+      }
+    });
+    drawPips(graphics, hudLayout.leftPipsX, runHudView.leftRows[0].y - 3, runHudView.healthTotal, runHudView.healthFilled, '#f97316');
+    drawGauge(graphics, hudLayout.leftGaugeX, runHudView.leftRows[1].y - 6, hudLayout.leftGaugeWidth, 12, state.sim.fuel / state.sim.fuelCapacity, '#38bdf8');
     drawGauge(
       graphics,
       hudLayout.leftGaugeX,
-      paceRowY - 5,
+      runHudView.leftRows[2].y - 5,
       hudLayout.leftGaugeWidth,
       10,
-      Math.min(1, Math.abs(state.player.vx) / Math.max(1, runSpeedForState(state))),
+      runHudView.paceRatio,
       '#f59e0b'
     );
-    drawPips(graphics, hudLayout.rightPipsX, linksRowY - 3, objectiveProgress.total, objectiveProgress.completed, '#22c55e');
+    drawPips(graphics, hudLayout.rightPipsX, runHudView.rightRows[0].y - 3, runHudView.objectiveTotal, runHudView.objectiveCompleted, '#22c55e');
     drawGauge(graphics, hudLayout.rightGaugeX, 69, hudLayout.rightGaugeWidth, 12, state.dashEnergy, '#a78bfa');
     drawModuleMeters(graphics, hudLayout.rightPanelX + 14, hudLayout.rightModuleY, state.sim);
 
-    const runHeaderLayout = buildPanelHeaderLayout(hudLayout.leftPanelX);
-    hud.text = runHudContent.title;
+    const runHeaderLayout = runHudView.headerLayout;
+    hud.text = runHudView.title;
     hud.style.fontSize = 18;
     hud.style.fill = '#e2e8f0';
     hud.x = runHeaderLayout.titleX;
     hud.y = runHeaderLayout.titleY;
-    panelMeta.text = runHudContent.meta;
+    panelMeta.text = runHudView.meta;
     panelMeta.style.fill = '#cbd5e1';
     panelMeta.style.fontSize = 12;
     panelMeta.x = runHeaderLayout.metaX;
     panelMeta.y = runHeaderLayout.metaY;
-    panelSeed.text = runHudContent.seed;
+    panelSeed.text = runHudView.seed;
     panelSeed.style.fill = '#94a3b8';
     panelSeed.x = runHeaderLayout.seedX;
     panelSeed.y = runHeaderLayout.seedY;
 
-    const runModuleLayouts = buildModuleLabelLayouts(hudLayout.rightPanelX + 14, hudLayout.rightModuleY, moduleLabels.length);
     moduleLabels.forEach((label, index) => {
-      const layout = runModuleLayouts[index];
-      label.text = runHudContent.moduleLabels[index] ?? '';
+      const layout = runHudView.moduleLabels[index];
+      label.text = layout?.text ?? '';
       label.style.fill = '#cbd5e1';
       label.x = layout?.x ?? 0;
       label.y = layout?.y ?? 0;
