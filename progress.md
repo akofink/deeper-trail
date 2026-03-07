@@ -526,7 +526,13 @@ TODO next:
   - Updated `src/game/runtime/arrivalEncounters.ts` so synthesized first-time town arrivals now bank a free transfer and annotate connected neighboring biome routes using the notebook, giving synthesis a direct route-choice payoff after travel.
   - Updated `tests/exploration.test.ts`, `tests/mapSceneContent.test.ts`, and `tests/expeditionFlow.test.ts`; updated `docs/06-puzzles-and-meta-mystery.md`.
 
+- Scene HUD meter-view extraction pass:
+  - Extended `src/game/runtime/sceneHudView.ts` so shared HUD helpers now own module-meter cell positions, level ratios, and condition-color state instead of leaving that grid math in `src/main.ts`.
+  - Updated `src/game/runtime/runSceneHudView.ts` and `src/game/runtime/mapSceneHudView.ts` to expose precomputed `moduleMeters` alongside the existing label/header view models.
+  - Updated `src/main.ts` to draw subsystem level/condition meters from helper-provided view data instead of rebuilding placement and condition coloring inline.
+  - Added targeted assertions in `tests/sceneHudView.test.ts`, `tests/runSceneHudView.test.ts`, and `tests/mapSceneHudView.test.ts`; `npm run typecheck` plus those three Vitest slices pass.
+
 TODO next:
 
 - Keep pushing notebook payoff toward stranger late-game consequences, for example goal-node variants or arrival encounters that alter local run rules instead of only map intel.
-- Continue breaking remaining scene orchestration out of `src/main.ts`, especially shared HUD/draw helper plumbing like chip composition, overlay-card state, and module-meter placement.
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially shared HUD/draw helper plumbing like chip composition and any remaining overlay-card state.

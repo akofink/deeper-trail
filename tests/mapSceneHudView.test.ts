@@ -63,6 +63,8 @@ describe('mapSceneHudView', () => {
     state.sim.scrap = 8;
     state.sim.fuel = 9;
     state.sim.fuelCapacity = 12;
+    state.sim.vehicle.storage = 4;
+    state.sim.vehicleCondition.storage = 1;
     state.sim.notebook.discoveredClues.ruin = true;
     state.sim.notebook.discoveredClues.nature = true;
     state.sim.notebook.synthesisUnlocked = true;
@@ -96,5 +98,13 @@ describe('mapSceneHudView', () => {
       { text: MODULE_LABELS[4].slice(0, 5), x: 666, y: 133 },
       { text: MODULE_LABELS[5].slice(0, 5), x: 750, y: 133 }
     ]);
+    expect(view.moduleMeters[4]).toMatchObject({
+      subsystem: 'storage',
+      x: 660,
+      y: 124,
+      levelRatio: 1,
+      conditionRatio: 1 / 3,
+      conditionColor: '#ef4444'
+    });
   });
 });

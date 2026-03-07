@@ -2,7 +2,13 @@ import { getMaxHealth } from '../../engine/sim/vehicle';
 import { runSpeedForState } from './vehicleDerivedStats';
 import { buildRunHudLayout, type RunHudLayout } from './runHudLayout';
 import { buildRunHudContent } from './sceneHudContent';
-import { buildModuleLabelLayouts, buildPanelHeaderLayout, type PanelHeaderLayout } from './sceneHudView';
+import {
+  buildModuleLabelLayouts,
+  buildModuleMeterViews,
+  buildPanelHeaderLayout,
+  type ModuleMeterView,
+  type PanelHeaderLayout
+} from './sceneHudView';
 import { runObjectiveProgress } from './runObjectiveUi';
 import type { RuntimeState } from './runtimeState';
 
@@ -25,6 +31,7 @@ export interface RunSceneHudViewModel {
   layout: RunHudLayout;
   leftRows: [RunHudRowView, RunHudRowView, RunHudRowView];
   moduleLabels: RunHudModuleLabelView[];
+  moduleMeters: ModuleMeterView[];
   objectiveCompleted: number;
   objectiveTotal: number;
   paceRatio: number;
@@ -46,6 +53,7 @@ export function buildRunSceneHudViewModel(
   const [linksRowY, boostRowY, systemsRowY] = layout.rightRowCenters;
   const objectiveProgress = runObjectiveProgress(state);
   const moduleLayouts = buildModuleLabelLayouts(layout.rightPanelX + 14, layout.rightModuleY, moduleLabelCount);
+  const moduleMeters = buildModuleMeterViews(layout.rightPanelX + 14, layout.rightModuleY, state.sim.vehicle, state.sim.vehicleCondition);
 
   return {
     headerLayout,
@@ -62,6 +70,7 @@ export function buildRunSceneHudViewModel(
       x: moduleLayouts[index]?.x ?? 0,
       y: moduleLayouts[index]?.y ?? 0
     })),
+    moduleMeters,
     objectiveCompleted: objectiveProgress.completed,
     objectiveTotal: objectiveProgress.total,
     paceRatio: Math.min(1, Math.abs(state.player.vx) / Math.max(1, runSpeedForState(state))),
