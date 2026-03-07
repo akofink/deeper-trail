@@ -377,3 +377,12 @@ TODO next:
 - Human playtest the new ruin/anomaly relay rules and report whether they read as satisfying constraints or just surprise failure states.
 - Add a simple clue/notebook system tied to node completion so the expedition goal feels like a mystery hunt, not only a far-right win marker.
 - Prototype one more fun-forward vehicle verb from the existing brainstorm list, likely `storage` pickup magnetism or `shielding` first-hit shield burn, whichever feels better in play.
+
+- Deployment fix pass:
+  - Diagnosed the live white-screen issue on `https://deeper-trail.akofink.com/`: the published HTML referenced `/deeper-trail/assets/...` while the custom domain serves the site from root, so JS/CSS were 404ing and the app never booted.
+  - Updated `vite.config.ts` to default production builds to relative asset paths (`./`) instead of an absolute `/` base.
+  - Removed the hardcoded `/deeper-trail/` CI base-path override from `.github/workflows/deploy-pages.yml` so the generated artifact works on both the GitHub Pages project URL and the custom domain root.
+  - Updated deployment docs in `README.md` and `docs/10-engineering-workflow.md`.
+  - Validation:
+    - `npm run build` passes.
+    - Built `dist/index.html` now references `./assets/...` instead of `/deeper-trail/assets/...`.

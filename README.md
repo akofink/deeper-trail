@@ -88,9 +88,9 @@ Alternative: **Phaser 3** also great. If you prefer a more “batteries included
 
 - This repo is configured for GitHub Pages deployment from GitHub Actions.
 - The workflow lives at [.github/workflows/deploy-pages.yml](/home/akofink/dev/repos/deeper-trail/.github/workflows/deploy-pages.yml).
-- For the `akofink/deeper-trail` repository, production builds use the `/deeper-trail/` base path automatically in CI via `VITE_BASE_PATH=/deeper-trail/`.
+- Production builds now use relative asset paths so the same `dist/` artifact works both on the GitHub Pages project URL and on the custom domain root.
 - In GitHub repo settings, set Pages to use `GitHub Actions` as the source.
-- After pushes to `main`, the site will deploy to `https://akofink.github.io/deeper-trail/`.
+- After pushes to `main`, the site will deploy to GitHub Pages and can be served from `https://akofink.github.io/deeper-trail/` or the configured custom domain `https://deeper-trail.akofink.com/`.
 
 ## Current code structure
 

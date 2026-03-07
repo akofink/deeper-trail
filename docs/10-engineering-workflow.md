@@ -1,9 +1,11 @@
 # docs/10-engineering-workflow.md
 
 ## Goal
+
 Enforce consistent code quality and repository hygiene while keeping iteration fast.
 
 ## Enforcement plan
+
 1. **Phase 1: Baseline quality gates (now)**
    - Type safety with TypeScript strict mode (`npm run typecheck`).
    - Linting with ESLint (`npm run lint`).
@@ -20,11 +22,17 @@ Enforce consistent code quality and repository hygiene while keeping iteration f
    - Add deterministic replay tests for world generation and state transitions.
 
 ## Test policy
+
 - **Features**: include tests for success paths and at least one edge case.
 - **Bug fixes**: add a failing reproducer test first, then implement fix.
 - **Simulation code**: deterministic tests must assert identical results for identical seeds.
 
 ## Documentation hygiene policy
+
 - Keep docs and code aligned in the same PR.
 - Update `ARCHITECTURE.md` when adding/changing foundational modules.
 - Update this workflow doc when changing quality gates or branching policy.
+
+## Deployment note
+
+- Static builds should prefer relative asset paths unless a deploy target truly requires a fixed absolute base. This avoids blank-page failures when the same artifact is served from both a repo subpath and a custom-domain root.
