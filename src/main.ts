@@ -28,24 +28,23 @@ import {
   applyCanopyLiftAssist,
   CANOPY_LIFT_HOLD_SECONDS,
   isInsideCanopyLift,
-  totalCanopyLiftProgress,
   updateCanopyLiftProgress,
-  usesCanopyLifts
 } from './game/runtime/canopyLifts';
 import {
   completeCurrentNodeRun,
   hasCompletedCurrentNode,
   travelToNodeWithRuntimeEffects
 } from './game/runtime/expeditionFlow';
-import { canShatterImpactPlate, impactPlatePrompt, totalImpactPlateProgress, usesImpactPlates } from './game/runtime/impactPlates';
+import { canShatterImpactPlate } from './game/runtime/impactPlates';
+import { objectiveShortLabel, runObjectiveProgress, runObjectivePrompt } from './game/runtime/runObjectiveUi';
 import { dashEntryEnergyCost, shouldContinueDash, shouldStartDash } from './game/runtime/runDash';
 import { buildRunHudLayout } from './game/runtime/runHudLayout';
 import { projectMapPoint } from './game/runtime/mapProjection';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import { advanceHorizontalVelocity } from './game/runtime/runMotion';
-import { SERVICE_STOP_HOLD_SECONDS, totalServiceStopProgress, updateServiceStopProgress, usesServiceStops } from './game/runtime/serviceStops';
+import { SERVICE_STOP_HOLD_SECONDS, updateServiceStopProgress } from './game/runtime/serviceStops';
 import { rechargeShieldCharge, tryConsumeShieldCharge } from './game/runtime/shieldCharge';
-import { canStabilizeSyncGate, totalSyncGateProgress, usesSyncGates } from './game/runtime/syncGates';
+import { canStabilizeSyncGate } from './game/runtime/syncGates';
 import type { RuntimeState } from './game/runtime/runtimeState';
 import {
   beaconInteractRadius,
@@ -541,246 +540,6 @@ function shiftRunSceneVertical(state: RuntimeState, deltaY: number): void {
   }
 }
 
-function hasBeaconInRange(state: RuntimeState): boolean {
-  const px = state.player.x + state.player.w * 0.5;
-  const py = state.player.y + state.player.h * 0.5;
-  const interactRadius = beaconInteractRadius(state);
-  for (const beacon of state.beacons) {
-    if (beacon.activated) continue;
-    const rr = (beacon.r + interactRadius) * (beacon.r + interactRadius);
-    if (distanceSq(px, py, beacon.x, beacon.y) <= rr) return true;
-  }
-  return false;
-}
-
-function hasServiceStopInRange(state: RuntimeState): boolean {
-  if (!usesServiceStops(currentNodeType(state.sim))) {
-    return false;
-  }
-
-  const px = state.player.x + state.player.w * 0.5;
-  for (const stop of state.serviceStops) {
-    if (stop.serviced) continue;
-    if (Math.abs(px - stop.x) <= stop.w * 0.5) return true;
-  }
-  return false;
-}
-
-function hasSyncGateInRange(state: RuntimeState): boolean {
-  if (!usesSyncGates(currentNodeType(state.sim))) {
-    return false;
-  }
-
-  const bounds = {
-    x: state.player.x,
-    y: state.player.y,
-    w: state.player.w,
-    h: state.player.h
-  };
-  for (let index = 0; index < state.syncGates.length; index += 1) {
-    const gate = state.syncGates[index];
-    const result = canStabilizeSyncGate(
-      gate,
-      index,
-      bounds,
-      Math.abs(state.player.vx),
-      state.dashBoost,
-      state.elapsedSeconds
-    );
-    if (result.canStabilize || result.reason) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function hasCanopyLiftInRange(state: RuntimeState): boolean {
-  if (!usesCanopyLifts(currentNodeType(state.sim))) {
-    return false;
-  }
-
-  const bounds = {
-    x: state.player.x,
-    y: state.player.y,
-    w: state.player.w,
-    h: state.player.h
-  };
-  for (const lift of state.canopyLifts) {
-    if (lift.charted) continue;
-    if (isInsideCanopyLift(lift, bounds)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function hasImpactPlateInRange(state: RuntimeState): boolean {
-  if (!usesImpactPlates(currentNodeType(state.sim))) {
-    return false;
-  }
-
-  const px = state.player.x + state.player.w * 0.5;
-  for (const plate of state.impactPlates) {
-    if (impactPlatePrompt(plate, px, state.player.onGround)) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-function serviceStopPromptText(state: RuntimeState): string | null {
-  if (state.scene !== 'run' || state.mode !== 'playing' || !usesServiceStops(currentNodeType(state.sim))) {
-    return null;
-  }
-
-  const px = state.player.x + state.player.w * 0.5;
-  const ready = isSteadyLinkReady(Math.abs(state.player.vx), !state.player.onGround);
-  for (const stop of state.serviceStops) {
-    if (stop.serviced) continue;
-    if (Math.abs(px - stop.x) > stop.w * 0.5) continue;
-
-    return ready
-      ? `Service bay aligned.\nHold steady to finish inspection ${Math.round(stop.progress / SERVICE_STOP_HOLD_SECONDS * 100)}%.`
-      : !state.player.onGround
-        ? 'Service bay unstable.\nSettle on the road to start inspection.'
-        : 'Service bay unstable.\nEase off and hold a low speed to start inspection.';
-  }
-
-  return null;
-}
-
-function syncGatePromptText(state: RuntimeState): string | null {
-  if (state.scene !== 'run' || state.mode !== 'playing' || !usesSyncGates(currentNodeType(state.sim))) {
-    return null;
-  }
-
-  const bounds = {
-    x: state.player.x,
-    y: state.player.y,
-    w: state.player.w,
-    h: state.player.h
-  };
-  for (let index = 0; index < state.syncGates.length; index += 1) {
-    const gate = state.syncGates[index];
-    const result = canStabilizeSyncGate(
-      gate,
-      index,
-      bounds,
-      Math.abs(state.player.vx),
-      state.dashBoost,
-      state.elapsedSeconds
-    );
-
-    if (result.canStabilize) {
-      return `Sync gate open.\nCut through ${gate.id.toUpperCase()} with speed or boost.`;
-    }
-
-    if (result.reason) {
-      return result.reason;
-    }
-  }
-
-  return null;
-}
-
-function canopyLiftPromptText(state: RuntimeState): string | null {
-  if (state.scene !== 'run' || state.mode !== 'playing' || !usesCanopyLifts(currentNodeType(state.sim))) {
-    return null;
-  }
-
-  const bounds = {
-    x: state.player.x,
-    y: state.player.y,
-    w: state.player.w,
-    h: state.player.h
-  };
-  for (const lift of state.canopyLifts) {
-    if (lift.charted || !isInsideCanopyLift(lift, bounds)) continue;
-
-    return !state.player.onGround
-      ? `Canopy draft engaged.\nHold in the bloom to chart ${Math.round(lift.progress / CANOPY_LIFT_HOLD_SECONDS * 100)}%.`
-      : 'Canopy draft dormant.\nJump into the bloom and stay airborne to chart it.';
-  }
-
-  return null;
-}
-
-function impactPlatePromptText(state: RuntimeState): string | null {
-  if (state.scene !== 'run' || state.mode !== 'playing' || !usesImpactPlates(currentNodeType(state.sim))) {
-    return null;
-  }
-
-  const px = state.player.x + state.player.w * 0.5;
-  for (const plate of state.impactPlates) {
-    const prompt = impactPlatePrompt(plate, px, state.player.onGround);
-    if (prompt) return prompt;
-  }
-
-  return null;
-}
-
-function beaconPromptText(state: RuntimeState): string | null {
-  if (state.scene !== 'run' || state.mode !== 'playing') {
-    return null;
-  }
-
-  const px = state.player.x + state.player.w * 0.5;
-  const py = state.player.y + state.player.h * 0.5;
-  const interactRadius = beaconInteractRadius(state);
-  const nodeType = currentNodeType(state.sim);
-  const beaconRule = getBeaconRuleForNodeType(nodeType);
-
-  for (let index = 0; index < state.beacons.length; index += 1) {
-    const beacon = state.beacons[index];
-    if (beacon.activated) continue;
-    const rr = (beacon.r + interactRadius) * (beacon.r + interactRadius);
-    if (distanceSq(px, py, beacon.x, beacon.y) > rr) continue;
-
-    const activation = canActivateBeacon({
-      nodeType,
-      beaconIndex: index,
-      beacons: state.beacons,
-      currentSpeed: Math.abs(state.player.vx),
-      dashBoost: state.dashBoost,
-      isAirborne: !state.player.onGround,
-      elapsedSeconds: state.elapsedSeconds
-    });
-
-    if (activation.canActivate) {
-      if (hasBeaconAutoLink(state)) {
-        if (beaconRule === 'boosted') {
-          return 'Signal relay in range.\nKeep boosting through an open sync window.';
-        }
-        if (beaconRule === 'airborne') {
-          return 'Signal relay in range.\nJump through it to auto-link.';
-        }
-        if (beaconRule === 'steady') {
-          return 'Signal relay in range.\nHold steady beside it to auto-link.';
-        }
-        return 'Signal relay in range.\nScanner will auto-link it.';
-      }
-      if (beaconRule === 'ordered') {
-        return `Signal relay in range.\nPress Enter to link ${beacon.id.toUpperCase()}.`;
-      }
-      if (beaconRule === 'boosted') {
-        return 'Sync window open.\nBoost through it, then press Enter.';
-      }
-      if (beaconRule === 'airborne') {
-        return 'Signal relay in range.\nJump through it, then press Enter.';
-      }
-      if (beaconRule === 'steady') {
-        return 'Relay stabilized.\nPress Enter while holding steady.';
-      }
-      return 'Signal relay in range.\nPress Enter to link it.';
-    }
-
-    return activation.reason ?? getBeaconRuleLabel(nodeType);
-  }
-
-  return null;
-}
-
 function hasBeaconAutoLink(state: RuntimeState): boolean {
   return hasAutoLinkScanner(state.sim.vehicle);
 }
@@ -789,54 +548,6 @@ function notebookStatusText(state: RuntimeState): string {
   const progress = notebookClueProgress(state.sim);
   const synthesisTag = state.sim.notebook.synthesisUnlocked ? ' SYNTH' : '';
   return `NB ${progress.discovered}/${progress.total}${synthesisTag}`;
-}
-
-function objectiveShortLabel(nodeType: string): string {
-  const rule = getBeaconRuleForNodeType(nodeType);
-  if (rule === 'steady') return 'OBJ STEADY';
-  if (rule === 'ordered') return 'OBJ ORDER';
-  if (rule === 'airborne') return 'OBJ AIR';
-  if (rule === 'boosted') return 'OBJ BOOST';
-  return 'OBJ LINK';
-}
-
-function runObjectiveProgress(state: RuntimeState): {
-  completed: number;
-  total: number;
-  beaconsRemaining: number;
-  serviceStopsRemaining: number;
-  syncGatesRemaining: number;
-  canopyLiftsRemaining: number;
-  impactPlatesRemaining: number;
-} {
-  const beaconProgress = {
-    completed: state.beacons.filter((beacon) => beacon.activated).length,
-    total: state.beacons.length
-  };
-  const serviceStopProgress = totalServiceStopProgress(state.serviceStops);
-  const syncGateProgress = totalSyncGateProgress(state.syncGates);
-  const canopyLiftProgress = totalCanopyLiftProgress(state.canopyLifts);
-  const impactPlateProgress = totalImpactPlateProgress(state.impactPlates);
-
-  return {
-    completed:
-      beaconProgress.completed +
-      serviceStopProgress.completed +
-      syncGateProgress.completed +
-      canopyLiftProgress.completed +
-      impactPlateProgress.completed,
-    total:
-      beaconProgress.total +
-      serviceStopProgress.total +
-      syncGateProgress.total +
-      canopyLiftProgress.total +
-      impactPlateProgress.total,
-    beaconsRemaining: beaconProgress.total - beaconProgress.completed,
-    serviceStopsRemaining: serviceStopProgress.total - serviceStopProgress.completed,
-    syncGatesRemaining: syncGateProgress.total - syncGateProgress.completed,
-    canopyLiftsRemaining: canopyLiftProgress.total - canopyLiftProgress.completed,
-    impactPlatesRemaining: impactPlateProgress.total - impactPlateProgress.completed
-  };
 }
 
 async function bootstrap(): Promise<void> {
@@ -1676,16 +1387,8 @@ async function bootstrap(): Promise<void> {
       overlay.text = 'Trail lost.\nPress Enter or R to restart';
     } else if (state.mapMessageTimer > 0 && state.mapMessage) {
       overlay.text = state.mapMessage;
-    } else if (hasSyncGateInRange(state)) {
-      overlay.text = syncGatePromptText(state) ?? '';
-    } else if (hasImpactPlateInRange(state)) {
-      overlay.text = impactPlatePromptText(state) ?? '';
-    } else if (hasCanopyLiftInRange(state)) {
-      overlay.text = canopyLiftPromptText(state) ?? '';
-    } else if (hasServiceStopInRange(state)) {
-      overlay.text = serviceStopPromptText(state) ?? '';
-    } else if (hasBeaconInRange(state)) {
-      overlay.text = beaconPromptText(state) ?? '';
+    } else {
+      overlay.text = runObjectivePrompt(state) ?? '';
     }
 
     if (overlay.text) {
