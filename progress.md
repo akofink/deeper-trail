@@ -431,8 +431,13 @@ TODO next:
   - Added `tests/expeditionFlow.test.ts` to cover a deterministic full loop: complete a node, gain a free trip, travel to a connected node with fuel refund, and apply arrival rewards / notebook progression.
   - Validation: targeted typecheck and loop-focused tests pass.
 
+- Run-objective UI extraction pass:
+  - Added `src/game/runtime/runObjectiveUi.ts` to own prompt-priority resolution, compact objective labels, and aggregate objective-progress counts instead of leaving those branches inline in `src/main.ts`.
+  - Updated `src/main.ts` to consume a single `runObjectivePrompt(...)` helper for run overlays and shared progress helpers for HUD/exit-lock bookkeeping.
+  - Added `tests/runObjectiveUi.test.ts` to cover prompt priority across sync gates, impact plates, canopy lifts, and relay prompts plus aggregate progress totals.
+  - Validation: targeted typecheck and objective-ui test slice pass.
+
 TODO next:
 
 - Decide whether notebook clues should start affecting route choice mechanically, for example by revealing pre-arrival scanner/map intel or unlocking authored encounter outcomes.
-- Consider extracting run-objective bookkeeping out of `src/main.ts` now that objectives include relays, impact plates, service bays, sync gates, and canopy lifts.
-- Continue breaking remaining run-objective bookkeeping and scene orchestration out of `src/main.ts`, especially the per-frame objective update/render branches.
+- Continue breaking remaining run-objective bookkeeping and scene orchestration out of `src/main.ts`, especially the per-frame objective update/mutation branches and draw-pass special cases.
