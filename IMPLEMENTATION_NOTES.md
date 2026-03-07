@@ -54,6 +54,8 @@
 - Per-frame objective mutation now belongs in `game/runtime/runObjectiveUpdates.ts` so service-bay/sync-gate/canopy-lift/impact-plate advancement can be tested without the render loop.
 - Objective visual-emphasis state now belongs in `game/runtime/runObjectiveVisuals.ts` so draw-pass special cases can consume precomputed labels/highlights instead of rebuilding those decisions inline.
 - Map-scene route/detail/notebook text assembly now belongs in `game/runtime/mapSceneContent.ts` so the map renderer can focus on layout/drawing instead of building long dynamic copy blocks inline.
+- Map-board projection/emphasis state now belongs in `game/runtime/mapBoardView.ts` so selected routes, goal rings, and chip labels can be regression-tested without Pixi drawing calls.
+- Map-scene card/footer placement now belongs in `game/runtime/mapSceneLayout.ts` so text-card positioning is derived from measured content instead of repeated inline coordinates.
 - World-node helper lookups belong in deterministic helpers (`engine/sim/world.ts`) so map travel, route cards, and automation all read the same node/neighbor logic.
 
 ## Current practical world-render guidance

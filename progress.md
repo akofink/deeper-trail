@@ -456,7 +456,19 @@ TODO next:
   - Added `tests/mapSceneContent.test.ts` to cover selected-route copy, scanner/install hints, notebook field notes, and completion-state outcomes.
   - Validation: targeted typecheck and map-content test slice pass.
 
+- Map-board view extraction pass:
+  - Added `src/game/runtime/mapBoardView.ts` to own projected node/edge emphasis state plus footer chip labels instead of recomputing those selections inline in `drawMapScene()`.
+  - Updated `src/main.ts` to draw the route board from the extracted view model while keeping Pixi primitives local to the shell.
+  - Added `tests/mapBoardView.test.ts` to cover selected-edge highlighting, goal/completion emphasis, depth ordering, and expedition-complete chip copy.
+  - Validation: targeted typecheck and map-board test slice pass.
+
+- Map-scene layout extraction pass:
+  - Added `src/game/runtime/mapSceneLayout.ts` to own lower-card width/wrap/placement and celebration/footer positions instead of hard-coding those coordinates inline in `drawMapScene()`.
+  - Updated `src/main.ts` to measure text against helper-provided wrap widths, then place route/notes/celebration cards from the extracted layout object.
+  - Added `tests/mapSceneLayout.test.ts` to cover card containment above the footer row and safe-band clamping on tighter screens.
+  - Validation: targeted typecheck and layout-focused test slice pass.
+
 TODO next:
 
 - Decide whether notebook clues should start affecting route choice mechanically, for example by revealing pre-arrival scanner/map intel or unlocking authored encounter outcomes.
-- Continue breaking remaining scene orchestration out of `src/main.ts`, especially map-board rendering/layout and shared draw primitives.
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially repeated HUD text-reset / draw-primitive plumbing and any remaining scene-specific card layout or module-meter setup.

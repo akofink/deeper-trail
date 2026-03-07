@@ -21,6 +21,7 @@ import { biomeByNodeType, buildRunLayout, MODULE_LABELS } from './game/runtime/r
 import { buildMapActionChips, buildMapBoardView } from './game/runtime/mapBoardView';
 import { buildMapSceneCopy, buildMapSceneHudLayout } from './game/runtime/mapSceneCards';
 import { buildMapSceneContent } from './game/runtime/mapSceneContent';
+import { buildMapSceneLayout } from './game/runtime/mapSceneLayout';
 import { pullCollectibleTowardTarget } from './game/runtime/collectibleMagnetism';
 import {
   applyCanopyLiftAssist,
@@ -1455,12 +1456,6 @@ async function bootstrap(): Promise<void> {
       hasAutoLinkScanner: hasBeaconAutoLink(state),
       hasCompletedCurrentNode: hasCompletedCurrentNode(state)
     });
-    const routeWidth = Math.min(360, w - 80);
-    const routeX = 20;
-    const notesWidth = Math.max(280, Math.min(350, w - routeWidth - 120));
-    const notesX = w - notesWidth - 20;
-    const chipY = h - 58;
-    const chipHeight = 34;
     const mapSceneCopy = buildMapSceneCopy({
       expeditionComplete: state.expeditionComplete,
       installHint: mapSceneContent.installHint,
@@ -1474,17 +1469,14 @@ async function bootstrap(): Promise<void> {
     });
     overlay.text = mapSceneCopy.routeText;
     overlay.style.wordWrap = true;
-    overlay.style.wordWrapWidth = Math.max(120, routeWidth - 36);
     overlay.style.fontSize = 15;
-    const routeCardHeight = overlay.height + 32;
-    const routeY = Math.max(150, chipY - 14 - routeCardHeight);
-
     fieldNotesText.text = mapSceneContent.fieldNotes.join('\n');
     fieldNotesText.style.wordWrap = true;
-    fieldNotesText.style.wordWrapWidth = Math.max(120, notesWidth - 36);
     fieldNotesText.style.fontSize = 13;
-    const notesCardHeight = fieldNotesText.height + 32;
-    const notesY = Math.max(150, chipY - 14 - notesCardHeight);
+    const mapSceneMeasureLayout = buildMapSceneLayout(w, h, 0, 0);
+    overlay.style.wordWrapWidth = mapSceneMeasureLayout.routeCard.wrapWidth;
+    fieldNotesText.style.wordWrapWidth = mapSceneMeasureLayout.notesCard.wrapWidth;
+    const mapSceneLayout = buildMapSceneLayout(w, h, overlay.height + 32, fieldNotesText.height + 32);
     const mapHud = buildMapSceneHudLayout(w);
     drawPanel(graphics, mapHud.leftPanelX, mapHud.leftPanelY, mapHud.leftPanelWidth, mapHud.leftPanelHeight);
     drawPanel(graphics, mapHud.rightPanelX, mapHud.rightPanelY, mapHud.rightPanelWidth, mapHud.rightPanelHeight);
@@ -1527,10 +1519,10 @@ async function bootstrap(): Promise<void> {
     if (mapSceneCopy.showRouteCard) {
       layoutTextCard(graphics, overlay, mapSceneCopy.routeText, {
         tone: 'dark',
-        x: routeX,
-        y: routeY,
-        maxWidth: routeWidth,
-        minWidth: 330,
+        x: mapSceneLayout.routeCard.x,
+        y: mapSceneLayout.routeCard.y,
+        maxWidth: mapSceneLayout.routeCard.maxWidth,
+        minWidth: mapSceneLayout.routeCard.minWidth,
         paddingX: 18,
         paddingY: 16,
         align: 'left',
@@ -1542,10 +1534,10 @@ async function bootstrap(): Promise<void> {
     }
     layoutTextCard(graphics, fieldNotesText, mapSceneContent.fieldNotes.join('\n'), {
       tone: 'light',
-      x: notesX,
-      y: notesY,
-      maxWidth: notesWidth,
-      minWidth: 280,
+      x: mapSceneLayout.notesCard.x,
+      y: mapSceneLayout.notesCard.y,
+      maxWidth: mapSceneLayout.notesCard.maxWidth,
+      minWidth: mapSceneLayout.notesCard.minWidth,
       paddingX: 18,
       paddingY: 16,
       align: 'left',
@@ -1557,26 +1549,28 @@ async function bootstrap(): Promise<void> {
     if (mapSceneCopy.celebrationText) {
       layoutTextCard(graphics, celebrationOverlay, mapSceneCopy.celebrationText, {
         tone: 'dark',
-        x: Math.round(w * 0.5 - 220),
-        y: 150,
-        maxWidth: 440,
-        minWidth: 360,
+        x: mapSceneLayout.celebrationCard.x,
+        y: mapSceneLayout.celebrationCard.y,
+        maxWidth: mapSceneLayout.celebrationCard.maxWidth,
+        minWidth: mapSceneLayout.celebrationCard.minWidth,
         paddingX: 22,
         paddingY: 18,
         align: 'center',
         fill: '#f8fafc',
         fontSize: 18
       });
-      graphics.circle(w * 0.5, 138, 10).fill('#fbbf24');
-      graphics.circle(w * 0.5 - 118, 174, 6).fill('#f59e0b');
-      graphics.circle(w * 0.5 + 126, 182, 6).fill('#22c55e');
+      mapSceneLayout.celebrationAccents.forEach((accent) => {
+        graphics.circle(accent.x, accent.y, accent.r).fill(accent.color);
+      });
     }
 
     const mapChips = buildMapActionChips(w, state.expeditionComplete);
     mapChips.forEach((chip, index) => {
-      drawChip(graphics, chip.x, chipY, chip.w, chip.color, chipHeight);
+      drawChip(graphics, chip.x, mapSceneLayout.chipY, chip.w, chip.color, mapSceneLayout.chipHeight);
       const label = chipLabels[index];
-      if (label) layoutChipLabel(label, chip.label, chip.x, chipY, chip.w, '#64748b', chipHeight);
+      if (label) {
+        layoutChipLabel(label, chip.label, chip.x, mapSceneLayout.chipY, chip.w, '#64748b', mapSceneLayout.chipHeight);
+      }
     });
   }
 
