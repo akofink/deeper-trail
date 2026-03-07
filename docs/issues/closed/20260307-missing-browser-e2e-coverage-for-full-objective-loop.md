@@ -42,3 +42,7 @@ There is Playwright tooling in [`scripts/web_game_playwright_client.js`](/Users/
   - [`src/main.ts`](/Users/akofink/dev/repos/deeper-trail/.worktrees/issue-triage-20260307/src/main.ts)
   - [`package.json`](/Users/akofink/dev/repos/deeper-trail/.worktrees/issue-triage-20260307/package.json)
   - [`progress.md`](/Users/akofink/dev/repos/deeper-trail/.worktrees/issue-triage-20260307/progress.md)
+
+## Resolution note
+
+Resolved on 2026-03-07 by adding deterministic `?seed=` boot support plus a committed Playwright smoke path in `scripts/e2e/fullObjectiveLoop.js`, then wiring that browser replay into `npm run test:e2e` and `npm run check`.

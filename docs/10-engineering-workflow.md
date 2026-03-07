@@ -10,6 +10,7 @@ Enforce consistent code quality and repository hygiene while keeping iteration f
    - Type safety with TypeScript strict mode (`npm run typecheck`).
    - Linting with ESLint (`npm run lint`).
    - Test suite with Vitest (`npm run test`).
+   - Browser smoke replay for the fixed-seed full objective loop (`npm run test:e2e`).
    - Unified command: `npm run check`.
 2. **Phase 2: Local automation (now)**
    - Pre-commit hook: lint/format staged files and run related tests.
@@ -33,6 +34,7 @@ Enforce consistent code quality and repository hygiene while keeping iteration f
 - Update `ARCHITECTURE.md` when adding/changing foundational modules.
 - Update this workflow doc when changing quality gates or branching/worktree policy.
 - When validating browser visuals, prefer the lightest tool that answers the question: direct `google-chrome --headless --screenshot` capture is a good first pass, while Playwright remains the default for scripted interaction, state setup, or cases where headless Chrome capture is not reliable enough.
+- The committed Playwright smoke path should stay deterministic: prefer fixed seeds plus `window.render_game_to_text` / `window.advanceTime(ms)` over adding separate test-only gameplay controls.
 - When a session uncovers actionable follow-up work that will not be fixed immediately, add an open
   report under `docs/issues/` before handoff so the next contributor has a durable queue entry.
 - Name issue files `YYYYMMDD-short-kebab-case-summary.md`.

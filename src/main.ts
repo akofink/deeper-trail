@@ -415,6 +415,11 @@ function createRunSeed(): string {
     .padStart(4, '0')}`;
 }
 
+function initialSeedFromLocation(): string | undefined {
+  const value = new URLSearchParams(window.location.search).get('seed')?.trim();
+  return value ? value : undefined;
+}
+
 function canUseMedPatch(state: RuntimeState): boolean {
   return state.health < getMaxHealth(state.sim.vehicle) && state.sim.scrap >= MEDPATCH_SCRAP_COST;
 }
@@ -682,7 +687,7 @@ async function bootstrap(): Promise<void> {
     return label;
   });
 
-  let state = makeInitialRuntimeState(app.screen.height);
+  let state = makeInitialRuntimeState(app.screen.height, initialSeedFromLocation());
 
   function screenWidth(): number {
     return Math.max(1, app.screen.width);
