@@ -36,6 +36,7 @@ import { buildRunObjectiveVisualState } from './game/runtime/runObjectiveVisuals
 import { dashEntryEnergyCost, shouldContinueDash, shouldStartDash } from './game/runtime/runDash';
 import { buildRunHudLayout } from './game/runtime/runHudLayout';
 import { projectMapPoint } from './game/runtime/mapProjection';
+import { updateMapRotation } from './game/runtime/mapRotation';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import { advanceHorizontalVelocity } from './game/runtime/runMotion';
 import { rechargeShieldCharge, tryConsumeShieldCharge } from './game/runtime/shieldCharge';
@@ -73,9 +74,6 @@ const DASH_BOOST_RAMP_PER_SECOND = 8;
 const DASH_BOOST_DECAY_PER_SECOND = 9;
 const DASH_START_BOOST = 0.3;
 const DASH_MIN_SPEED_RATIO = 0.62;
-const MAP_ROTATION_ACCEL = 3.2;
-const MAP_ROTATION_FAST_MULTIPLIER = 2.15;
-const MAP_ROTATION_DAMPING = 0.86;
 const GROUND_Y_RATIO = 0.74;
 const COYOTE_TIME = 0.11;
 const JUMP_BUFFER_TIME = 0.12;
@@ -1062,11 +1060,7 @@ async function bootstrap(): Promise<void> {
     let rotateInput = 0;
     if (keys.has('KeyQ')) rotateInput -= 1;
     if (keys.has('KeyE')) rotateInput += 1;
-    const fastRotate = keys.has('ShiftLeft') || keys.has('ShiftRight');
-    const rotateAccel = MAP_ROTATION_ACCEL * (fastRotate ? MAP_ROTATION_FAST_MULTIPLIER : 1);
-    state.mapRotationVelocity += rotateInput * rotateAccel * dt;
-    state.mapRotationVelocity *= Math.pow(MAP_ROTATION_DAMPING, dt * 60);
-    state.mapRotation += state.mapRotationVelocity * dt;
+    updateMapRotation(state, rotateInput as -1 | 0 | 1, dt);
   }
 
   function drawRunScene(): void {
