@@ -2,9 +2,7 @@ import { Application, Graphics, Text } from 'pixi.js';
 import { noteBiomeHazard } from './engine/sim/exploration';
 import { connectedNeighbors, currentNodeType, expeditionGoalNodeId, findNode } from './engine/sim/world';
 import {
-  canActivateBeacon,
   getBeaconRuleForNodeType,
-  getBeaconRuleLabel,
   getObjectiveSummary,
 } from './engine/sim/runObjectives';
 import {
@@ -12,10 +10,10 @@ import {
   damageSubsystemForNodeType,
   getInstallOffer,
   getMaxHealth,
-  hasAutoLinkScanner,
   installUpgradeForNodeType,
   repairMostDamagedSubsystem
 } from './engine/sim/vehicle';
+import { attemptBeaconActivation, hasBeaconAutoLink } from './game/runtime/beaconActivation';
 import { biomeByNodeType, buildRunLayout } from './game/runtime/runLayout';
 import { buildMapActionChips, buildMapBoardView } from './game/runtime/mapBoardView';
 import { buildMapSceneCopy } from './game/runtime/mapSceneCards';
@@ -46,7 +44,6 @@ import { advanceHorizontalVelocity } from './game/runtime/runMotion';
 import { rechargeShieldCharge, tryConsumeShieldCharge } from './game/runtime/shieldCharge';
 import type { RuntimeState } from './game/runtime/runtimeState';
 import {
-  beaconInteractRadius,
   collectibleMagnetRadius,
   collectibleMagnetSpeed,
   dashSpeedForState,
@@ -557,10 +554,6 @@ function shiftRunSceneVertical(state: RuntimeState, deltaY: number): void {
   }
 }
 
-function hasBeaconAutoLink(state: RuntimeState): boolean {
-  return hasAutoLinkScanner(state.sim.vehicle);
-}
-
 async function bootstrap(): Promise<void> {
   const app = new Application();
   await app.init({ background: '#89c3f0', resizeTo: window, antialias: true });
@@ -851,7 +844,7 @@ async function bootstrap(): Promise<void> {
     const px = p.x + p.w * 0.5;
     const py = p.y + p.h * 0.5;
     if (hasBeaconAutoLink(state)) {
-      tryActivateBeacon('auto');
+      attemptBeaconActivation(state, 'auto');
     }
     const magnetRadius = collectibleMagnetRadius(state);
     const magnetSpeed = collectibleMagnetSpeed(state);
@@ -935,51 +928,6 @@ async function bootstrap(): Promise<void> {
       return;
     }
     state.mapSelectionIndex = (state.mapSelectionIndex + step + options.length) % options.length;
-  }
-
-  function tryActivateBeacon(trigger: 'manual' | 'auto' = 'manual'): boolean {
-    if (state.scene !== 'run' || state.mode !== 'playing') return false;
-    const px = state.player.x + state.player.w * 0.5;
-    const py = state.player.y + state.player.h * 0.5;
-    const interactRadius = beaconInteractRadius(state);
-    const nodeType = currentNodeType(state.sim);
-    for (let index = 0; index < state.beacons.length; index += 1) {
-      const beacon = state.beacons[index];
-      if (beacon.activated) continue;
-      const rr = (beacon.r + interactRadius) * (beacon.r + interactRadius);
-      if (distanceSq(px, py, beacon.x, beacon.y) <= rr) {
-        const activation = canActivateBeacon({
-          nodeType,
-          beaconIndex: index,
-          beacons: state.beacons,
-          currentSpeed: Math.abs(state.player.vx),
-          dashBoost: state.dashBoost,
-          isAirborne: !state.player.onGround,
-          elapsedSeconds: state.elapsedSeconds,
-          scanLocked: beacon.scanLocked
-        });
-        if (!activation.canActivate) {
-          if (trigger === 'manual') {
-            state.mapMessage = activation.reason ?? getBeaconRuleLabel(nodeType);
-            state.mapMessageTimer = 2.2;
-          }
-          continue;
-        }
-        beacon.activated = true;
-        state.score += 15;
-        state.mapMessage =
-          trigger === 'auto'
-            ? `Scanner auto-linked ${beacon.id.toUpperCase()} (${state.beacons.filter((b) => b.activated).length}/${state.beacons.length}).`
-            : `Beacon ${beacon.id.toUpperCase()} linked (${state.beacons.filter((b) => b.activated).length}/${state.beacons.length}).`;
-        state.mapMessageTimer = 2.5;
-        return true;
-      }
-    }
-    if (trigger === 'manual') {
-      state.mapMessage = 'No inactive beacon in range.';
-      state.mapMessageTimer = 1.5;
-    }
-    return false;
   }
 
   function tryTravelSelected(): void {
@@ -1467,7 +1415,7 @@ async function bootstrap(): Promise<void> {
     }
 
     if (event.code === 'Enter' && state.scene === 'run' && state.mode === 'playing') {
-      tryActivateBeacon();
+      attemptBeaconActivation(state);
       event.preventDefault();
       return;
     }
