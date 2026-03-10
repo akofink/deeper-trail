@@ -1143,7 +1143,7 @@ async function bootstrap(): Promise<void> {
         paddingX: runOverlayCard.paddingX,
         paddingY: runOverlayCard.paddingY,
         align: 'center',
-        fill: '#e2e8f0',
+        fill: runOverlayCard.fill,
         fontSize: runOverlayCard.fontSize
       });
     } else {
