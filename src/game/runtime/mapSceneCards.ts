@@ -1,3 +1,5 @@
+import type { MapSceneLayout } from './mapSceneLayout';
+
 export interface MapSceneCopyInput {
   expeditionComplete: boolean;
   installHint: string;
@@ -14,6 +16,26 @@ export interface MapSceneCopy {
   celebrationText: string | null;
   routeText: string;
   showRouteCard: boolean;
+}
+
+export interface MapSceneTextCardView {
+  align: 'left' | 'center';
+  fill: string;
+  fontSize: number;
+  maxWidth: number;
+  minWidth: number;
+  paddingX: number;
+  paddingY: number;
+  text: string;
+  tone: 'dark' | 'light';
+  x: number;
+  y: number;
+}
+
+export interface MapSceneCardViews {
+  celebrationCard: MapSceneTextCardView | null;
+  notesCard: MapSceneTextCardView;
+  routeCard: MapSceneTextCardView | null;
 }
 
 export interface MapSceneHudLayout {
@@ -94,5 +116,59 @@ export function buildMapSceneCopy(input: MapSceneCopyInput): MapSceneCopy {
       : null,
     routeText: `${input.routeDetail}\n${input.installHint}\n${input.scannerHint}\n${input.repairHint}\n${statusLine}`,
     showRouteCard: !input.expeditionComplete
+  };
+}
+
+export function buildMapSceneCardViews(input: {
+  celebrationText: string | null;
+  fieldNotesText: string;
+  layout: MapSceneLayout;
+  routeText: string;
+  showRouteCard: boolean;
+}): MapSceneCardViews {
+  return {
+    celebrationCard: input.celebrationText
+      ? {
+          align: 'center',
+          fill: '#f8fafc',
+          fontSize: 18,
+          maxWidth: input.layout.celebrationCard.maxWidth,
+          minWidth: input.layout.celebrationCard.minWidth,
+          paddingX: 22,
+          paddingY: 18,
+          text: input.celebrationText,
+          tone: 'dark',
+          x: input.layout.celebrationCard.x,
+          y: input.layout.celebrationCard.y
+        }
+      : null,
+    notesCard: {
+      align: 'left',
+      fill: '#0f172a',
+      fontSize: 13,
+      maxWidth: input.layout.notesCard.maxWidth,
+      minWidth: input.layout.notesCard.minWidth,
+      paddingX: 18,
+      paddingY: 16,
+      text: input.fieldNotesText,
+      tone: 'light',
+      x: input.layout.notesCard.x,
+      y: input.layout.notesCard.y
+    },
+    routeCard: input.showRouteCard
+      ? {
+          align: 'left',
+          fill: '#e2e8f0',
+          fontSize: 15,
+          maxWidth: input.layout.routeCard.maxWidth,
+          minWidth: input.layout.routeCard.minWidth,
+          paddingX: 18,
+          paddingY: 16,
+          text: input.routeText,
+          tone: 'dark',
+          x: input.layout.routeCard.x,
+          y: input.layout.routeCard.y
+        }
+      : null
   };
 }

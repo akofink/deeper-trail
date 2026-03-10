@@ -63,6 +63,7 @@ describe('runSceneView', () => {
     state.mode = 'won';
 
     expect(buildRunSceneOverlayCard(state, 900)).toEqual({
+      align: 'center',
       fontSize: 18,
       fill: '#e2e8f0',
       maxWidth: 460,
@@ -70,6 +71,7 @@ describe('runSceneView', () => {
       paddingX: 22,
       paddingY: 18,
       text: 'Trail complete.\nMap travel unlocked and +1 free trip earned.',
+      tone: 'dark',
       x: 220,
       y: 150
     });
@@ -88,6 +90,7 @@ describe('runSceneView', () => {
     state.mapMessageTimer = 2;
 
     expect(buildRunSceneOverlayCard(state, 900)).toEqual({
+      align: 'center',
       fontSize: 22,
       fill: '#fef3c7',
       maxWidth: 460,
@@ -95,6 +98,7 @@ describe('runSceneView', () => {
       paddingX: 22,
       paddingY: 14,
       text: 'ALERT\nLinked B0 1/3.',
+      tone: 'dark',
       x: 220,
       y: 137
     });
@@ -115,10 +119,15 @@ describe('runSceneView', () => {
   it('switches the run interaction chip label when auto-link is installed', () => {
     const state = buildRuntimeState();
 
-    expect(buildRunActionChips(state)[3]?.label).toBe('Enter\nLink');
+    expect(buildRunActionChips(state, 720)[3]).toMatchObject({
+      y: 662,
+      height: 34,
+      label: 'Enter\nLink',
+      labelFill: '#dbeafe'
+    });
 
     state.sim.vehicle.scanner = 3;
 
-    expect(buildRunActionChips(state)[3]?.label).toBe('Scan\nAuto-link');
+    expect(buildRunActionChips(state, 720)[3]?.label).toBe('Scan\nAuto-link');
   });
 });

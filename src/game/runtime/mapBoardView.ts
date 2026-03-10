@@ -39,9 +39,12 @@ export interface MapBoardNodeView {
 
 export interface MapActionChip {
   color: string;
+  height: number;
   label: string;
+  labelFill: string;
   w: number;
   x: number;
+  y: number;
 }
 
 export interface MapBoardView {
@@ -137,15 +140,28 @@ export function buildMapBoardView(
   return { edges, nodes, selectedNodeId };
 }
 
-export function buildMapActionChips(screenWidth: number, expeditionComplete: boolean): MapActionChip[] {
+export function buildMapActionChips(
+  screenWidth: number,
+  chipY: number,
+  chipHeight: number,
+  expeditionComplete: boolean
+): MapActionChip[] {
   const chipStartX = Math.round(screenWidth * 0.5 - 292);
 
   return [
-    { x: chipStartX, w: 98, color: '#60a5fa', label: 'Up/Down\nRoute' },
-    { x: chipStartX + 108, w: 88, color: '#7dd3fc', label: 'Q/E\nRotate' },
-    { x: chipStartX + 206, w: 88, color: '#fbbf24', label: 'Enter\nTravel' },
-    { x: chipStartX + 304, w: 88, color: '#34d399', label: 'B\nRepair' },
-    { x: chipStartX + 402, w: 88, color: '#94a3b8', label: 'C\nInstall' },
-    { x: chipStartX + 500, w: 88, color: '#64748b', label: expeditionComplete ? 'N\nNew' : 'A\nReturn' }
+    { x: chipStartX, y: chipY, w: 98, height: chipHeight, color: '#60a5fa', label: 'Up/Down\nRoute', labelFill: '#64748b' },
+    { x: chipStartX + 108, y: chipY, w: 88, height: chipHeight, color: '#7dd3fc', label: 'Q/E\nRotate', labelFill: '#64748b' },
+    { x: chipStartX + 206, y: chipY, w: 88, height: chipHeight, color: '#fbbf24', label: 'Enter\nTravel', labelFill: '#64748b' },
+    { x: chipStartX + 304, y: chipY, w: 88, height: chipHeight, color: '#34d399', label: 'B\nRepair', labelFill: '#64748b' },
+    { x: chipStartX + 402, y: chipY, w: 88, height: chipHeight, color: '#94a3b8', label: 'C\nInstall', labelFill: '#64748b' },
+    {
+      x: chipStartX + 500,
+      y: chipY,
+      w: 88,
+      height: chipHeight,
+      color: '#64748b',
+      label: expeditionComplete ? 'N\nNew' : 'A\nReturn',
+      labelFill: '#64748b'
+    }
   ];
 }
