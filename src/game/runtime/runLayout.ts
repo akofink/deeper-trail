@@ -30,6 +30,82 @@ export function mapNodePalette(nodeType: string): { fill: string; glow: string; 
   return { fill: '#0f766e', glow: '#99f6e4', label: 'TOWN' };
 }
 
+type HazardTemplate = {
+  kind: Hazard['kind'];
+  x: number;
+  width: number;
+  height: number;
+  collectibleOffsetX: number;
+  collectibleHeight: number;
+  amplitudeX?: number;
+  amplitudeY?: number;
+  pulse?: number;
+  speed?: number;
+  phase?: number;
+};
+
+function createHazard(groundY: number, nodeType: string, template: HazardTemplate, encounterIndex: number): Hazard {
+  const rise = encounterRiseAt(nodeType, encounterIndex);
+  const height = template.height;
+  return {
+    kind: template.kind,
+    x: template.x,
+    baseX: template.x,
+    y: groundY - height - Math.round(rise * 0.2),
+    baseY: groundY - height - Math.round(rise * 0.2),
+    w: template.width,
+    baseW: template.width,
+    h: height,
+    baseH: height,
+    amplitudeX: template.amplitudeX ?? 0,
+    amplitudeY: template.amplitudeY ?? 0,
+    pulse: template.pulse ?? 0,
+    speed: template.speed ?? 0,
+    phase: template.phase ?? 0
+  };
+}
+
+function hazardTemplatesForNodeType(nodeType: string): HazardTemplate[] {
+  if (nodeType === 'anomaly') {
+    return [
+      { kind: 'pulsing', x: 430, width: 66, height: 18, collectibleOffsetX: 30, collectibleHeight: 92, pulse: 14, speed: 1.3, phase: 0.1 },
+      { kind: 'sweeper', x: 760, width: 82, height: 18, collectibleOffsetX: -18, collectibleHeight: 104, amplitudeX: 40, speed: 1.55, phase: 0.8 },
+      { kind: 'stomper', x: 1095, width: 54, height: 34, collectibleOffsetX: 16, collectibleHeight: 98, amplitudeY: 36, speed: 1.1, phase: 1.4 },
+      { kind: 'pulsing', x: 1445, width: 88, height: 18, collectibleOffsetX: -14, collectibleHeight: 112, pulse: 18, speed: 1.45, phase: 2.1 },
+      { kind: 'sweeper', x: 1795, width: 72, height: 18, collectibleOffsetX: 18, collectibleHeight: 102, amplitudeX: 46, speed: 1.7, phase: 2.8 },
+      { kind: 'stomper', x: 2140, width: 52, height: 38, collectibleOffsetX: -10, collectibleHeight: 118, amplitudeY: 42, speed: 1.2, phase: 3.5 }
+    ];
+  }
+  if (nodeType === 'ruin') {
+    return [
+      { kind: 'static', x: 420, width: 78, height: 20, collectibleOffsetX: 20, collectibleHeight: 74 },
+      { kind: 'stomper', x: 735, width: 58, height: 34, collectibleOffsetX: -14, collectibleHeight: 92, amplitudeY: 24, speed: 0.95, phase: 0.6 },
+      { kind: 'sweeper', x: 1080, width: 90, height: 18, collectibleOffsetX: 10, collectibleHeight: 86, amplitudeX: 28, speed: 1.2, phase: 1.3 },
+      { kind: 'static', x: 1430, width: 84, height: 24, collectibleOffsetX: -18, collectibleHeight: 94 },
+      { kind: 'stomper', x: 1765, width: 62, height: 38, collectibleOffsetX: 14, collectibleHeight: 102, amplitudeY: 30, speed: 1.05, phase: 2.2 },
+      { kind: 'sweeper', x: 2100, width: 86, height: 18, collectibleOffsetX: -12, collectibleHeight: 90, amplitudeX: 34, speed: 1.35, phase: 2.9 }
+    ];
+  }
+  if (nodeType === 'nature') {
+    return [
+      { kind: 'sweeper', x: 425, width: 58, height: 18, collectibleOffsetX: 14, collectibleHeight: 74, amplitudeX: 18, speed: 0.95, phase: 0.2 },
+      { kind: 'static', x: 760, width: 72, height: 16, collectibleOffsetX: -16, collectibleHeight: 88 },
+      { kind: 'stomper', x: 1090, width: 46, height: 30, collectibleOffsetX: 18, collectibleHeight: 82, amplitudeY: 18, speed: 0.85, phase: 1.1 },
+      { kind: 'sweeper', x: 1420, width: 76, height: 18, collectibleOffsetX: -12, collectibleHeight: 100, amplitudeX: 22, speed: 1.05, phase: 1.8 },
+      { kind: 'static', x: 1750, width: 70, height: 16, collectibleOffsetX: 16, collectibleHeight: 90 },
+      { kind: 'stomper', x: 2080, width: 48, height: 28, collectibleOffsetX: -10, collectibleHeight: 96, amplitudeY: 22, speed: 0.92, phase: 2.6 }
+    ];
+  }
+  return [
+    { kind: 'static', x: 440, width: 72, height: 18, collectibleOffsetX: 14, collectibleHeight: 70 },
+    { kind: 'sweeper', x: 770, width: 84, height: 18, collectibleOffsetX: -18, collectibleHeight: 90, amplitudeX: 24, speed: 1.05, phase: 0.7 },
+    { kind: 'static', x: 1110, width: 80, height: 20, collectibleOffsetX: 12, collectibleHeight: 82 },
+    { kind: 'sweeper', x: 1450, width: 88, height: 18, collectibleOffsetX: -14, collectibleHeight: 98, amplitudeX: 26, speed: 1.18, phase: 1.5 },
+    { kind: 'static', x: 1790, width: 84, height: 20, collectibleOffsetX: 16, collectibleHeight: 88 },
+    { kind: 'sweeper', x: 2130, width: 78, height: 18, collectibleOffsetX: -10, collectibleHeight: 94, amplitudeX: 30, speed: 1.28, phase: 2.3 }
+  ];
+}
+
 export function buildRunLayout(groundY: number, nodeType: string): {
   goalX: number;
   hazards: Hazard[];
@@ -40,69 +116,15 @@ export function buildRunLayout(groundY: number, nodeType: string): {
   canopyLifts: CanopyLift[];
   impactPlates: ImpactPlate[];
 } {
-  const hazardPattern =
-    nodeType === 'anomaly'
-      ? [
-          { x: 450, w: 72 },
-          { x: 790, w: 86 },
-          { x: 1140, w: 78 },
-          { x: 1490, w: 90 },
-          { x: 1840, w: 84 },
-          { x: 2190, w: 76 }
-        ]
-      : nodeType === 'ruin'
-        ? [
-            { x: 420, w: 68 },
-            { x: 740, w: 82 },
-            { x: 1080, w: 88 },
-            { x: 1420, w: 74 },
-            { x: 1760, w: 86 },
-            { x: 2100, w: 80 }
-          ]
-        : nodeType === 'nature'
-          ? [
-              { x: 430, w: 60 },
-              { x: 760, w: 70 },
-              { x: 1090, w: 66 },
-              { x: 1420, w: 74 },
-              { x: 1750, w: 68 },
-              { x: 2080, w: 72 }
-            ]
-          : [
-              { x: 440, w: 70 },
-              { x: 770, w: 84 },
-              { x: 1110, w: 78 },
-              { x: 1450, w: 88 },
-              { x: 1790, w: 82 },
-              { x: 2130, w: 76 }
-            ];
-
-  const collectibleHeights =
-    nodeType === 'anomaly'
-      ? [76, 88, 82, 94, 86, 90]
-      : nodeType === 'ruin'
-        ? [70, 84, 78, 90, 82, 86]
-        : nodeType === 'nature'
-          ? [64, 72, 68, 80, 74, 76]
-          : [66, 82, 74, 88, 78, 84];
+  const hazardTemplates = hazardTemplatesForNodeType(nodeType);
   const beaconRiseIndexes = [0, 2, 4];
 
   return {
     goalX: 2450,
-    hazards: hazardPattern.map((hazard, i) => ({
-      kind: i % 2 === 0 ? 'moving' : 'static',
-      x: hazard.x,
-      baseX: hazard.x,
-      y: groundY - 16 - Math.round(encounterRiseAt(nodeType, i) * 0.2),
-      w: hazard.w,
-      h: 16,
-      amplitude: i % 2 === 0 ? 34 : 0,
-      speed: i % 2 === 0 ? 1.4 + i * 0.08 : 0,
-      phase: i * 0.7
-    })),
-    collectibles: hazardPattern.map((hazard, i) => ({
-      x: hazard.x + Math.round(hazard.w * 0.5) + (i % 2 === 0 ? 12 : -12),
-      y: groundY - collectibleHeights[i] - encounterRiseAt(nodeType, i),
+    hazards: hazardTemplates.map((hazard, i) => createHazard(groundY, nodeType, hazard, i)),
+    collectibles: hazardTemplates.map((hazard, i) => ({
+      x: hazard.x + Math.round(hazard.width * 0.5) + hazard.collectibleOffsetX,
+      y: groundY - hazard.collectibleHeight - encounterRiseAt(nodeType, i),
       r: 11,
       collected: false
     })),

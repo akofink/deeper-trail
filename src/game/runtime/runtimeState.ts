@@ -26,13 +26,18 @@ export interface Collectible {
 }
 
 export interface Hazard {
-  kind: 'static' | 'moving';
+  kind: 'static' | 'sweeper' | 'stomper' | 'pulsing';
   x: number;
   baseX: number;
   y: number;
+  baseY: number;
   w: number;
+  baseW: number;
   h: number;
-  amplitude: number;
+  baseH: number;
+  amplitudeX: number;
+  amplitudeY: number;
+  pulse: number;
   speed: number;
   phase: number;
 }

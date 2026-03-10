@@ -185,7 +185,24 @@ describe('goal signal primer helpers', () => {
     });
     state.sim.notebook.synthesisUnlocked = true;
     state.sim.currentNodeId = state.expeditionGoalNodeId;
-    state.hazards = [{ kind: 'moving', x: 0, baseX: 0, y: 0, w: 60, h: 16, amplitude: 20, speed: 1, phase: 0 }];
+    state.hazards = [
+      {
+        kind: 'sweeper',
+        x: 0,
+        baseX: 0,
+        y: 0,
+        baseY: 0,
+        w: 60,
+        baseW: 60,
+        h: 16,
+        baseH: 16,
+        amplitudeX: 20,
+        amplitudeY: 0,
+        pulse: 0,
+        speed: 1,
+        phase: 0
+      }
+    ];
 
     expect(applyGoalSignalRunBonus(state)).toBe(true);
     expect(state.hazards[0]?.w).toBe(0);

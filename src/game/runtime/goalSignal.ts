@@ -110,7 +110,11 @@ export function applyGoalSignalRunBonus(state: RuntimeState): boolean {
     }
     firstHazard.w = 0;
     firstHazard.h = 0;
-    firstHazard.amplitude = 0;
+    firstHazard.baseW = 0;
+    firstHazard.baseH = 0;
+    firstHazard.amplitudeX = 0;
+    firstHazard.amplitudeY = 0;
+    firstHazard.pulse = 0;
     firstHazard.speed = 0;
     return true;
   }
