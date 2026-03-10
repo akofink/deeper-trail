@@ -93,6 +93,8 @@ describe('expedition flow runtime helpers', () => {
     expect(state.health).toBe(3);
     expect(state.sim.day).toBe(1);
     expect(state.sim.fuel).toBe(23);
+    expect(state.mapMessage).toBe('Route board unlocked. Pick a connected route and press Enter to travel.');
+    expect(state.mapMessageTimer).toBe(4);
     expect(completion.flawlessRecovery).toBe(1);
     expect(completion.notebookUpdate.newEntries[0]?.clueKey).toBe('ruin');
 
