@@ -85,7 +85,7 @@ describe('beacon activation runtime helper', () => {
     expect(state.beacons[0]?.activated).toBe(true);
     expect(state.beacons[1]?.activated).toBe(false);
     expect(state.score).toBe(15);
-    expect(state.mapMessage).toBe('Beacon B0 linked (1/2).');
+    expect(state.mapMessage).toBe('Linked B0 1/2.');
     expect(state.mapMessageTimer).toBe(2.5);
   });
 
@@ -100,7 +100,7 @@ describe('beacon activation runtime helper', () => {
     expect(attemptBeaconActivation(state, 'auto')).toBe(true);
     expect(state.beacons[0]?.activated).toBe(true);
     expect(state.score).toBe(15);
-    expect(state.mapMessage).toBe('Scanner auto-linked B0 (1/1).');
+    expect(state.mapMessage).toBe('Auto-linked B0 1/1.');
     expect(state.mapMessageTimer).toBe(2.5);
 
     state.mapMessage = '';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { objectiveShortLabel, runObjectiveProgress, runObjectivePrompt } from '../src/game/runtime/runObjectiveUi';
+import { objectiveShortLabel, runObjectiveProgress, runObjectivePrompt, updateStickyRunPrompt } from '../src/game/runtime/runObjectiveUi';
 import type { RuntimeState } from '../src/game/runtime/runtimeState';
 import { createInitialGameState } from '../src/game/state/gameState';
 
@@ -89,7 +89,7 @@ describe('run objective ui helpers', () => {
     state.player.y = 0;
     state.player.vx = 260;
 
-    expect(runObjectivePrompt(state)).toContain('Sync gate open');
+    expect(runObjectivePrompt(state)).toContain('Phase open: cut through');
   });
 
   it('surfaces biome-specific non-relay prompts when present', () => {
@@ -101,14 +101,14 @@ describe('run objective ui helpers', () => {
     state.player.x = 0;
     state.player.onGround = true;
 
-    expect(runObjectivePrompt(state)).toContain('Impact plate intact');
+    expect(runObjectivePrompt(state)).toBe('Jump and slam the impact plate');
 
     ruinNode.type = 'nature';
     state.impactPlates = [];
     state.canopyLifts = [{ id: 'cl0', x: 17, y: 22, w: 70, h: 80, progress: 0.3, charted: false }];
     state.player.onGround = false;
 
-    expect(runObjectivePrompt(state)).toContain('Canopy draft engaged');
+    expect(runObjectivePrompt(state)).toBe('Stay airborne in the bloom 50%');
   });
 
   it('falls back to beacon prompts and exposes compact objective labels', () => {
@@ -121,7 +121,7 @@ describe('run objective ui helpers', () => {
     state.player.y = 0;
     state.player.onGround = false;
 
-    expect(runObjectivePrompt(state)).toContain('Jump through, then press Enter');
+    expect(runObjectivePrompt(state)).toBe('Jump through the relay, then press Enter');
     expect(objectiveShortLabel('town')).toBe('OBJ STEADY');
     expect(objectiveShortLabel('ruin')).toBe('OBJ ORDER');
     expect(objectiveShortLabel('nature')).toBe('OBJ AIR');
@@ -141,9 +141,25 @@ describe('run objective ui helpers', () => {
     state.dashBoost = 0.3;
     state.beacons = [{ id: 'b0', x: 17, y: 22, r: 15, activated: false, scanProgress: 0.2, scanLocked: false }];
 
-    expect(runObjectivePrompt(state)).toContain('Hold speed: lock 50%');
+    expect(runObjectivePrompt(state)).toBe('Phase open: lock relay 50%');
 
     state.beacons[0]!.scanLocked = true;
-    expect(runObjectivePrompt(state)).toContain('pattern locked');
+    expect(runObjectivePrompt(state)).toBe('Relay locked: press Enter to confirm');
+  });
+
+  it('keeps the previous run prompt alive briefly after a prompt disappears', () => {
+    expect(updateStickyRunPrompt('Hold steady at bay 25%', '', 0, 1 / 60)).toEqual({
+      text: 'Hold steady at bay 25%',
+      timer: 0.55
+    });
+
+    const retainedPrompt = updateStickyRunPrompt(null, 'Hold steady at bay 25%', 0.3, 0.1);
+    expect(retainedPrompt.text).toBe('Hold steady at bay 25%');
+    expect(retainedPrompt.timer).toBeCloseTo(0.2);
+
+    expect(updateStickyRunPrompt(null, 'Hold steady at bay 25%', 0.05, 0.1)).toEqual({
+      text: '',
+      timer: 0
+    });
   });
 });

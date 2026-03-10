@@ -61,7 +61,7 @@ export function updateRunObjectives(state: RuntimeState, input: RunObjectiveUpda
         if (beacon.scanProgress >= ANOMALY_SCAN_LOCK_SECONDS) {
           beacon.scanLocked = true;
           beacon.scanProgress = ANOMALY_SCAN_LOCK_SECONDS;
-          message = `Scanner locked relay ${beacon.id.toUpperCase()}.`;
+          message = `Relay ${beacon.id.toUpperCase()} locked.`;
           durationSeconds = 1.8;
         }
         continue;
@@ -76,7 +76,7 @@ export function updateRunObjectives(state: RuntimeState, input: RunObjectiveUpda
     const update = updateServiceStopProgress(stop, input.dt, inZone, steadyReady);
     if (update.completedNow) {
       state.score += 20;
-      message = `Service bay ${stop.id.toUpperCase()} calibrated.`;
+      message = `Bay ${stop.id.toUpperCase()} calibrated.`;
       durationSeconds = 2.2;
     }
   }
@@ -88,7 +88,7 @@ export function updateRunObjectives(state: RuntimeState, input: RunObjectiveUpda
     if (!result.canStabilize) continue;
     gate.stabilized = true;
     state.score += 20;
-    message = `Sync gate ${gate.id.toUpperCase()} stabilized.`;
+    message = `Gate ${gate.id.toUpperCase()} stabilized.`;
     durationSeconds = 2.2;
   }
 
@@ -97,7 +97,7 @@ export function updateRunObjectives(state: RuntimeState, input: RunObjectiveUpda
     const update = updateCanopyLiftProgress(lift, input.dt, inZone, !state.player.onGround);
     if (update.completedNow) {
       state.score += 20;
-      message = `Canopy lift ${lift.id.toUpperCase()} charted.`;
+      message = `Lift ${lift.id.toUpperCase()} charted.`;
       durationSeconds = 2.2;
     }
   }
@@ -106,7 +106,7 @@ export function updateRunObjectives(state: RuntimeState, input: RunObjectiveUpda
     if (!canShatterImpactPlate(plate, px, input.landingSpeed, input.landedThisFrame)) continue;
     plate.shattered = true;
     state.score += 20;
-    message = `Impact plate ${plate.id.toUpperCase()} shattered.`;
+    message = `Plate ${plate.id.toUpperCase()} shattered.`;
     durationSeconds = 2.2;
   }
 

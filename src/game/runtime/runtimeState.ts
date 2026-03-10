@@ -48,6 +48,8 @@ export interface RuntimeState {
   elapsedSeconds: number;
   mapMessage: string;
   mapMessageTimer: number;
+  runPromptText?: string;
+  runPromptTimer?: number;
   mapSelectionIndex: number;
   completedNodeIds: string[];
   freeTravelCharges: number;

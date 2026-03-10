@@ -1,5 +1,6 @@
 import { hasAutoLinkScanner } from '../../engine/sim/vehicle';
-import { runObjectivePrompt } from './runObjectiveUi';
+import { currentNodeType } from '../../engine/sim/world';
+import { objectiveShortLabel, runObjectiveProgress } from './runObjectiveUi';
 import type { RuntimeState } from './runtimeState';
 
 export interface RunSceneOverlayCard {
@@ -28,7 +29,7 @@ const OVERLAY_MIN_WIDTH = 280;
 const WIDE_OVERLAY_PADDING_Y = 18;
 const DEFAULT_OVERLAY_PADDING_Y = 14;
 const WIDE_OVERLAY_FONT_SIZE = 18;
-const DEFAULT_OVERLAY_FONT_SIZE = 20;
+const DEFAULT_OVERLAY_FONT_SIZE = 22;
 
 function bannerPulseY(state: RuntimeState): number {
   if (state.mapMessageTimer <= 0 || !state.mapMessage) {
@@ -55,8 +56,12 @@ export function buildRunSceneOverlayCard(state: RuntimeState, screenWidth: numbe
     text = `ALERT\n${state.mapMessage}`;
     fill = '#fef3c7';
   } else {
-    const prompt = runObjectivePrompt(state);
-    text = prompt ? `OBJECTIVE\n${prompt}` : '';
+    const prompt = state.runPromptTimer && state.runPromptTimer > 0 ? state.runPromptText ?? '' : '';
+    if (prompt) {
+      const progress = runObjectiveProgress(state);
+      const nodeType = currentNodeType(state.sim);
+      text = `${objectiveShortLabel(nodeType)} ${progress.completed}/${progress.total}\n${prompt}`;
+    }
   }
 
   if (!text) {

@@ -3,8 +3,8 @@ import {
   canActivateBeacon,
   canChargeAnomalyLock,
   getBeaconRuleForNodeType,
-  getBeaconRuleLabel,
-  isSteadyLinkReady
+  isSteadyLinkReady,
+  nextRequiredBeaconIndex
 } from '../../engine/sim/runObjectives';
 import { currentNodeType } from '../../engine/sim/world';
 import { isInsideCanopyLift, totalCanopyLiftProgress, usesCanopyLifts } from './canopyLifts';
@@ -30,6 +30,19 @@ export interface RunObjectiveProgress {
   impactPlatesRemaining: number;
 }
 
+export interface StickyRunPrompt {
+  text: string;
+  timer: number;
+}
+
+const STICKY_RUN_PROMPT_SECONDS = 0.55;
+
+function quantizedPercent(progress: number, maxProgress: number): number {
+  if (maxProgress <= 0) return 0;
+  const percent = Math.max(0, Math.min(100, Math.round((progress / maxProgress) * 100)));
+  return Math.max(0, Math.min(100, Math.round(percent / 25) * 25));
+}
+
 function serviceStopPromptText(state: RuntimeState): string | null {
   if (state.scene !== 'run' || state.mode !== 'playing' || !usesServiceStops(currentNodeType(state.sim))) {
     return null;
@@ -42,10 +55,10 @@ function serviceStopPromptText(state: RuntimeState): string | null {
     if (Math.abs(px - stop.x) > stop.w * 0.5) continue;
 
     return ready
-      ? `Service bay aligned.\nHold steady: inspect ${Math.round((stop.progress / SERVICE_STOP_HOLD_SECONDS) * 100)}%.`
+      ? `Hold steady at bay ${quantizedPercent(stop.progress, SERVICE_STOP_HOLD_SECONDS)}%`
       : !state.player.onGround
-        ? 'Service bay unstable.\nTouch down to start inspection.'
-        : 'Service bay unstable.\nEase off to inspection speed.';
+        ? 'Touch down and slow for the bay'
+        : 'Ease off and settle into the bay';
   }
 
   return null;
@@ -74,7 +87,7 @@ function syncGatePromptText(state: RuntimeState): string | null {
     );
 
     if (result.canStabilize) {
-      return `Sync gate open.\nCut through ${gate.id.toUpperCase()} fast or boosted.`;
+      return `Phase open: cut through ${gate.id.toUpperCase()}`;
     }
 
     if (result.reason) {
@@ -100,8 +113,8 @@ function canopyLiftPromptText(state: RuntimeState): string | null {
     if (lift.charted || !isInsideCanopyLift(lift, bounds)) continue;
 
     return !state.player.onGround
-      ? `Canopy draft engaged.\nStay in the bloom: chart ${Math.round((lift.progress / 0.6) * 100)}%.`
-      : 'Canopy draft dormant.\nJump into the bloom and stay airborne.';
+      ? `Stay airborne in the bloom ${quantizedPercent(lift.progress, 0.6)}%`
+      : 'Jump into the bloom and stay airborne';
   }
 
   return null;
@@ -152,30 +165,52 @@ function beaconPromptText(state: RuntimeState): string | null {
     if (beaconRule === 'boosted' && state.sim.vehicle.scanner >= 2) {
       if (beacon.scanLocked) {
         return state.sim.vehicle.scanner >= 3
-          ? 'Relay pattern locked.\nScanner will confirm the link.'
-          : 'Relay pattern locked.\nPress Enter to confirm the link.';
+          ? 'Relay locked: scanner confirms the link'
+          : 'Relay locked: press Enter to confirm';
       }
 
       if (canChargeAnomalyLock(Math.abs(state.player.vx), state.dashBoost, state.elapsedSeconds, index)) {
-        return `Sync window open.\nHold speed: lock ${Math.round(anomalyLockProgressRatio(beacon.scanProgress ?? 0) * 100)}%.`;
+        return `Phase open: lock relay ${quantizedPercent(
+          anomalyLockProgressRatio(beacon.scanProgress ?? 0),
+          1
+        )}%`;
       }
     }
 
     if (activation.canActivate) {
       if (state.sim.vehicle.scanner >= 3) {
-        if (beaconRule === 'boosted') return 'Relay in range.\nKeep boosting through the sync window.';
-        if (beaconRule === 'airborne') return 'Relay in range.\nJump through it to auto-link.';
-        if (beaconRule === 'steady') return 'Relay in range.\nHold steady beside it to auto-link.';
-        return 'Relay in range.\nScanner will auto-link it.';
+        if (beaconRule === 'boosted') return 'Keep boosting through the relay to auto-link';
+        if (beaconRule === 'airborne') return 'Jump through the relay to auto-link';
+        if (beaconRule === 'steady') return 'Hold steady beside the relay to auto-link';
+        return 'Stay in range and the scanner will auto-link';
       }
-      if (beaconRule === 'ordered') return `Relay in range.\nPress Enter: link ${beacon.id.toUpperCase()}.`;
-      if (beaconRule === 'boosted') return 'Sync window open.\nBoost through, then press Enter.';
-      if (beaconRule === 'airborne') return 'Relay in range.\nJump through, then press Enter.';
-      if (beaconRule === 'steady') return 'Relay stabilized.\nPress Enter while holding steady.';
-      return 'Relay in range.\nPress Enter to link it.';
+      if (beaconRule === 'ordered') return `Press Enter to link relay ${beacon.id.toUpperCase()}`;
+      if (beaconRule === 'boosted') return 'Boost through the relay, then press Enter';
+      if (beaconRule === 'airborne') return 'Jump through the relay, then press Enter';
+      if (beaconRule === 'steady') return 'Hold steady and press Enter';
+      return 'Press Enter to link the relay';
     }
 
-    return activation.reason ?? getBeaconRuleLabel(nodeType);
+    if (beaconRule === 'steady') {
+      return !state.player.onGround ? 'Touch down before linking the relay' : 'Ease off before linking the relay';
+    }
+
+    if (beaconRule === 'ordered') {
+      const requiredIndex = nextRequiredBeaconIndex(state.beacons);
+      const nextBeacon = state.beacons[requiredIndex];
+      return `Link relay ${nextBeacon?.id.toUpperCase() ?? 'NEXT'} first`;
+    }
+
+    if (beaconRule === 'boosted') {
+      const enoughSpeed = Math.abs(state.player.vx) >= 260 || state.dashBoost >= 0.2;
+      return enoughSpeed ? 'Hold boost and wait for the phase' : 'Need more speed or boost for this relay';
+    }
+
+    if (beaconRule === 'airborne') {
+      return 'Jump through the relay to link it';
+    }
+
+    return 'Relay in range';
   }
 
   return null;
@@ -229,4 +264,24 @@ export function runObjectivePrompt(state: RuntimeState): string | null {
     serviceStopPromptText(state) ??
     beaconPromptText(state)
   );
+}
+
+export function updateStickyRunPrompt(
+  nextPrompt: string | null,
+  previousText: string | undefined,
+  previousTimer: number | undefined,
+  dt: number
+): StickyRunPrompt {
+  if (nextPrompt) {
+    return {
+      text: nextPrompt,
+      timer: STICKY_RUN_PROMPT_SECONDS
+    };
+  }
+
+  const timer = Math.max(0, (previousTimer ?? 0) - dt);
+  return {
+    text: timer > 0 ? previousText ?? '' : '',
+    timer
+  };
 }

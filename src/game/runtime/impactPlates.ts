@@ -36,6 +36,6 @@ export function impactPlatePrompt(plate: ImpactPlate, playerCenterX: number, pla
   }
 
   return playerOnGround
-    ? 'Impact plate intact.\nJump and land hard on the slab to crack it open.'
-    : 'Impact plate below.\nDrop onto the slab with a hard landing.';
+    ? 'Jump and slam the impact plate'
+    : 'Drop hard onto the impact plate';
 }
