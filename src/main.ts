@@ -17,7 +17,7 @@ import { attemptBeaconActivation, hasBeaconAutoLink } from './game/runtime/beaco
 import { buildDamageFeedbackView, decayDamageFeedback, triggerDamageFeedback } from './game/runtime/damageFeedback';
 import { biomeByNodeType, buildRunLayout } from './game/runtime/runLayout';
 import { buildMapActionChips, buildMapBoardView } from './game/runtime/mapBoardView';
-import { buildMapSceneCopy } from './game/runtime/mapSceneCards';
+import { buildMapSceneCardViews, buildMapSceneCopy } from './game/runtime/mapSceneCards';
 import { buildMapSceneContent } from './game/runtime/mapSceneContent';
 import { buildMapSceneHudViewModel } from './game/runtime/mapSceneHudView';
 import { buildMapSceneLayout } from './game/runtime/mapSceneLayout';
@@ -1281,27 +1281,25 @@ async function bootstrap(): Promise<void> {
     const runOverlayCard = buildRunSceneOverlayCard(state, w);
     if (runOverlayCard) {
       layoutTextCard(graphics, overlay, runOverlayCard.text, {
-        tone: 'dark',
+        tone: runOverlayCard.tone,
         x: runOverlayCard.x,
         y: runOverlayCard.y,
         maxWidth: runOverlayCard.maxWidth,
         minWidth: runOverlayCard.minWidth,
         paddingX: runOverlayCard.paddingX,
         paddingY: runOverlayCard.paddingY,
-        align: 'center',
+        align: runOverlayCard.align,
         fill: runOverlayCard.fill,
         fontSize: runOverlayCard.fontSize
       });
     } else {
       overlay.text = '';
     }
-    const chipY = h - 58;
-    const chipHeight = 34;
-    const runChips = buildRunActionChips(state);
+    const runChips = buildRunActionChips(state, h);
     runChips.forEach((chip, index) => {
-      drawChip(graphics, chip.x, chipY, chip.w, chip.color, chipHeight);
+      drawChip(graphics, chip.x, chip.y, chip.w, chip.color, chip.height);
       const label = chipLabels[index];
-      if (label) layoutChipLabel(label, chip.label, chip.x, chipY, chip.w, '#dbeafe', chipHeight);
+      if (label) layoutChipLabel(label, chip.label, chip.x, chip.y, chip.w, chip.labelFill, chip.height);
     });
   }
 
@@ -1453,60 +1451,68 @@ async function bootstrap(): Promise<void> {
       label.y = layout?.y ?? 0;
     });
 
-    if (mapSceneCopy.showRouteCard) {
-      layoutTextCard(graphics, overlay, mapSceneCopy.routeText, {
-        tone: 'dark',
-        x: mapSceneLayout.routeCard.x,
-        y: mapSceneLayout.routeCard.y,
-        maxWidth: mapSceneLayout.routeCard.maxWidth,
-        minWidth: mapSceneLayout.routeCard.minWidth,
-        paddingX: 18,
-        paddingY: 16,
-        align: 'left',
-        fill: '#e2e8f0',
-        fontSize: 15
+    const mapCardViews = buildMapSceneCardViews({
+      celebrationText: mapSceneCopy.celebrationText,
+      fieldNotesText: mapSceneContent.fieldNotes.join('\n'),
+      layout: mapSceneLayout,
+      routeText: mapSceneCopy.routeText,
+      showRouteCard: mapSceneCopy.showRouteCard
+    });
+
+    if (mapCardViews.routeCard) {
+      layoutTextCard(graphics, overlay, mapCardViews.routeCard.text, {
+        tone: mapCardViews.routeCard.tone,
+        x: mapCardViews.routeCard.x,
+        y: mapCardViews.routeCard.y,
+        maxWidth: mapCardViews.routeCard.maxWidth,
+        minWidth: mapCardViews.routeCard.minWidth,
+        paddingX: mapCardViews.routeCard.paddingX,
+        paddingY: mapCardViews.routeCard.paddingY,
+        align: mapCardViews.routeCard.align,
+        fill: mapCardViews.routeCard.fill,
+        fontSize: mapCardViews.routeCard.fontSize
       });
     } else {
       overlay.text = '';
     }
-    layoutTextCard(graphics, fieldNotesText, mapSceneContent.fieldNotes.join('\n'), {
-      tone: 'light',
-      x: mapSceneLayout.notesCard.x,
-      y: mapSceneLayout.notesCard.y,
-      maxWidth: mapSceneLayout.notesCard.maxWidth,
-      minWidth: mapSceneLayout.notesCard.minWidth,
-      paddingX: 18,
-      paddingY: 16,
-      align: 'left',
-      fill: '#0f172a',
-      fontSize: 13
+    layoutTextCard(graphics, fieldNotesText, mapCardViews.notesCard.text, {
+      tone: mapCardViews.notesCard.tone,
+      x: mapCardViews.notesCard.x,
+      y: mapCardViews.notesCard.y,
+      maxWidth: mapCardViews.notesCard.maxWidth,
+      minWidth: mapCardViews.notesCard.minWidth,
+      paddingX: mapCardViews.notesCard.paddingX,
+      paddingY: mapCardViews.notesCard.paddingY,
+      align: mapCardViews.notesCard.align,
+      fill: mapCardViews.notesCard.fill,
+      fontSize: mapCardViews.notesCard.fontSize
     });
 
     celebrationOverlay.text = '';
-    if (mapSceneCopy.celebrationText) {
-      layoutTextCard(graphics, celebrationOverlay, mapSceneCopy.celebrationText, {
-        tone: 'dark',
-        x: mapSceneLayout.celebrationCard.x,
-        y: mapSceneLayout.celebrationCard.y,
-        maxWidth: mapSceneLayout.celebrationCard.maxWidth,
-        minWidth: mapSceneLayout.celebrationCard.minWidth,
-        paddingX: 22,
-        paddingY: 18,
-        align: 'center',
-        fill: '#f8fafc',
-        fontSize: 18
+    if (mapCardViews.celebrationCard) {
+      layoutTextCard(graphics, celebrationOverlay, mapCardViews.celebrationCard.text, {
+        tone: mapCardViews.celebrationCard.tone,
+        x: mapCardViews.celebrationCard.x,
+        y: mapCardViews.celebrationCard.y,
+        maxWidth: mapCardViews.celebrationCard.maxWidth,
+        minWidth: mapCardViews.celebrationCard.minWidth,
+        paddingX: mapCardViews.celebrationCard.paddingX,
+        paddingY: mapCardViews.celebrationCard.paddingY,
+        align: mapCardViews.celebrationCard.align,
+        fill: mapCardViews.celebrationCard.fill,
+        fontSize: mapCardViews.celebrationCard.fontSize
       });
       mapSceneLayout.celebrationAccents.forEach((accent) => {
         graphics.circle(accent.x, accent.y, accent.r).fill(accent.color);
       });
     }
 
-    const mapChips = buildMapActionChips(w, state.expeditionComplete);
+    const mapChips = buildMapActionChips(w, mapSceneLayout.chipY, mapSceneLayout.chipHeight, state.expeditionComplete);
     mapChips.forEach((chip, index) => {
-      drawChip(graphics, chip.x, mapSceneLayout.chipY, chip.w, chip.color, mapSceneLayout.chipHeight);
+      drawChip(graphics, chip.x, chip.y, chip.w, chip.color, chip.height);
       const label = chipLabels[index];
       if (label) {
-        layoutChipLabel(label, chip.label, chip.x, mapSceneLayout.chipY, chip.w, '#64748b', mapSceneLayout.chipHeight);
+        layoutChipLabel(label, chip.label, chip.x, chip.y, chip.w, chip.labelFill, chip.height);
       }
     });
   }

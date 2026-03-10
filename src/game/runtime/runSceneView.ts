@@ -4,6 +4,7 @@ import { objectiveShortLabel, runObjectiveProgress } from './runObjectiveUi';
 import type { RuntimeState } from './runtimeState';
 
 export interface RunSceneOverlayCard {
+  align: 'center';
   fontSize: number;
   fill: string;
   maxWidth: number;
@@ -11,15 +12,19 @@ export interface RunSceneOverlayCard {
   paddingX: number;
   paddingY: number;
   text: string;
+  tone: 'dark';
   x: number;
   y: number;
 }
 
 export interface RunSceneActionChip {
   color: string;
+  height: number;
   label: string;
+  labelFill: string;
   w: number;
   x: number;
+  y: number;
 }
 
 const OVERLAY_Y = 150;
@@ -72,6 +77,7 @@ export function buildRunSceneOverlayCard(state: RuntimeState, screenWidth: numbe
   const maxWidth = Math.min(OVERLAY_MAX_WIDTH, screenWidth - OVERLAY_SCREEN_MARGIN);
 
   return {
+    align: 'center',
     fontSize: emphasizedMode ? WIDE_OVERLAY_FONT_SIZE : DEFAULT_OVERLAY_FONT_SIZE,
     fill,
     maxWidth,
@@ -79,17 +85,29 @@ export function buildRunSceneOverlayCard(state: RuntimeState, screenWidth: numbe
     paddingX: 22,
     paddingY: emphasizedMode ? WIDE_OVERLAY_PADDING_Y : DEFAULT_OVERLAY_PADDING_Y,
     text,
+    tone: 'dark',
     x: Math.round(screenWidth * 0.5 - maxWidth * 0.5),
     y: emphasizedMode ? OVERLAY_Y : bannerPulseY(state)
   };
 }
 
-export function buildRunActionChips(state: RuntimeState): RunSceneActionChip[] {
+export function buildRunActionChips(state: RuntimeState, screenHeight: number): RunSceneActionChip[] {
+  const chipY = screenHeight - 58;
+  const height = 34;
+
   return [
-    { x: 20, w: 94, color: '#60a5fa', label: 'Arrows\nMove' },
-    { x: 122, w: 94, color: '#fbbf24', label: 'Space\nJump' },
-    { x: 224, w: 92, color: '#a78bfa', label: 'Shift\nDash' },
-    { x: 324, w: 92, color: '#34d399', label: hasAutoLinkScanner(state.sim.vehicle) ? 'Scan\nAuto-link' : 'Enter\nLink' },
-    { x: 424, w: 82, color: '#64748b', label: 'A\nMap' }
+    { x: 20, y: chipY, w: 94, height, color: '#60a5fa', label: 'Arrows\nMove', labelFill: '#dbeafe' },
+    { x: 122, y: chipY, w: 94, height, color: '#fbbf24', label: 'Space\nJump', labelFill: '#dbeafe' },
+    { x: 224, y: chipY, w: 92, height, color: '#a78bfa', label: 'Shift\nDash', labelFill: '#dbeafe' },
+    {
+      x: 324,
+      y: chipY,
+      w: 92,
+      height,
+      color: '#34d399',
+      label: hasAutoLinkScanner(state.sim.vehicle) ? 'Scan\nAuto-link' : 'Enter\nLink',
+      labelFill: '#dbeafe'
+    },
+    { x: 424, y: chipY, w: 82, height, color: '#64748b', label: 'A\nMap', labelFill: '#dbeafe' }
   ];
 }

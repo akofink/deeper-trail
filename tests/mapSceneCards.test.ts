@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildMapSceneCopy, buildMapSceneHudLayout } from '../src/game/runtime/mapSceneCards';
+import { buildMapSceneCardViews, buildMapSceneCopy, buildMapSceneHudLayout } from '../src/game/runtime/mapSceneCards';
+import { buildMapSceneLayout } from '../src/game/runtime/mapSceneLayout';
 
 describe('map scene card copy', () => {
   it('shows the route card while an expedition is still active', () => {
@@ -50,5 +51,51 @@ describe('map scene card copy', () => {
     expect(layout.pipsX + 44).toBeLessThan(layout.leftPanelX + layout.leftPanelWidth);
     expect(layout.moduleX).toBeGreaterThan(layout.rightPanelX);
     expect(layout.rightLabelX).toBeGreaterThan(layout.rightPanelX);
+  });
+
+  it('builds reusable route, notes, and celebration card views from the map copy and layout', () => {
+    const copy = buildMapSceneCopy({
+      expeditionComplete: true,
+      installHint: 'Install available',
+      mapMessage: 'Route locked',
+      mapMessageTimer: 1,
+      repairHint: 'Repair available',
+      routeDetail: 'Route board details',
+      scannerHint: 'Scanner offline',
+      score: 735,
+      seed: '6618abd4'
+    });
+    const layout = buildMapSceneLayout(1280, 720, 180, 140);
+
+    const views = buildMapSceneCardViews({
+      celebrationText: copy.celebrationText,
+      fieldNotesText: 'Visited ruin 1x',
+      layout,
+      routeText: copy.routeText,
+      showRouteCard: copy.showRouteCard
+    });
+
+    expect(views.routeCard).toBeNull();
+    expect(views.notesCard).toEqual({
+      align: 'left',
+      fill: '#0f172a',
+      fontSize: 13,
+      maxWidth: layout.notesCard.maxWidth,
+      minWidth: layout.notesCard.minWidth,
+      paddingX: 18,
+      paddingY: 16,
+      text: 'Visited ruin 1x',
+      tone: 'light',
+      x: layout.notesCard.x,
+      y: layout.notesCard.y
+    });
+    expect(views.celebrationCard).toMatchObject({
+      align: 'center',
+      fill: '#f8fafc',
+      fontSize: 18,
+      tone: 'dark',
+      x: layout.celebrationCard.x,
+      y: layout.celebrationCard.y
+    });
   });
 });
