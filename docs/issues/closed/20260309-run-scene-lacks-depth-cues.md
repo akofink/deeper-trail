@@ -11,3 +11,6 @@ The prototype is already leaning on movement feel and route readability. If the 
 
 Known constraints, suspected cause, or likely starting points:
 Keep gameplay rules deterministic and avoid pushing simulation logic into rendering. Likely touchpoints are the Pixi presentation and run-scene view code in [src/main.ts](/Users/akofink/dev/repos/deeper-trail/src/main.ts) plus the runtime rendering helpers under [src/game/runtime](/Users/akofink/dev/repos/deeper-trail/src/game/runtime).
+
+Resolution note (2026-03-10):
+Closed by moving run-scene depth geometry into a deterministic runtime helper that now drives layered parallax ridge bands, biome-specific silhouette props, and speed-linked motion trails. The Pixi shell renders those cues without changing simulation rules, and targeted tests cover the depth-view model across biome and pace variants.
