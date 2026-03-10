@@ -25,4 +25,16 @@ describe('runLayout', () => {
       ['stomper', 0, 42, 0]
     ]);
   });
+
+  it('keeps town relays within grounded steady-link reach', () => {
+    const groundY = 500;
+    const layout = buildRunLayout(groundY, 'town');
+    const playerHeight = 44;
+    const interactRadius = 40;
+
+    for (const beacon of layout.beacons) {
+      const verticalDistanceFromGroundedPlayerCenter = groundY - playerHeight * 0.5 - beacon.y;
+      expect(verticalDistanceFromGroundedPlayerCenter).toBeLessThanOrEqual(beacon.r + interactRadius);
+    }
+  });
 });

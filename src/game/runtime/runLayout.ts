@@ -106,6 +106,17 @@ function hazardTemplatesForNodeType(nodeType: string): HazardTemplate[] {
   ];
 }
 
+function beaconOffsetY(nodeType: string, encounterIndex: number, beaconIndex: number): number {
+  const rise = encounterRiseAt(nodeType, encounterIndex);
+
+  if (nodeType === 'town') {
+    const groundedOffsets = [48, 50, 49];
+    return groundedOffsets[beaconIndex] + Math.round(rise * 0.35);
+  }
+
+  return ([58, 62, 60][beaconIndex] ?? 58) + Math.round(rise * 0.7);
+}
+
 export function buildRunLayout(groundY: number, nodeType: string): {
   goalX: number;
   hazards: Hazard[];
@@ -131,7 +142,7 @@ export function buildRunLayout(groundY: number, nodeType: string): {
     beacons: beaconRiseIndexes.map((riseIndex, index) => ({
       id: `b${index}`,
       x: [360, 1220, 1980][index] ?? 360,
-      y: groundY - [58, 62, 60][index] - Math.round(encounterRiseAt(nodeType, riseIndex) * 0.7),
+      y: groundY - beaconOffsetY(nodeType, riseIndex, index),
       r: 15,
       activated: false
     })),
