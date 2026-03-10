@@ -36,6 +36,7 @@ import { updateRunObjectives } from './game/runtime/runObjectiveUpdates';
 import { buildRunObjectiveVisualState } from './game/runtime/runObjectiveVisuals';
 import { dashEntryEnergyCost, shouldContinueDash, shouldStartDash } from './game/runtime/runDash';
 import { updateMapRotation } from './game/runtime/mapRotation';
+import { buildRunSceneDepthView } from './game/runtime/runSceneDepth';
 import { buildRunSceneHudViewModel } from './game/runtime/runSceneHudView';
 import { buildBeaconLabelViews, drawRunExitFlag, drawRunObjectiveVisuals } from './game/runtime/runSceneObjectiveView';
 import { buildRunActionChips, buildRunSceneOverlayCard } from './game/runtime/runSceneView';
@@ -301,6 +302,45 @@ function drawTerrainBand(
   }
   graphics.lineTo(endX, floorY);
   graphics.closePath().fill({ color, alpha });
+}
+
+function drawRunDepthProp(graphics: Graphics, prop: ReturnType<typeof buildRunSceneDepthView>['props'][number], cameraX: number, groundY: number): void {
+  const screenX = prop.x - cameraX * prop.parallax;
+  if (prop.kind === 'canopy') {
+    graphics.roundRect(screenX - prop.width * 0.1, prop.y + prop.height * 0.26, prop.width * 0.18, prop.height * 0.74, 10).fill({
+      color: '#14532d',
+      alpha: prop.alpha + 0.02
+    });
+    graphics.ellipse(screenX + prop.width * 0.3, prop.y + prop.height * 0.28, prop.width * 0.56, prop.height * 0.26).fill({
+      color: prop.color,
+      alpha: prop.alpha
+    });
+    return;
+  }
+
+  if (prop.kind === 'pillar') {
+    graphics.rect(screenX, prop.y, prop.width, prop.height).fill({ color: prop.color, alpha: prop.alpha });
+    graphics.rect(screenX + prop.width * 0.24, prop.y - 10, prop.width * 0.52, 18).fill({ color: '#d6a86a', alpha: prop.alpha * 0.8 });
+    return;
+  }
+
+  if (prop.kind === 'crystal') {
+    graphics
+      .moveTo(screenX + prop.width * 0.5, prop.y)
+      .lineTo(screenX + prop.width, prop.y + prop.height * 0.38)
+      .lineTo(screenX + prop.width * 0.7, groundY)
+      .lineTo(screenX, groundY - prop.height * 0.12)
+      .closePath()
+      .fill({ color: prop.color, alpha: prop.alpha });
+    return;
+  }
+
+  graphics.rect(screenX + prop.width * 0.42, prop.y, prop.width * 0.16, prop.height).fill({ color: prop.color, alpha: prop.alpha });
+  graphics.circle(screenX + prop.width * 0.5, prop.y + prop.height * 0.14, prop.width * 0.34).stroke({
+    color: '#ccfbf1',
+    alpha: prop.alpha * 0.95,
+    width: 2
+  });
 }
 
 function drawRunTerrain(
@@ -1027,6 +1067,21 @@ async function bootstrap(): Promise<void> {
     const nodeType = findNode(state.sim, state.sim.currentNodeId)?.type ?? 'town';
     const colors = biomeByNodeType(nodeType);
     const objectiveVisuals = buildRunObjectiveVisualState(state);
+    const speedRatio = clamp(Math.abs(state.player.vx) / Math.max(1, runSpeedForState(state)), 0, 1.3);
+    const depthView = buildRunSceneDepthView({
+      nodeType,
+      cameraX: cam,
+      elapsedSeconds: state.elapsedSeconds,
+      groundY: state.groundY,
+      screenWidth: w,
+      goalX: state.goalX,
+      paceRatio: speedRatio,
+      dashRatio: state.dashBoost,
+      playerScreenX: state.player.x - cam,
+      playerY: state.player.y,
+      playerWidth: state.player.w,
+      playerHeight: state.player.h
+    });
 
     graphics.clear();
     playerGraphics.clear();
@@ -1063,8 +1118,30 @@ async function bootstrap(): Promise<void> {
     graphics.rect(0, 0, w, h).fill(colors.sky);
     graphics.rect(0, h * 0.5, w, h * 0.5).fill(colors.back);
     drawBackdropAccents(graphics, nodeType, w, h, state.groundY, cam);
+    depthView.bands.forEach((band) => {
+      drawTerrainBand(
+        graphics,
+        Math.floor(cam * band.parallax / 64) * 64 - 220,
+        cam * band.parallax + w + 240,
+        band.y,
+        band.amplitude,
+        band.wavelength,
+        band.color,
+        band.alpha,
+        state.groundY
+      );
+    });
     drawRunTerrain(graphics, nodeType, state.groundY, state.goalX, cam, w, h);
     graphics.rect(-cam, state.groundY, state.goalX + 300, h - state.groundY).fill(colors.ground);
+    depthView.props.forEach((prop) => {
+      drawRunDepthProp(graphics, prop, cam, state.groundY);
+    });
+    depthView.motionTrails.forEach((trail) => {
+      graphics.roundRect(trail.x, trail.y, trail.width, trail.height, trail.height * 0.5).fill({
+        color: '#f8fafc',
+        alpha: trail.alpha
+      });
+    });
 
     for (const hazard of state.hazards) {
       graphics.rect(hazard.x - cam, hazard.y, hazard.w, hazard.h).fill(colors.hazard);
