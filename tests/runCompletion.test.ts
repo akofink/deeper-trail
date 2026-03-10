@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { applyNodeCompletionState } from '../src/game/runtime/runCompletion';
+import {
+  applyNodeCompletionState,
+  buildExitLockedMessage,
+  buildRunCompletionMessage
+} from '../src/game/runtime/runCompletion';
 import type { RuntimeState } from '../src/game/runtime/runtimeState';
 import { createInitialGameState } from '../src/game/state/gameState';
 
@@ -73,5 +77,50 @@ describe('applyNodeCompletionState', () => {
 
     expect(state.scene).toBe('map');
     expect(state.mode).toBe('won');
+  });
+});
+
+describe('run completion copy helpers', () => {
+  it('builds a compact exit-lock summary from every remaining objective type', () => {
+    expect(
+      buildExitLockedMessage({
+        completed: 1,
+        total: 6,
+        beaconsRemaining: 1,
+        serviceStopsRemaining: 2,
+        syncGatesRemaining: 1,
+        canopyLiftsRemaining: 0,
+        impactPlatesRemaining: 3
+      })
+    ).toBe('Exit locked: 1 relay, 2 service bays, 1 sync gate, 3 impact plates left.');
+  });
+
+  it('includes flawless recovery and notebook updates for non-goal node completions', () => {
+    expect(
+      buildRunCompletionMessage({
+        expeditionCompleted: false,
+        flawlessRecovery: 1,
+        latestNotebookEntryTitle: 'Relay Masonry'
+      })
+    ).toBe('Trail complete: route data synced. Clean run restored +1 HP and unlocked +1 free trip. Notebook updated: Relay Masonry.');
+  });
+
+  it('suppresses notebook text when no new clue was logged', () => {
+    expect(
+      buildRunCompletionMessage({
+        expeditionCompleted: false,
+        flawlessRecovery: 0
+      })
+    ).toBe('Trail complete: route data synced. +1 free travel charge unlocked.');
+  });
+
+  it('uses the expedition-ending celebration copy when the goal node is cleared', () => {
+    expect(
+      buildRunCompletionMessage({
+        expeditionCompleted: true,
+        flawlessRecovery: 1,
+        latestNotebookEntryTitle: 'Ignored'
+      })
+    ).toBe('Signal source reached. Expedition complete. Press N for a new expedition.');
   });
 });
