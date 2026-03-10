@@ -547,3 +547,14 @@ TODO next:
 
 - Decide whether later notebook payoff should mutate more than one relay/objective on the goal run or branch the actual goal-node encounter by clue mix.
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially shared HUD/draw helper plumbing like chip composition, overlay-card state, and module-meter placement.
+
+- Run-resolution copy extraction pass:
+  - Extended `src/game/runtime/runCompletion.ts` so exit-lock summaries and post-run completion messages are assembled in a deterministic helper instead of inline in `src/main.ts`.
+  - Updated `src/main.ts` to consume the extracted helpers when the player hits a locked exit or finishes a run, trimming another chunk of scene-owned rule/copy logic out of the Pixi shell.
+  - Expanded `tests/runCompletion.test.ts` to cover mixed objective-lock summaries, flawless/non-flawless completion text, notebook-update suffixes, and expedition-end messaging.
+  - Updated `IMPLEMENTATION_NOTES.md`; `npm run typecheck` and `npm run test -- runCompletion runSceneView` pass.
+
+TODO next:
+
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially shared HUD/draw helper plumbing like chip composition, overlay-card state, and repeated text-node reset/application work.
+- Decide whether later notebook payoff should mutate more than one relay/objective on the goal run or branch the actual goal-node encounter by clue mix.

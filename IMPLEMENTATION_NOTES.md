@@ -65,6 +65,7 @@
 - Scene HUD title/meta/row-label content now belongs in `game/runtime/sceneHudContent.ts` so map/run panel copy can be regression-tested without spinning up Pixi text nodes.
 - Shared HUD header, module-label placement, and module-meter cell geometry now belongs in `game/runtime/sceneHudView.ts` so panel text anchors and subsystem level/condition grids stay consistent across scenes.
 - Run-scene overlay banners and footer chip copy now belong in `game/runtime/runSceneView.ts` so prompt priority and control labels can be regression-tested without Pixi draw calls.
+- Exit-lock and post-run completion message assembly now belongs in `game/runtime/runCompletion.ts` so run-resolution copy can be regression-tested without stepping the Pixi shell.
 - World-node helper lookups belong in deterministic helpers (`engine/sim/world.ts`) so map travel, route cards, and automation all read the same node/neighbor logic.
 
 ## Current practical world-render guidance

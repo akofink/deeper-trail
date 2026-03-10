@@ -40,6 +40,7 @@ import { updateMapRotation } from './game/runtime/mapRotation';
 import { buildRunSceneHudViewModel } from './game/runtime/runSceneHudView';
 import { buildRunSceneDepthView } from './game/runtime/runSceneDepthView';
 import { buildBeaconLabelViews, drawRunExitFlag, drawRunObjectiveVisuals } from './game/runtime/runSceneObjectiveView';
+import { buildExitLockedMessage, buildRunCompletionMessage } from './game/runtime/runCompletion';
 import { buildRunActionChips, buildRunSceneOverlayCard } from './game/runtime/runSceneView';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import { advanceHorizontalVelocity } from './game/runtime/runMotion';
@@ -1009,47 +1010,16 @@ async function bootstrap(): Promise<void> {
     const exitReady = objectiveProgress.completed >= objectiveProgress.total;
     if (p.x + p.w >= state.goalX && !exitReady) {
       p.x = state.goalX - 64;
-      const pendingParts: string[] = [];
-      if (objectiveProgress.beaconsRemaining > 0) {
-        pendingParts.push(
-          `${objectiveProgress.beaconsRemaining} relay${objectiveProgress.beaconsRemaining === 1 ? '' : 's'}`
-        );
-      }
-      if (objectiveProgress.serviceStopsRemaining > 0) {
-        pendingParts.push(
-          `${objectiveProgress.serviceStopsRemaining} service ${objectiveProgress.serviceStopsRemaining === 1 ? 'bay' : 'bays'}`
-        );
-      }
-      if (objectiveProgress.syncGatesRemaining > 0) {
-        pendingParts.push(
-          `${objectiveProgress.syncGatesRemaining} sync ${objectiveProgress.syncGatesRemaining === 1 ? 'gate' : 'gates'}`
-        );
-      }
-      if (objectiveProgress.canopyLiftsRemaining > 0) {
-        pendingParts.push(
-          `${objectiveProgress.canopyLiftsRemaining} canopy ${objectiveProgress.canopyLiftsRemaining === 1 ? 'lift' : 'lifts'}`
-        );
-      }
-      if (objectiveProgress.impactPlatesRemaining > 0) {
-        pendingParts.push(
-          `${objectiveProgress.impactPlatesRemaining} impact ${objectiveProgress.impactPlatesRemaining === 1 ? 'plate' : 'plates'}`
-        );
-      }
-      state.mapMessage = `Exit locked: ${pendingParts.join(', ')} left.`;
+      state.mapMessage = buildExitLockedMessage(objectiveProgress);
       state.mapMessageTimer = 2.5;
     } else if (p.x + p.w >= state.goalX) {
       const completion = completeCurrentNodeRun(state);
-      state.mapMessage =
-        completion.flawlessRecovery > 0
-          ? 'Trail complete: route data synced. Clean run restored +1 HP and unlocked +1 free trip.'
-          : 'Trail complete: route data synced. +1 free travel charge unlocked.';
-      if (completion.notebookUpdate.newEntries.length > 0) {
-        const latestTitle = completion.notebookUpdate.newEntries[completion.notebookUpdate.newEntries.length - 1]?.title ?? 'new clue';
-        state.mapMessage += ` Notebook updated: ${latestTitle}.`;
-      }
-      if (completion.expeditionCompleted) {
-        state.mapMessage = 'Signal source reached. Expedition complete. Press N for a new expedition.';
-      }
+      state.mapMessage = buildRunCompletionMessage({
+        expeditionCompleted: completion.expeditionCompleted,
+        flawlessRecovery: completion.flawlessRecovery,
+        latestNotebookEntryTitle:
+          completion.notebookUpdate.newEntries[completion.notebookUpdate.newEntries.length - 1]?.title
+      });
       state.mapMessageTimer = 4;
     }
 
