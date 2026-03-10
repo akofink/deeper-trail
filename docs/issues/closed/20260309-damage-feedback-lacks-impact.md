@@ -11,3 +11,5 @@ Weak damage feedback makes hits harder to parse, lowers perceived responsiveness
 
 Known constraints, suspected cause, or likely starting points:
 Keep the underlying damage rules in deterministic engine/state code and limit this work to presentation unless a simulation bug is also found. Likely starting points are the run-scene presentation path in [src/main.ts](/Users/akofink/dev/repos/deeper-trail/src/main.ts) and related runtime rendering/view modules under [src/game/runtime](/Users/akofink/dev/repos/deeper-trail/src/game/runtime).
+
+Resolution note (2026-03-10): Added a dedicated transient damage-feedback runtime helper and hooked it into the run-scene renderer so hazard hits now produce a short screen flash, avatar flash, impact ring, and spark burst. Covered the helper with unit tests and re-ran the full check gate; browser smoke scripts still skipped in this environment because Chromium could not be launched.

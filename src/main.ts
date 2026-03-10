@@ -14,6 +14,7 @@ import {
   repairMostDamagedSubsystem
 } from './engine/sim/vehicle';
 import { attemptBeaconActivation, hasBeaconAutoLink } from './game/runtime/beaconActivation';
+import { buildDamageFeedbackView, decayDamageFeedback, triggerDamageFeedback } from './game/runtime/damageFeedback';
 import { biomeByNodeType, buildRunLayout } from './game/runtime/runLayout';
 import { buildMapActionChips, buildMapBoardView } from './game/runtime/mapBoardView';
 import { buildMapSceneCopy } from './game/runtime/mapSceneCards';
@@ -333,9 +334,29 @@ function drawRunTerrain(
   graphics.rect(startX, groundY, endX - startX, screenH - groundY).fill({ color: '#140f33', alpha: 0.06 });
 }
 
+function drawDamageFeedback(graphics: Graphics, screenWidth: number, screenHeight: number, state: RuntimeState, cameraX: number): void {
+  const feedback = buildDamageFeedbackView(state, cameraX);
+  if (!feedback) return;
+
+  graphics.rect(0, 0, screenWidth, screenHeight).fill({ color: feedback.overlayColor, alpha: feedback.overlayAlpha });
+  graphics.circle(feedback.impactX, feedback.impactY, feedback.ringRadius).stroke({
+    color: feedback.ringColor,
+    width: 5,
+    alpha: feedback.ringAlpha
+  });
+  feedback.sparks.forEach((spark) => {
+    graphics.moveTo(spark.fromX, spark.fromY).lineTo(spark.toX, spark.toY).stroke({
+      color: spark.color,
+      width: spark.width,
+      alpha: spark.alpha
+    });
+  });
+}
+
 function drawVehicleAvatar(graphics: Graphics, state: RuntimeState, cameraX: number): void {
   const p = state.player;
   const vehicle = state.sim.vehicle;
+  const feedback = buildDamageFeedbackView(state, cameraX);
   const speedRatio = clamp(Math.abs(p.vx) / Math.max(1, runSpeedForState(state)), 0, 1.3);
   const dashRatio = state.dashBoost;
   const suspensionBounce = p.onGround ? Math.sin(state.elapsedSeconds * (11 + speedRatio * 4) + p.x * 0.02) * (1.4 + vehicle.suspension * 0.7) : 0;
@@ -373,6 +394,16 @@ function drawVehicleAvatar(graphics: Graphics, state: RuntimeState, cameraX: num
 
   graphics.roundRect(-chassisW * 0.5, -chassisH * 0.2, chassisW, chassisH, 8).fill(dashRatio > 0 ? '#2563eb' : '#1d4ed8');
   graphics.roundRect(-chassisW * 0.18, -chassisH * 0.52, chassisW * 0.36, 6, 3).fill('#60a5fa');
+  if (feedback && feedback.avatarFlashAlpha > 0) {
+    graphics.roundRect(-chassisW * 0.5, -chassisH * 0.2, chassisW, chassisH, 8).fill({
+      color: feedback.avatarFlashColor,
+      alpha: feedback.avatarFlashAlpha
+    });
+    graphics.roundRect(-chassisW * 0.18, -chassisH * 0.52, chassisW * 0.36, 6, 3).fill({
+      color: feedback.avatarFlashColor,
+      alpha: feedback.avatarFlashAlpha * 0.75
+    });
+  }
 
   if (vehicle.storage > 1) {
     graphics.roundRect(-chassisW * 0.52, -chassisH * 0.02, 12, 12, 4).fill('#92400e');
@@ -402,6 +433,13 @@ function drawVehicleAvatar(graphics: Graphics, state: RuntimeState, cameraX: num
       width: 2 + (vehicle.shielding - 1) * 0.5,
       alpha: state.shieldChargeAvailable ? 0.72 : p.invuln > 0 ? 0.85 : 0.45
     });
+    if (feedback?.avatarFlashAlpha) {
+      graphics.arc(0, -2, chassisW * 0.72, Math.PI * 1.05, Math.PI * 1.95).stroke({
+        color: state.damageFeedback?.kind === 'shield' ? '#f5f3ff' : '#fff7ed',
+        width: 3,
+        alpha: feedback.avatarFlashAlpha
+      });
+    }
   }
 
   graphics.moveTo(-wheelOffset + 2, chassisH * 0.24).lineTo(-wheelOffset + 2, chassisH * 0.74).stroke({ color: '#475569', width: 2 });
@@ -480,6 +518,7 @@ function makeInitialRuntimeState(canvasHeight: number, seed = createRunSeed()): 
     mapRotationVelocity: 0,
     tookDamageThisRun: false,
     shieldChargeAvailable: sim.vehicle.shielding >= 2,
+    damageFeedback: undefined,
     player: {
       x: START_X,
       y: groundY - PLAYER_H,
@@ -518,6 +557,7 @@ function resetRunFromCurrentNode(state: RuntimeState): void {
   state.player.onGround = true;
   state.player.invuln = 0;
   state.cameraX = 0;
+  state.damageFeedback = undefined;
   state.goalX = run.goalX;
   state.collectibles = run.collectibles;
   state.hazards = run.hazards;
@@ -720,6 +760,7 @@ async function bootstrap(): Promise<void> {
     if (state.mapMessageTimer > 0) {
       state.mapMessageTimer = Math.max(0, state.mapMessageTimer - dt);
     }
+    decayDamageFeedback(state, dt);
 
     const p = state.player;
     const wasOnGround = p.onGround;
@@ -837,6 +878,13 @@ async function bootstrap(): Promise<void> {
         state.health -= 1;
         state.tookDamageThisRun = true;
       }
+      triggerDamageFeedback(
+        state,
+        shieldAbsorbed ? 'shield' : 'health',
+        hazard.x + hazard.w * 0.5,
+        hazard.y + hazard.h * 0.4,
+        p.x < hazard.x ? -1 : 1
+      );
       state.mapMessage = shieldAbsorbed
         ? `Shield charge burned. ${damagedSubsystem} subsystem took field damage.`
         : `${damagedSubsystem} subsystem took field damage.`;
@@ -1070,6 +1118,7 @@ async function bootstrap(): Promise<void> {
       graphics.rect(hazard.x - cam, hazard.y, hazard.w, hazard.h).fill(colors.hazard);
     }
     drawRunObjectiveVisuals(graphics, objectiveVisuals, state.groundY, state.elapsedSeconds, cam);
+    drawDamageFeedback(graphics, w, h, state, cam);
     const beaconLabelViews = buildBeaconLabelViews(objectiveVisuals, cam);
     beaconLabelViews.forEach((view, index) => {
       const label = beaconLabels[index];
