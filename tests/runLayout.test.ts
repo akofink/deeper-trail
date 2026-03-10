@@ -29,12 +29,11 @@ describe('runLayout', () => {
   it('keeps town relays within grounded steady-link reach', () => {
     const groundY = 500;
     const layout = buildRunLayout(groundY, 'town');
-    const playerHeight = 44;
-    const interactRadius = 40;
+    const groundedPlayerCenterY = groundY - 22;
+    const maxGroundedReach = 55;
 
-    for (const beacon of layout.beacons) {
-      const verticalDistanceFromGroundedPlayerCenter = groundY - playerHeight * 0.5 - beacon.y;
-      expect(verticalDistanceFromGroundedPlayerCenter).toBeLessThanOrEqual(beacon.r + interactRadius);
-    }
+    expect(layout.beacons.map((beacon) => beacon.y)).toEqual([449, 433, 436]);
+    expect(layout.beacons.every((beacon) => groundedPlayerCenterY - beacon.y <= maxGroundedReach)).toBe(true);
+    expect(layout.serviceStops).toHaveLength(2);
   });
 });

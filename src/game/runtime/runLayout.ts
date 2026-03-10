@@ -110,8 +110,8 @@ function beaconOffsetY(nodeType: string, encounterIndex: number, beaconIndex: nu
   const rise = encounterRiseAt(nodeType, encounterIndex);
 
   if (nodeType === 'town') {
-    const groundedOffsets = [48, 50, 49];
-    return groundedOffsets[beaconIndex] + Math.round(rise * 0.35);
+    const groundedOffsets = [48, 52, 50];
+    return groundedOffsets[beaconIndex] + Math.round(rise * 0.45);
   }
 
   return ([58, 62, 60][beaconIndex] ?? 58) + Math.round(rise * 0.7);

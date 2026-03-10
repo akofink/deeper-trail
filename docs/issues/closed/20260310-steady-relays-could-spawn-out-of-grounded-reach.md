@@ -10,4 +10,4 @@ Why it mattered:
 It created an impossible or contradictory objective prompt in one of the baseline biome rules, which breaks readability and undermines deterministic fairness.
 
 Resolution:
-Town relay placement now uses a lower deterministic height band that stays within grounded steady-link reach for the default player geometry and scanner radius. Added a regression test in `tests/runLayout.test.ts` to lock that contract.
+Town relay placement now uses a lower deterministic height band that stays within grounded steady-link reach for the default player geometry and scanner radius. Added a regression test in `tests/runLayout.test.ts` to lock both the reach check and the specific relay elevations.
