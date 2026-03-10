@@ -97,6 +97,8 @@ Alternative: **Phaser 3** also great. If you prefer a more “batteries included
 - Do not write into another agent's worktree. Coordinate by updating docs in your own branch and by choosing unclaimed tasks.
 - Merge the completed branch back into `main`, then remove the linked worktree and delete the merged branch as part of the same task.
 - If you find an inactive worktree with no live Codex session attached, clean it up proactively: inspect its status, resolve any merge conflicts yourself, merge it into `main`, and delete the stale worktree and branch.
+- Before ending the task, verify `git status --short --branch` is clean in `main`, `git branch --no-merged main` has no abandoned project branches, and `git worktree list` does not still include merged task worktrees.
+- If Git metadata writes are blocked in the current environment, report the exact blocked command and `.git` path rather than leaving half-finished merges or stale worktrees behind.
 - `.worktrees/` is intentionally gitignored and excluded from common repo scans so nested checkouts do not pollute normal lint/search/format flows.
 - Do not place linked checkouts under `.git/`; Git already stores linked-worktree metadata in `.git/worktrees/`.
 

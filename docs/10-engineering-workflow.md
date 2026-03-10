@@ -61,6 +61,9 @@ Enforce consistent code quality and repository hygiene while keeping iteration f
 - If you find an inactive worktree with no live Codex session attached, inspect its branch, finish any coherent pending work, merge it into `main`, then remove the linked worktree and delete the merged branch.
 - If that merge produces conflicts, resolve them in the current session instead of deferring by default. Preserve both branches' intended behavior where possible, run the most relevant checks, and complete the merge before cleanup.
 - After merging, remove the linked worktree and delete the merged branch as part of finishing the task.
+- End every repo-changing task by checking three things from the primary checkout: `git status --short --branch` is clean, `git branch --no-merged main` does not contain abandoned project branches, and `git worktree list` does not contain merged task worktrees.
+- If `main` contains staged or unstaged changes that duplicate an unmerged task branch, treat that as unfinished merge work rather than leaving it for a later session.
+- If Git metadata writes are blocked by the current sandbox, stop and report the exact failure instead of pretending cleanup succeeded. Include the blocked command and the denied `.git` or `.git/worktrees` path in the handoff so the next operator can finish cleanup outside the restriction.
 - `.worktrees/` must stay gitignored and excluded from recursive repo tooling such as search, lint, and formatting.
 - Do not place live worktree checkouts inside `.git/`; only Git-managed metadata belongs under `.git/worktrees/`.
 - Before deleting a worktree or handing off its branch, capture any unfinished actionable findings in
