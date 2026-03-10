@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { connectedNeighbors, findNode, shortestLegCountBetweenNodes } from '../src/engine/sim/world';
+import { connectedNeighbors, shortestLegCountBetweenNodes } from '../src/engine/sim/world';
 import { buildMapSceneContent } from '../src/game/runtime/mapSceneContent';
 import type { RuntimeState } from '../src/game/runtime/runtimeState';
 import { createInitialGameState } from '../src/game/state/gameState';
@@ -56,54 +56,48 @@ function buildRuntimeState(): RuntimeState {
   };
 }
 
-function pickRouteIntelSetup(state: RuntimeState): {
-  strongestLeadNodeId: string;
-  strongestLeadLegs: number;
-  weakerLeadNodeId: string;
-} {
-  const hubNode = state.sim.world.nodes.find((node) => {
-    const degree = state.sim.world.edges.filter((edge) => edge.from === node.id || edge.to === node.id).length;
-    return degree >= 2;
-  });
-  expect(hubNode).toBeDefined();
-  if (!hubNode) {
-    throw new Error('Expected a hub node for route intel checks');
+function findRouteComparisonCase(state: RuntimeState) {
+  for (const node of state.sim.world.nodes) {
+    const currentLegs = shortestLegCountBetweenNodes(state.sim, node.id, state.expeditionGoalNodeId);
+    if (currentLegs === null || currentLegs === 0) {
+      continue;
+    }
+
+    state.sim.currentNodeId = node.id;
+    const neighbors = connectedNeighbors(state.sim)
+      .map((neighbor) => ({
+        ...neighbor,
+        legs: shortestLegCountBetweenNodes(state.sim, neighbor.nodeId, state.expeditionGoalNodeId)
+      }))
+      .filter((neighbor): neighbor is { nodeId: string; distance: number; legs: number } => neighbor.legs !== null);
+
+    const stronger = neighbors.find((neighbor) => neighbor.legs < currentLegs) ?? null;
+    const weaker = neighbors.find((neighbor) => neighbor.legs > currentLegs) ?? null;
+    const best = neighbors.reduce<typeof neighbors[number] | null>(
+      (selected, neighbor) => (selected === null || neighbor.legs < selected.legs ? neighbor : selected),
+      null
+    );
+
+    if (stronger && weaker && best) {
+      return { best, currentNodeId: node.id, stronger, weaker };
+    }
   }
 
-  state.sim.currentNodeId = hubNode.id;
-  state.expeditionGoalNodeId = state.sim.world.nodes.at(-1)?.id ?? hubNode.id;
-  const rankedNeighbors = connectedNeighbors(state.sim)
-    .map((neighbor) => ({
-      nodeId: neighbor.nodeId,
-      legs: shortestLegCountBetweenNodes(state.sim, neighbor.nodeId, state.expeditionGoalNodeId)
-    }))
-    .filter((entry): entry is { nodeId: string; legs: number } => entry.legs !== null)
-    .sort((a, b) => a.legs - b.legs);
-  const strongestLead = rankedNeighbors[0];
-  const weakerLead = rankedNeighbors.at(-1);
-  expect(strongestLead).toBeDefined();
-  expect(weakerLead).toBeDefined();
-  if (!strongestLead || !weakerLead) {
-    throw new Error('Expected ranked connected leads');
-  }
-
-  return {
-    strongestLeadNodeId: strongestLead.nodeId,
-    strongestLeadLegs: strongestLead.legs,
-    weakerLeadNodeId: weakerLead.nodeId
-  };
+  throw new Error('Expected a node with stronger and weaker connected leads');
 }
 
 describe('map scene content helper', () => {
   it('gates selected-route objective intel behind scanner progression', () => {
     const state = buildRuntimeState();
-    const routeSetup = pickRouteIntelSetup(state);
-    const destination = findNode(state.sim, routeSetup.strongestLeadNodeId);
+    state.expeditionGoalNodeId = 'n9';
+    const routeCase = findRouteComparisonCase(state);
+    state.sim.currentNodeId = routeCase.currentNodeId;
+    const destination = state.sim.world.nodes.find((node) => node.id === routeCase.weaker.nodeId);
     if (!destination) throw new Error('Expected destination node');
     destination.type = 'nature';
     state.sim.vehicle.scanner = 2;
 
-    const content = buildMapSceneContent(state, routeSetup.strongestLeadNodeId, 7, {
+    const content = buildMapSceneContent(state, routeCase.weaker.nodeId, routeCase.weaker.distance, {
       canUseMedPatch: false,
       medPatchHealAmount: 1,
       medPatchScrapCost: 2,
@@ -113,7 +107,7 @@ describe('map scene content helper', () => {
 
     expect(content.completionState).toBe('LOCKED');
     expect(content.routeDetail).toContain('NATURE');
-    expect(content.routeDetail).toContain('dist 7  fuel 7');
+    expect(content.routeDetail).toContain(`dist ${routeCase.weaker.distance}  fuel ${routeCase.weaker.distance}`);
     expect(content.routeDetail).toContain('Objective pattern ?');
     expect(content.routeDetail).toContain('Signal triangulation offline.');
     expect(content.installHint.length).toBeGreaterThan(0);
@@ -125,7 +119,7 @@ describe('map scene content helper', () => {
     state.sim.vehicle.scanner = 3;
     state.sim.notebook.discoveredClues.ruin = true;
     state.sim.notebook.discoveredClues.nature = true;
-    const upgradedContent = buildMapSceneContent(state, routeSetup.strongestLeadNodeId, 7, {
+    const upgradedContent = buildMapSceneContent(state, routeCase.weaker.nodeId, routeCase.weaker.distance, {
       canUseMedPatch: false,
       medPatchHealAmount: 1,
       medPatchScrapCost: 2,
@@ -136,10 +130,8 @@ describe('map scene content helper', () => {
     expect(upgradedContent.routeDetail).toContain('Air relays + canopy lifts');
     expect(upgradedContent.scannerHint).toContain('objective scan');
     expect(upgradedContent.scannerHint).toContain('auto-link online');
-    expect(upgradedContent.routeDetail).toContain('Signal bearing');
-    expect(upgradedContent.routeDetail).toContain(
-      `Source est. ${routeSetup.strongestLeadLegs} leg${routeSetup.strongestLeadLegs === 1 ? '' : 's'}.`
-    );
+    expect(upgradedContent.routeDetail).toContain('Signal bearing weakens.');
+    expect(upgradedContent.routeDetail).toContain(`Source est. ${routeCase.weaker.legs} legs.`);
     expect(upgradedContent.fieldNotes.join('\n')).toContain('SIGNAL 2/3  depth online');
   });
 
@@ -204,23 +196,21 @@ describe('map scene content helper', () => {
 
   it('lets notebook synthesis decode the strongest connected lead before scanner unlocks it', () => {
     const state = buildRuntimeState();
-    const routeSetup = pickRouteIntelSetup(state);
+    state.expeditionGoalNodeId = 'n9';
+    const routeCase = findRouteComparisonCase(state);
+    state.sim.currentNodeId = routeCase.currentNodeId;
     state.sim.vehicle.scanner = 1;
     state.sim.notebook.discoveredClues.ruin = true;
     state.sim.notebook.discoveredClues.nature = true;
     state.sim.notebook.discoveredClues.anomaly = true;
     state.sim.notebook.synthesisUnlocked = true;
-    const strongestLeadNode = findNode(state.sim, routeSetup.strongestLeadNodeId);
-    const weakerLeadNode = findNode(state.sim, routeSetup.weakerLeadNodeId);
-    expect(strongestLeadNode).toBeDefined();
-    expect(weakerLeadNode).toBeDefined();
-    if (!strongestLeadNode || !weakerLeadNode) {
-      throw new Error('Expected lead nodes');
+    const strongestNode = state.sim.world.nodes.find((node) => node.id === routeCase.best.nodeId);
+    if (!strongestNode) {
+      throw new Error('Expected strongest lead node');
     }
-    strongestLeadNode.type = 'nature';
-    weakerLeadNode.type = 'anomaly';
+    strongestNode.type = 'nature';
 
-    const strongestLead = buildMapSceneContent(state, routeSetup.strongestLeadNodeId, 4, {
+    const strongestLead = buildMapSceneContent(state, routeCase.best.nodeId, routeCase.best.distance, {
       canUseMedPatch: false,
       medPatchHealAmount: 1,
       medPatchScrapCost: 2,
@@ -233,7 +223,7 @@ describe('map scene content helper', () => {
     expect(strongestLead.routeDetail).toContain('suspension');
     expect(strongestLead.routeDetail).toContain('Best current lead.');
 
-    const weakerLead = buildMapSceneContent(state, routeSetup.weakerLeadNodeId, 6, {
+    const weakerLead = buildMapSceneContent(state, routeCase.weaker.nodeId, routeCase.weaker.distance, {
       canUseMedPatch: false,
       medPatchHealAmount: 1,
       medPatchScrapCost: 2,

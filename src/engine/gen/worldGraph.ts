@@ -29,6 +29,30 @@ function pickNodeType(rng: SeededRng): NodeType {
   return NODE_TYPES[rng.nextInt(NODE_TYPES.length)];
 }
 
+function legacyNodeTypes(seed: string, nodeCount: number): NodeType[] {
+  const rng = createSeededRng(seed);
+  const clusterCount = Math.max(3, Math.min(5, Math.round(nodeCount / 4)));
+  const types: NodeType[] = [];
+
+  rng.nextRange(0, Math.PI * 2);
+  for (let i = 0; i < clusterCount; i += 1) {
+    rng.nextRange(-70, 90);
+    rng.nextRange(-60, 80);
+    rng.nextRange(-90, 110);
+  }
+
+  for (let i = 0; i < nodeCount; i += 1) {
+    rng.nextRange(0, Math.PI * 2);
+    rng.nextRange(-18, 42);
+    rng.nextRange(-0.18, 0.22);
+    rng.nextRange(-26, 26);
+    rng.nextRange(-42, 42);
+    types.push(pickNodeType(rng));
+  }
+
+  return types;
+}
+
 function distanceFromCoordinates(a: WorldNode, b: WorldNode): number {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
@@ -63,7 +87,6 @@ function generateSpinePoint(
 ): { x: number; y: number; z: number } {
   const progress = spineCount === 1 ? 0 : index / (spineCount - 1);
   const laneBias = index % 2 === 0 ? -1 : 1;
-
   return {
     x: Math.round(120 + progress * 760 + rng.nextRange(-20, 20)),
     y: Math.round(
@@ -112,11 +135,12 @@ export function generateWorldGraph(seed: string, nodeCount = 12): WorldGraph {
   const rng = createSeededRng(seed);
   const nodes: WorldNode[] = [];
   const edges: WorldEdge[] = [];
+  const nodeTypes = legacyNodeTypes(seed, nodeCount);
   const spineCount = clamp(Math.round(nodeCount * 0.58), 3, nodeCount);
 
   for (let i = 0; i < spineCount; i += 1) {
     const point = generateSpinePoint(rng, i, spineCount);
-    nodes.push({ id: `n${i}`, type: i === 0 ? 'town' : pickNodeType(rng), x: point.x, y: point.y, z: point.z });
+    nodes.push({ id: `n${i}`, type: i === 0 ? 'town' : (nodeTypes[i] ?? 'town'), x: point.x, y: point.y, z: point.z });
     if (i > 0) {
       edges.push({
         from: `n${i - 1}`,
@@ -134,8 +158,9 @@ export function generateWorldGraph(seed: string, nodeCount = 12): WorldGraph {
     if (!anchor) {
       throw new Error('Expected anchor node for branch generation');
     }
+
     const point = generateBranchPoint(rng, anchor, anchorIndex, i - spineCount);
-    nodes.push({ id: `n${i}`, type: pickNodeType(rng), x: point.x, y: point.y, z: point.z });
+    nodes.push({ id: `n${i}`, type: nodeTypes[i] ?? 'town', x: point.x, y: point.y, z: point.z });
     edges.push({
       from: anchor.id,
       kind: 'branch',
@@ -149,11 +174,13 @@ export function generateWorldGraph(seed: string, nodeCount = 12): WorldGraph {
     if (rng.next() < 0.35) {
       continue;
     }
+
     const fromIndex = 1 + i;
     const toIndex = Math.min(spineCount - 1, fromIndex + 2 + rng.nextInt(Math.max(1, spineCount - fromIndex - 1)));
     if (toIndex - fromIndex < 2) {
       continue;
     }
+
     edges.push({
       from: `n${fromIndex}`,
       kind: 'crosslink',

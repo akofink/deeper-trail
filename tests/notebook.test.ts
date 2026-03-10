@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { connectedNeighbors, shortestLegCountBetweenNodes } from '../src/engine/sim/world';
 import {
   latestNotebookEntry,
   notebookClueProgress,
@@ -7,7 +6,38 @@ import {
   notebookSignalRouteIntel,
   recordNotebookClue
 } from '../src/engine/sim/notebook';
+import { connectedNeighbors, shortestLegCountBetweenNodes } from '../src/engine/sim/world';
 import { createInitialGameState } from '../src/game/state/gameState';
+
+function findRouteComparisonCase(state: ReturnType<typeof createInitialGameState>, goalNodeId: string) {
+  for (const node of state.world.nodes) {
+    const currentLegs = shortestLegCountBetweenNodes(state, node.id, goalNodeId);
+    if (currentLegs === null || currentLegs === 0) {
+      continue;
+    }
+
+    state.currentNodeId = node.id;
+    const neighbors = connectedNeighbors(state)
+      .map((neighbor) => ({
+        ...neighbor,
+        legs: shortestLegCountBetweenNodes(state, neighbor.nodeId, goalNodeId)
+      }))
+      .filter((neighbor): neighbor is { nodeId: string; distance: number; legs: number } => neighbor.legs !== null);
+
+    const stronger = neighbors.find((neighbor) => neighbor.legs < currentLegs) ?? null;
+    const weaker = neighbors.find((neighbor) => neighbor.legs > currentLegs) ?? null;
+    const best = neighbors.reduce<typeof neighbors[number] | null>(
+      (selected, neighbor) => (selected === null || neighbor.legs < selected.legs ? neighbor : selected),
+      null
+    );
+
+    if (stronger && weaker && best) {
+      return { best, currentNodeId: node.id, stronger, weaker };
+    }
+  }
+
+  throw new Error('Expected a node with both stronger and weaker connected routes');
+}
 
 describe('notebook clues', () => {
   it('records one deterministic clue per core biome and avoids duplicates', () => {
@@ -52,60 +82,37 @@ describe('notebook clues', () => {
 
   it('turns notebook progress into route-triangulation intel', () => {
     const state = createInitialGameState('notebook-triangulation');
-    const currentNode = state.world.nodes.find((node) => {
-      const degree = state.world.edges.filter((edge) => edge.from === node.id || edge.to === node.id).length;
-      return degree >= 2;
-    });
-    expect(currentNode).toBeDefined();
-    if (!currentNode) {
-      throw new Error('Expected a hub node');
-    }
-    state.currentNodeId = currentNode.id;
-    const neighbors = connectedNeighbors(state);
-    expect(neighbors.length).toBeGreaterThanOrEqual(2);
-    const expeditionGoalNodeId = state.world.nodes.at(-1)?.id ?? state.currentNodeId;
-    const neighborWithLegs = neighbors
-      .map((neighbor) => ({
-        nodeId: neighbor.nodeId,
-        legs: shortestLegCountBetweenNodes(state, neighbor.nodeId, expeditionGoalNodeId)
-      }))
-      .filter((entry): entry is { nodeId: string; legs: number } => entry.legs !== null)
-      .sort((a, b) => a.legs - b.legs);
-    const strongestLead = neighborWithLegs[0];
-    const weakerLead = neighborWithLegs.at(-1);
-    expect(strongestLead).toBeDefined();
-    expect(weakerLead).toBeDefined();
-    if (!strongestLead || !weakerLead) {
-      throw new Error('Expected route options with leg counts');
-    }
+    const goalNodeId = 'n9';
+    const routeCase = findRouteComparisonCase(state, goalNodeId);
+    state.currentNodeId = routeCase.currentNodeId;
 
-    const offline = notebookSignalRouteIntel(state, expeditionGoalNodeId, strongestLead.nodeId);
+    const offline = notebookSignalRouteIntel(state, goalNodeId, routeCase.stronger.nodeId);
     expect(offline.fieldNote).toContain('bearing offline');
     expect(offline.routeHint).toBeNull();
     expect(offline.revealsObjective).toBe(false);
 
-    recordNotebookClue(state, { nodeType: 'ruin', nodeId: state.currentNodeId });
-    const bearingOnly = notebookSignalRouteIntel(state, expeditionGoalNodeId, strongestLead.nodeId);
+    recordNotebookClue(state, { nodeType: 'ruin', nodeId: routeCase.currentNodeId });
+    const bearingOnly = notebookSignalRouteIntel(state, goalNodeId, routeCase.stronger.nodeId);
     expect(bearingOnly.routeHint).toContain('strengthens');
     expect(bearingOnly.routeHint).not.toContain('Source est.');
     expect(bearingOnly.revealsBenefit).toBe(false);
 
-    recordNotebookClue(state, { nodeType: 'nature', nodeId: strongestLead.nodeId });
-    const withDepth = notebookSignalRouteIntel(state, expeditionGoalNodeId, weakerLead.nodeId);
+    recordNotebookClue(state, { nodeType: 'nature', nodeId: routeCase.stronger.nodeId });
+    const withDepth = notebookSignalRouteIntel(state, goalNodeId, routeCase.weaker.nodeId);
     expect(withDepth.fieldNote).toContain('depth online');
     expect(withDepth.routeHint).toContain('weakens');
-    expect(withDepth.routeHint).toContain(`Source est. ${weakerLead.legs} leg${weakerLead.legs === 1 ? '' : 's'}.`);
+    expect(withDepth.routeHint).toContain(`Source est. ${routeCase.weaker.legs} legs.`);
     expect(withDepth.revealsRisk).toBe(false);
 
-    recordNotebookClue(state, { nodeType: 'anomaly', nodeId: weakerLead.nodeId });
-    const synthesized = notebookSignalRouteIntel(state, expeditionGoalNodeId, strongestLead.nodeId);
+    recordNotebookClue(state, { nodeType: 'anomaly', nodeId: routeCase.weaker.nodeId });
+    const synthesized = notebookSignalRouteIntel(state, goalNodeId, routeCase.best.nodeId);
     expect(synthesized.fieldNote).toContain('synth lock');
     expect(synthesized.routeHint).toContain('Best current lead.');
     expect(synthesized.revealsBenefit).toBe(true);
     expect(synthesized.revealsObjective).toBe(true);
     expect(synthesized.revealsRisk).toBe(true);
 
-    const nonLead = notebookSignalRouteIntel(state, expeditionGoalNodeId, weakerLead.nodeId);
+    const nonLead = notebookSignalRouteIntel(state, goalNodeId, routeCase.weaker.nodeId);
     expect(nonLead.routeHint).not.toContain('Best current lead.');
     expect(nonLead.revealsBenefit).toBe(false);
     expect(nonLead.revealsObjective).toBe(false);
