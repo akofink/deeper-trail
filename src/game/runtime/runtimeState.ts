@@ -37,6 +37,15 @@ export interface Hazard {
   phase: number;
 }
 
+export interface DamageFeedback {
+  kind: 'health' | 'shield';
+  timer: number;
+  duration: number;
+  worldX: number;
+  worldY: number;
+  direction: -1 | 1;
+}
+
 export interface RuntimeState {
   mode: Mode;
   scene: Scene;
@@ -72,5 +81,6 @@ export interface RuntimeState {
   groundY: number;
   collectibles: Collectible[];
   hazards: Hazard[];
+  damageFeedback?: DamageFeedback;
   sim: SimState;
 }
