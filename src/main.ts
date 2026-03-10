@@ -43,6 +43,7 @@ import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import { advanceHorizontalVelocity } from './game/runtime/runMotion';
 import { rechargeShieldCharge, tryConsumeShieldCharge } from './game/runtime/shieldCharge';
 import type { RuntimeState } from './game/runtime/runtimeState';
+import { encounterRiseAt } from './game/runtime/runTerrainProfile';
 import {
   collectibleMagnetRadius,
   collectibleMagnetSpeed,
@@ -321,9 +322,11 @@ function drawRunTerrain(
   drawTerrainBand(graphics, startX, endX, groundY - 92, 14, 128, lowColor, 0.1, groundY);
 
   for (let x = startX; x < Math.min(goalX + 180, endX); x += 220) {
-    const width = 68 + ((x / 220) % 3) * 18;
-    const height = 14 + ((x / 220) % 2) * 8;
-    graphics.roundRect(x, groundY - 44 - (x % 440 === 0 ? 18 : 0), width, height, 8).fill({ color: lowColor, alpha: 0.12 });
+    const profileIndex = Math.round(x / 220);
+    const rise = encounterRiseAt(nodeType, profileIndex);
+    const width = 68 + ((profileIndex % 3 + 3) % 3) * 18;
+    const height = 14 + ((profileIndex % 2 + 2) % 2) * 8 + Math.round(rise * 0.12);
+    graphics.roundRect(x, groundY - 44 - Math.round(rise * 0.45), width, height, 8).fill({ color: lowColor, alpha: 0.14 });
   }
 
   for (let x = startX + 60; x < endX; x += 170) {

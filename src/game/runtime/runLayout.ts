@@ -1,5 +1,6 @@
 import type { Beacon, CanopyLift, ImpactPlate, ServiceStop, SyncGate } from '../state/runObjectives';
 import type { Collectible, Hazard } from './runtimeState';
+import { encounterRiseAt } from './runTerrainProfile';
 
 export const MODULE_LABELS = ['FRAME', 'ENGINE', 'SCAN', 'SUSP', 'STORE', 'SHIELD'] as const;
 
@@ -84,6 +85,7 @@ export function buildRunLayout(groundY: number, nodeType: string): {
         : nodeType === 'nature'
           ? [64, 72, 68, 80, 74, 76]
           : [66, 82, 74, 88, 78, 84];
+  const beaconRiseIndexes = [0, 2, 4];
 
   return {
     goalX: 2450,
@@ -91,7 +93,7 @@ export function buildRunLayout(groundY: number, nodeType: string): {
       kind: i % 2 === 0 ? 'moving' : 'static',
       x: hazard.x,
       baseX: hazard.x,
-      y: groundY - 16,
+      y: groundY - 16 - Math.round(encounterRiseAt(nodeType, i) * 0.2),
       w: hazard.w,
       h: 16,
       amplitude: i % 2 === 0 ? 34 : 0,
@@ -100,15 +102,17 @@ export function buildRunLayout(groundY: number, nodeType: string): {
     })),
     collectibles: hazardPattern.map((hazard, i) => ({
       x: hazard.x + Math.round(hazard.w * 0.5) + (i % 2 === 0 ? 12 : -12),
-      y: groundY - collectibleHeights[i],
+      y: groundY - collectibleHeights[i] - encounterRiseAt(nodeType, i),
       r: 11,
       collected: false
     })),
-    beacons: [
-      { id: 'b0', x: 360, y: groundY - 58, r: 15, activated: false },
-      { id: 'b1', x: 1220, y: groundY - 62, r: 15, activated: false },
-      { id: 'b2', x: 1980, y: groundY - 60, r: 15, activated: false }
-    ],
+    beacons: beaconRiseIndexes.map((riseIndex, index) => ({
+      id: `b${index}`,
+      x: [360, 1220, 1980][index] ?? 360,
+      y: groundY - [58, 62, 60][index] - Math.round(encounterRiseAt(nodeType, riseIndex) * 0.7),
+      r: 15,
+      activated: false
+    })),
     serviceStops:
       nodeType === 'town'
         ? [
@@ -119,15 +123,45 @@ export function buildRunLayout(groundY: number, nodeType: string): {
     syncGates:
       nodeType === 'anomaly'
         ? [
-            { id: 'sg0', x: 680, y: groundY - 102, w: 62, h: 88, stabilized: false },
-            { id: 'sg1', x: 1700, y: groundY - 118, w: 66, h: 94, stabilized: false }
+            {
+              id: 'sg0',
+              x: 680,
+              y: groundY - 102 - Math.round(encounterRiseAt(nodeType, 1) * 0.75),
+              w: 62,
+              h: 88,
+              stabilized: false
+            },
+            {
+              id: 'sg1',
+              x: 1700,
+              y: groundY - 118 - Math.round(encounterRiseAt(nodeType, 4) * 0.75),
+              w: 66,
+              h: 94,
+              stabilized: false
+            }
           ]
         : [],
     canopyLifts:
       nodeType === 'nature'
         ? [
-            { id: 'cl0', x: 660, y: groundY - 130, w: 120, h: 108, progress: 0, charted: false },
-            { id: 'cl1', x: 1680, y: groundY - 144, w: 126, h: 116, progress: 0, charted: false }
+            {
+              id: 'cl0',
+              x: 660,
+              y: groundY - 130 - Math.round(encounterRiseAt(nodeType, 1) * 0.7),
+              w: 120,
+              h: 108,
+              progress: 0,
+              charted: false
+            },
+            {
+              id: 'cl1',
+              x: 1680,
+              y: groundY - 144 - Math.round(encounterRiseAt(nodeType, 5) * 0.7),
+              w: 126,
+              h: 116,
+              progress: 0,
+              charted: false
+            }
           ]
         : [],
     impactPlates:
