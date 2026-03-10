@@ -4,6 +4,7 @@ import type { RuntimeState } from './runtimeState';
 
 export interface RunSceneOverlayCard {
   fontSize: number;
+  fill: string;
   maxWidth: number;
   minWidth: number;
   paddingX: number;
@@ -29,8 +30,18 @@ const DEFAULT_OVERLAY_PADDING_Y = 14;
 const WIDE_OVERLAY_FONT_SIZE = 18;
 const DEFAULT_OVERLAY_FONT_SIZE = 20;
 
+function bannerPulseY(state: RuntimeState): number {
+  if (state.mapMessageTimer <= 0 || !state.mapMessage) {
+    return OVERLAY_Y;
+  }
+
+  const pulse = Math.max(0, Math.sin(state.elapsedSeconds * 12));
+  return OVERLAY_Y - Math.round(6 + pulse * 8);
+}
+
 export function buildRunSceneOverlayCard(state: RuntimeState, screenWidth: number): RunSceneOverlayCard | null {
   let text = '';
+  let fill = '#e2e8f0';
 
   if (state.mode === 'paused') {
     text = 'Paused\nPress P to resume';
@@ -41,9 +52,11 @@ export function buildRunSceneOverlayCard(state: RuntimeState, screenWidth: numbe
   } else if (state.mode === 'lost') {
     text = 'Trail lost.\nPress Enter or R to restart';
   } else if (state.mapMessageTimer > 0 && state.mapMessage) {
-    text = state.mapMessage;
+    text = `ALERT\n${state.mapMessage}`;
+    fill = '#fef3c7';
   } else {
-    text = runObjectivePrompt(state) ?? '';
+    const prompt = runObjectivePrompt(state);
+    text = prompt ? `OBJECTIVE\n${prompt}` : '';
   }
 
   if (!text) {
@@ -55,13 +68,14 @@ export function buildRunSceneOverlayCard(state: RuntimeState, screenWidth: numbe
 
   return {
     fontSize: emphasizedMode ? WIDE_OVERLAY_FONT_SIZE : DEFAULT_OVERLAY_FONT_SIZE,
+    fill,
     maxWidth,
     minWidth: OVERLAY_MIN_WIDTH,
     paddingX: 22,
     paddingY: emphasizedMode ? WIDE_OVERLAY_PADDING_Y : DEFAULT_OVERLAY_PADDING_Y,
     text,
     x: Math.round(screenWidth * 0.5 - maxWidth * 0.5),
-    y: OVERLAY_Y
+    y: emphasizedMode ? OVERLAY_Y : bannerPulseY(state)
   };
 }
 

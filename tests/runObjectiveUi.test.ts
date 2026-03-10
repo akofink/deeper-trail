@@ -121,7 +121,7 @@ describe('run objective ui helpers', () => {
     state.player.y = 0;
     state.player.onGround = false;
 
-    expect(runObjectivePrompt(state)).toContain('Jump through it, then press Enter');
+    expect(runObjectivePrompt(state)).toContain('Jump through, then press Enter');
     expect(objectiveShortLabel('town')).toBe('OBJ STEADY');
     expect(objectiveShortLabel('ruin')).toBe('OBJ ORDER');
     expect(objectiveShortLabel('nature')).toBe('OBJ AIR');
@@ -141,9 +141,9 @@ describe('run objective ui helpers', () => {
     state.dashBoost = 0.3;
     state.beacons = [{ id: 'b0', x: 17, y: 22, r: 15, activated: false, scanProgress: 0.2, scanLocked: false }];
 
-    expect(runObjectivePrompt(state)).toContain('Hold speed to lock 50%');
+    expect(runObjectivePrompt(state)).toContain('Hold speed: lock 50%');
 
     state.beacons[0]!.scanLocked = true;
-    expect(runObjectivePrompt(state)).toContain('Pattern locked');
+    expect(runObjectivePrompt(state)).toContain('pattern locked');
   });
 });

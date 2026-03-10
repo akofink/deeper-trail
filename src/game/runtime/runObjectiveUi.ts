@@ -42,10 +42,10 @@ function serviceStopPromptText(state: RuntimeState): string | null {
     if (Math.abs(px - stop.x) > stop.w * 0.5) continue;
 
     return ready
-      ? `Service bay aligned.\nHold steady to finish inspection ${Math.round((stop.progress / SERVICE_STOP_HOLD_SECONDS) * 100)}%.`
+      ? `Service bay aligned.\nHold steady: inspect ${Math.round((stop.progress / SERVICE_STOP_HOLD_SECONDS) * 100)}%.`
       : !state.player.onGround
-        ? 'Service bay unstable.\nSettle on the road to start inspection.'
-        : 'Service bay unstable.\nEase off and hold a low speed to start inspection.';
+        ? 'Service bay unstable.\nTouch down to start inspection.'
+        : 'Service bay unstable.\nEase off to inspection speed.';
   }
 
   return null;
@@ -74,7 +74,7 @@ function syncGatePromptText(state: RuntimeState): string | null {
     );
 
     if (result.canStabilize) {
-      return `Sync gate open.\nCut through ${gate.id.toUpperCase()} with speed or boost.`;
+      return `Sync gate open.\nCut through ${gate.id.toUpperCase()} fast or boosted.`;
     }
 
     if (result.reason) {
@@ -100,8 +100,8 @@ function canopyLiftPromptText(state: RuntimeState): string | null {
     if (lift.charted || !isInsideCanopyLift(lift, bounds)) continue;
 
     return !state.player.onGround
-      ? `Canopy draft engaged.\nHold in the bloom to chart ${Math.round((lift.progress / 0.6) * 100)}%.`
-      : 'Canopy draft dormant.\nJump into the bloom and stay airborne to chart it.';
+      ? `Canopy draft engaged.\nStay in the bloom: chart ${Math.round((lift.progress / 0.6) * 100)}%.`
+      : 'Canopy draft dormant.\nJump into the bloom and stay airborne.';
   }
 
   return null;
@@ -152,27 +152,27 @@ function beaconPromptText(state: RuntimeState): string | null {
     if (beaconRule === 'boosted' && state.sim.vehicle.scanner >= 2) {
       if (beacon.scanLocked) {
         return state.sim.vehicle.scanner >= 3
-          ? 'Signal relay in range.\nPattern locked. Scanner will confirm it.'
-          : 'Signal relay in range.\nPattern locked. Press Enter to confirm link.';
+          ? 'Relay pattern locked.\nScanner will confirm the link.'
+          : 'Relay pattern locked.\nPress Enter to confirm the link.';
       }
 
       if (canChargeAnomalyLock(Math.abs(state.player.vx), state.dashBoost, state.elapsedSeconds, index)) {
-        return `Sync window open.\nHold speed to lock ${Math.round(anomalyLockProgressRatio(beacon.scanProgress ?? 0) * 100)}%.`;
+        return `Sync window open.\nHold speed: lock ${Math.round(anomalyLockProgressRatio(beacon.scanProgress ?? 0) * 100)}%.`;
       }
     }
 
     if (activation.canActivate) {
       if (state.sim.vehicle.scanner >= 3) {
-        if (beaconRule === 'boosted') return 'Signal relay in range.\nKeep boosting through an open sync window.';
-        if (beaconRule === 'airborne') return 'Signal relay in range.\nJump through it to auto-link.';
-        if (beaconRule === 'steady') return 'Signal relay in range.\nHold steady beside it to auto-link.';
-        return 'Signal relay in range.\nScanner will auto-link it.';
+        if (beaconRule === 'boosted') return 'Relay in range.\nKeep boosting through the sync window.';
+        if (beaconRule === 'airborne') return 'Relay in range.\nJump through it to auto-link.';
+        if (beaconRule === 'steady') return 'Relay in range.\nHold steady beside it to auto-link.';
+        return 'Relay in range.\nScanner will auto-link it.';
       }
-      if (beaconRule === 'ordered') return `Signal relay in range.\nPress Enter to link ${beacon.id.toUpperCase()}.`;
-      if (beaconRule === 'boosted') return 'Sync window open.\nBoost through it, then press Enter.';
-      if (beaconRule === 'airborne') return 'Signal relay in range.\nJump through it, then press Enter.';
+      if (beaconRule === 'ordered') return `Relay in range.\nPress Enter: link ${beacon.id.toUpperCase()}.`;
+      if (beaconRule === 'boosted') return 'Sync window open.\nBoost through, then press Enter.';
+      if (beaconRule === 'airborne') return 'Relay in range.\nJump through, then press Enter.';
       if (beaconRule === 'steady') return 'Relay stabilized.\nPress Enter while holding steady.';
-      return 'Signal relay in range.\nPress Enter to link it.';
+      return 'Relay in range.\nPress Enter to link it.';
     }
 
     return activation.reason ?? getBeaconRuleLabel(nodeType);

@@ -62,6 +62,7 @@ describe('runSceneView', () => {
 
     expect(buildRunSceneOverlayCard(state, 900)).toEqual({
       fontSize: 18,
+      fill: '#e2e8f0',
       maxWidth: 460,
       minWidth: 280,
       paddingX: 22,
@@ -76,6 +77,36 @@ describe('runSceneView', () => {
     const state = buildRuntimeState();
 
     expect(buildRunSceneOverlayCard(state, 900)).toBeNull();
+  });
+
+  it('labels transient run banners as alerts and lifts them with a pulse', () => {
+    const state = buildRuntimeState();
+    state.elapsedSeconds = 0.1;
+    state.mapMessage = 'Beacon B0 linked (1/3).';
+    state.mapMessageTimer = 2;
+
+    expect(buildRunSceneOverlayCard(state, 900)).toEqual({
+      fontSize: 20,
+      fill: '#fef3c7',
+      maxWidth: 460,
+      minWidth: 280,
+      paddingX: 22,
+      paddingY: 14,
+      text: 'ALERT\nBeacon B0 linked (1/3).',
+      x: 220,
+      y: 137
+    });
+  });
+
+  it('labels contextual guidance as objective prompts', () => {
+    const state = buildRuntimeState();
+    state.mapMessage = '';
+    state.mapMessageTimer = 0;
+    state.beacons = [{ id: 'b0', x: 17, y: 22, r: 15, activated: false }];
+    state.player.x = 0;
+    state.player.y = 0;
+
+    expect(buildRunSceneOverlayCard(state, 900)?.text).toContain('OBJECTIVE\n');
   });
 
   it('switches the run interaction chip label when auto-link is installed', () => {
