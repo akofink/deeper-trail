@@ -48,14 +48,14 @@ export function canStabilizeSyncGate(
   if (!syncGateReady(currentSpeed, dashBoost)) {
     return {
       canStabilize: false,
-      reason: 'Sync gate rejects the pass. Carry more speed or boost through it.'
+      reason: 'Need more speed or boost for the gate'
     };
   }
 
   if (!isPhaseWindowOpen(elapsedSeconds, gateIndex)) {
     return {
       canStabilize: false,
-      reason: 'Sync gate is out of phase. Wait for the bright window, then cut through.'
+      reason: 'Hold speed and wait for the bright phase'
     };
   }
 

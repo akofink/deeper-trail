@@ -11,3 +11,6 @@ Players can miss the active goal or misread a state transition, which directly h
 
 Known constraints, suspected cause, or likely starting points:
 Likely involves the HUD/prompt rendering paths in [src/main.ts](/Users/akofink/dev/repos/deeper-trail/src/main.ts). The fix may require both copy reduction and throttling/stabilizing when objective state changes are surfaced.
+
+Resolution note (2026-03-09):
+Run-scene objective prompts now use shorter one-line copy, quantized progress steps, and a short sticky timer so the banner stays readable when the player clips through triggers at speed. The overlay also shows explicit objective progress alongside the prompt instead of swapping through long text-only status lines.

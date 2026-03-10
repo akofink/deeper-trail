@@ -37,8 +37,8 @@ describe('impact plate runtime rules', () => {
 
     expect(isWithinImpactPlate(plate, 620)).toBe(true);
     expect(isWithinImpactPlate(plate, 800)).toBe(false);
-    expect(impactPlatePrompt(plate, 620, true)).toContain('land hard');
-    expect(impactPlatePrompt(plate, 620, false)).toContain('Drop onto');
+    expect(impactPlatePrompt(plate, 620, true)).toBe('Jump and slam the impact plate');
+    expect(impactPlatePrompt(plate, 620, false)).toBe('Drop hard onto the impact plate');
     expect(impactPlatePrompt(plate, 800, true)).toBeNull();
   });
 

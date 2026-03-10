@@ -33,7 +33,7 @@ describe('sync gate runtime rules', () => {
 
     const closedWindow = canStabilizeSyncGate(gate, 0, bounds, 240, 0.2, 0.9);
     expect(closedWindow.canStabilize).toBe(false);
-    expect(closedWindow.reason).toContain('out of phase');
+    expect(closedWindow.reason).toContain('bright phase');
 
     const openWindow = canStabilizeSyncGate(gate, 0, bounds, 240, 0.2, 0.1);
     expect(openWindow.canStabilize).toBe(true);

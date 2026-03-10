@@ -31,7 +31,7 @@ import {
   hasCompletedCurrentNode,
   travelToNodeWithRuntimeEffects
 } from './game/runtime/expeditionFlow';
-import { runObjectiveProgress } from './game/runtime/runObjectiveUi';
+import { runObjectiveProgress, runObjectivePrompt, updateStickyRunPrompt } from './game/runtime/runObjectiveUi';
 import { updateRunObjectives } from './game/runtime/runObjectiveUpdates';
 import { buildRunObjectiveVisualState } from './game/runtime/runObjectiveVisuals';
 import { dashEntryEnergyCost, shouldContinueDash, shouldStartDash } from './game/runtime/runDash';
@@ -467,6 +467,8 @@ function makeInitialRuntimeState(canvasHeight: number, seed = createRunSeed()): 
     elapsedSeconds: 0,
     mapMessage: '',
     mapMessageTimer: 0,
+    runPromptText: '',
+    runPromptTimer: 0,
     mapSelectionIndex: 0,
     completedNodeIds: [],
     freeTravelCharges: 0,
@@ -530,6 +532,8 @@ function resetRunFromCurrentNode(state: RuntimeState): void {
   state.dashBoost = 0;
   state.wheelRotation = 0;
   state.tookDamageThisRun = false;
+  state.runPromptText = '';
+  state.runPromptTimer = 0;
   rechargeShieldCharge(state);
   if (!state.expeditionComplete) {
     state.mode = 'playing';
@@ -899,7 +903,7 @@ async function bootstrap(): Promise<void> {
           `${objectiveProgress.impactPlatesRemaining} impact ${objectiveProgress.impactPlatesRemaining === 1 ? 'plate' : 'plates'}`
         );
       }
-      state.mapMessage = `Exit locked: finish ${pendingParts.join(' and ')}.`;
+      state.mapMessage = `Exit locked: ${pendingParts.join(', ')} left.`;
       state.mapMessageTimer = 2.5;
     } else if (p.x + p.w >= state.goalX) {
       const completion = completeCurrentNodeRun(state);
@@ -916,6 +920,15 @@ async function bootstrap(): Promise<void> {
       }
       state.mapMessageTimer = 4;
     }
+
+    const stickyPrompt = updateStickyRunPrompt(
+      runObjectivePrompt(state),
+      state.runPromptText,
+      state.runPromptTimer,
+      dt
+    );
+    state.runPromptText = stickyPrompt.text;
+    state.runPromptTimer = stickyPrompt.timer;
 
     const maxCamera = Math.max(0, state.goalX - screenWidth() * 0.5);
     state.cameraX = clamp(p.x - screenWidth() * 0.35, 0, maxCamera);

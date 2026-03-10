@@ -60,14 +60,14 @@ export function attemptBeaconActivation(
     const completed = state.beacons.filter((item) => item.activated).length;
     state.mapMessage =
       trigger === 'auto'
-        ? `Scanner auto-linked ${beacon.id.toUpperCase()} (${completed}/${state.beacons.length}).`
-        : `Beacon ${beacon.id.toUpperCase()} linked (${completed}/${state.beacons.length}).`;
+        ? `Auto-linked ${beacon.id.toUpperCase()} ${completed}/${state.beacons.length}.`
+        : `Linked ${beacon.id.toUpperCase()} ${completed}/${state.beacons.length}.`;
     state.mapMessageTimer = 2.5;
     return true;
   }
 
   if (trigger === 'manual' && !sawInRangeBeacon) {
-    state.mapMessage = 'No inactive beacon in range.';
+    state.mapMessage = 'No relay in range.';
     state.mapMessageTimer = 1.5;
   }
 

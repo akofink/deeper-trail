@@ -11,3 +11,6 @@ Critical interaction cues should survive motion and moment-to-moment play. If pl
 
 Known constraints, suspected cause, or likely starting points:
 Review prompt presentation and local feedback effects in [src/main.ts](/Users/akofink/dev/repos/deeper-trail/src/main.ts). A fix may combine lighter copy with stronger local animation or non-text affordances.
+
+Resolution note (2026-03-09):
+Run-scene prompts and relay/biome completion alerts now use tighter, faster-reading copy, and the objective banner holds briefly after prompts drop out so feedback is easier to catch while moving. The alert card also now competes less with long status text because the prompt layer carries less copy per state change.

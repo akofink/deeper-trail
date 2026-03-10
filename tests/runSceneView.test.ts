@@ -17,6 +17,8 @@ function buildRuntimeState(): RuntimeState {
     elapsedSeconds: 0,
     mapMessage: '',
     mapMessageTimer: 0,
+    runPromptText: '',
+    runPromptTimer: 0,
     mapSelectionIndex: 0,
     completedNodeIds: [],
     freeTravelCharges: 0,
@@ -82,31 +84,32 @@ describe('runSceneView', () => {
   it('labels transient run banners as alerts and lifts them with a pulse', () => {
     const state = buildRuntimeState();
     state.elapsedSeconds = 0.1;
-    state.mapMessage = 'Beacon B0 linked (1/3).';
+    state.mapMessage = 'Linked B0 1/3.';
     state.mapMessageTimer = 2;
 
     expect(buildRunSceneOverlayCard(state, 900)).toEqual({
-      fontSize: 20,
+      fontSize: 22,
       fill: '#fef3c7',
       maxWidth: 460,
       minWidth: 280,
       paddingX: 22,
       paddingY: 14,
-      text: 'ALERT\nBeacon B0 linked (1/3).',
+      text: 'ALERT\nLinked B0 1/3.',
       x: 220,
       y: 137
     });
   });
 
-  it('labels contextual guidance as objective prompts', () => {
+  it('shows a sticky contextual objective banner with progress', () => {
     const state = buildRuntimeState();
-    state.mapMessage = '';
-    state.mapMessageTimer = 0;
+    const node = state.sim.world.nodes.find((item) => item.id === state.sim.currentNodeId);
+    if (!node) throw new Error('Expected current node');
+    node.type = 'nature';
+    state.runPromptText = 'Jump through the relay, then press Enter';
+    state.runPromptTimer = 0.4;
     state.beacons = [{ id: 'b0', x: 17, y: 22, r: 15, activated: false }];
-    state.player.x = 0;
-    state.player.y = 0;
 
-    expect(buildRunSceneOverlayCard(state, 900)?.text).toContain('OBJECTIVE\n');
+    expect(buildRunSceneOverlayCard(state, 900)?.text).toBe('OBJ AIR 0/1\nJump through the relay, then press Enter');
   });
 
   it('switches the run interaction chip label when auto-link is installed', () => {

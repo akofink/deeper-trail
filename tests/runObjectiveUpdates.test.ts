@@ -76,7 +76,7 @@ describe('run objective update helper', () => {
     expect(state.serviceStops[0]?.serviced).toBe(false);
     expect(state.syncGates[0]?.stabilized).toBe(true);
     expect(state.canopyLifts[0]?.charted).toBe(true);
-    expect(airborneResult.message).toContain('Canopy lift');
+    expect(airborneResult.message).toContain('Lift');
     expect(state.score).toBe(40);
 
     state.player.onGround = true;
@@ -91,7 +91,7 @@ describe('run objective update helper', () => {
     expect(state.serviceStops[0]?.serviced).toBe(true);
     expect(state.impactPlates[0]?.shattered).toBe(true);
     expect(state.score).toBe(80);
-    expect(landingResult.message).toContain('Impact plate');
+    expect(landingResult.message).toContain('Plate');
     expect(landingResult.durationSeconds).toBe(2.2);
   });
 
@@ -131,7 +131,7 @@ describe('run objective update helper', () => {
 
     expect(state.beacons[0]?.scanLocked).toBe(true);
     expect(state.beacons[0]?.scanProgress).toBeCloseTo(0.4);
-    expect(result.message).toContain('Scanner locked relay');
+    expect(result.message).toContain('locked');
     expect(result.durationSeconds).toBe(1.8);
   });
 });
