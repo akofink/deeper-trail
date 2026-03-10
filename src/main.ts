@@ -38,6 +38,7 @@ import { buildRunObjectiveVisualState } from './game/runtime/runObjectiveVisuals
 import { dashEntryEnergyCost, shouldContinueDash, shouldStartDash } from './game/runtime/runDash';
 import { updateMapRotation } from './game/runtime/mapRotation';
 import { buildRunSceneHudViewModel } from './game/runtime/runSceneHudView';
+import { buildRunSceneDepthView } from './game/runtime/runSceneDepthView';
 import { buildBeaconLabelViews, drawRunExitFlag, drawRunObjectiveVisuals } from './game/runtime/runSceneObjectiveView';
 import { buildRunActionChips, buildRunSceneOverlayCard } from './game/runtime/runSceneView';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
@@ -256,32 +257,74 @@ function drawModuleMeters(graphics: Graphics, moduleMeters: Array<{
   });
 }
 
-function drawBackdropAccents(graphics: Graphics, nodeType: string, w: number, h: number, groundY: number, cameraX: number): void {
-  if (nodeType === 'anomaly') {
-    graphics.circle(w * 0.24 - cameraX * 0.04, h * 0.18, 70).fill({ color: '#ddd6fe', alpha: 0.24 });
-    graphics.circle(w * 0.72 - cameraX * 0.03, h * 0.24, 42).fill({ color: '#c4b5fd', alpha: 0.2 });
-    graphics.roundRect(-cameraX * 0.08, groundY - 180, w * 0.9, 18, 9).fill({ color: '#8b5cf6', alpha: 0.08 });
-    graphics.roundRect(w * 0.3 - cameraX * 0.1, groundY - 240, w * 0.45, 14, 7).fill({ color: '#7c3aed', alpha: 0.1 });
-    return;
-  }
+function drawBackdropAccents(graphics: Graphics, state: RuntimeState, nodeType: string, w: number, h: number): void {
+  const depthView = buildRunSceneDepthView(state, nodeType, w, h);
 
-  if (nodeType === 'nature') {
-    graphics.circle(w * 0.18 - cameraX * 0.03, h * 0.2, 64).fill({ color: '#bbf7d0', alpha: 0.22 });
-    graphics.roundRect(-cameraX * 0.08, groundY - 140, w * 0.3, 80, 30).fill({ color: '#16a34a', alpha: 0.08 });
-    graphics.roundRect(w * 0.55 - cameraX * 0.1, groundY - 170, w * 0.24, 110, 34).fill({ color: '#15803d', alpha: 0.08 });
-    return;
-  }
+  depthView.bands.forEach((band, index) => {
+    if (index === 0) {
+      graphics.circle(w * 0.26, band.y, Math.round(Math.max(w, h) * 0.16)).fill({ color: band.color, alpha: band.alpha });
+      graphics.circle(w * 0.74, band.y + 24, Math.round(Math.max(w, h) * 0.09)).fill({ color: band.color, alpha: band.alpha * 0.7 });
+      return;
+    }
 
-  if (nodeType === 'ruin') {
-    graphics.circle(w * 0.18 - cameraX * 0.02, h * 0.19, 74).fill({ color: '#fde68a', alpha: 0.18 });
-    graphics.rect(w * 0.12 - cameraX * 0.08, groundY - 150, 42, 90).fill({ color: '#92400e', alpha: 0.1 });
-    graphics.rect(w * 0.66 - cameraX * 0.1, groundY - 210, 54, 150).fill({ color: '#78350f', alpha: 0.1 });
-    return;
-  }
+    graphics.roundRect(-60, band.y, w + 120, band.height, Math.round(band.height * 0.45)).fill({
+      color: band.color,
+      alpha: band.alpha
+    });
+  });
 
-  graphics.circle(w * 0.2 - cameraX * 0.03, h * 0.18, 64).fill({ color: '#dbeafe', alpha: 0.22 });
-  graphics.roundRect(-cameraX * 0.08, groundY - 120, w * 0.28, 56, 22).fill({ color: '#0f766e', alpha: 0.08 });
-  graphics.roundRect(w * 0.62 - cameraX * 0.1, groundY - 150, w * 0.2, 82, 22).fill({ color: '#115e59', alpha: 0.08 });
+  depthView.props.forEach((prop) => {
+    if (prop.shape === 'blob') {
+      graphics.ellipse(prop.x + prop.width * 0.5, prop.y + prop.height * 0.68, prop.width * 0.52, prop.height * 0.38).fill({
+        color: prop.color,
+        alpha: prop.alpha
+      });
+      graphics.rect(prop.x + prop.width * 0.42, prop.y + prop.height * 0.46, prop.width * 0.16, prop.height * 0.62).fill({
+        color: prop.color,
+        alpha: prop.alpha * 0.9
+      });
+      return;
+    }
+
+    if (prop.shape === 'pillar') {
+      graphics.roundRect(prop.x, prop.y, prop.width * 0.34, prop.height, 10).fill({ color: prop.color, alpha: prop.alpha });
+      graphics.roundRect(prop.x + prop.width * 0.38, prop.y + prop.height * 0.18, prop.width * 0.24, prop.height * 0.82, 8).fill({
+        color: prop.color,
+        alpha: prop.alpha * 0.94
+      });
+      return;
+    }
+
+    if (prop.shape === 'slab') {
+      graphics.roundRect(prop.x, prop.y + prop.height * 0.12, prop.width, prop.height * 0.88, 12).fill({
+        color: prop.color,
+        alpha: prop.alpha
+      });
+      graphics.roundRect(prop.x + prop.width * 0.12, prop.y, prop.width * 0.24, prop.height * 0.24, 8).fill({
+        color: prop.color,
+        alpha: prop.alpha * 0.78
+      });
+      return;
+    }
+
+    graphics.arc(prop.x + prop.width * 0.5, prop.y + prop.height, prop.width * 0.5, Math.PI, Math.PI * 2).stroke({
+      color: prop.color,
+      width: Math.max(10, prop.width * 0.16),
+      alpha: prop.alpha
+    });
+    graphics.roundRect(prop.x + prop.width * 0.12, prop.y + prop.height * 0.22, prop.width * 0.16, prop.height * 0.78, 8).fill({
+      color: prop.color,
+      alpha: prop.alpha * 0.72
+    });
+    graphics.roundRect(prop.x + prop.width * 0.72, prop.y + prop.height * 0.22, prop.width * 0.16, prop.height * 0.78, 8).fill({
+      color: prop.color,
+      alpha: prop.alpha * 0.72
+    });
+  });
+
+  depthView.speedLines.forEach((line) => {
+    graphics.roundRect(line.x, line.y, line.width, 4, 2).fill({ color: line.color, alpha: line.alpha });
+  });
 }
 
 function drawTerrainBand(
@@ -1113,7 +1156,7 @@ async function bootstrap(): Promise<void> {
     });
     graphics.rect(0, 0, w, h).fill(colors.sky);
     graphics.rect(0, h * 0.5, w, h * 0.5).fill(colors.back);
-    drawBackdropAccents(graphics, nodeType, w, h, state.groundY, cam);
+    drawBackdropAccents(graphics, state, nodeType, w, h);
     drawRunTerrain(graphics, nodeType, state.groundY, state.goalX, cam, w, h);
     graphics.rect(-cam, state.groundY, state.goalX + 300, h - state.groundY).fill(colors.ground);
 
