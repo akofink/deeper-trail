@@ -101,6 +101,9 @@ export function completeCurrentNodeRun(state: RuntimeState): NodeCompletionOutco
   }
 
   applyNodeCompletionState(state);
+  if (!expeditionCompleted) {
+    state.mapMessage = 'Route board unlocked. Pick a connected route and press Enter to travel.';
+  }
   state.mapMessageTimer = 4;
   state.sim.day += 1;
   state.sim.fuel = Math.min(state.sim.fuelCapacity, state.sim.fuel + 3);
