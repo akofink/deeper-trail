@@ -85,15 +85,19 @@ export function buildMapBoardView(
     const isSelected =
       (edge.from === state.sim.currentNodeId && edge.to === selectedNodeId) ||
       (edge.to === state.sim.currentNodeId && edge.from === selectedNodeId);
+    const depthAlpha = clamp(0.52 + (fromPoint.depth + toPoint.depth) * 0.00035, 0.34, 0.78);
+    const kindWidthBoost = edge.kind === 'spine' ? 1.1 : edge.kind === 'crosslink' ? 0.35 : 0;
+    const kindAlphaBoost = edge.kind === 'spine' ? 0.16 : edge.kind === 'crosslink' ? -0.08 : 0;
+    const edgeColor = edge.kind === 'spine' ? '#cbd5e1' : edge.kind === 'crosslink' ? '#64748b' : '#7dd3fc';
 
     return [
       {
-        alpha: isSelected ? 0.95 : clamp(0.55 + ((fromPoint.depth + toPoint.depth) * 0.00035 + 0.25), 0.4, 0.82),
-        color: isSelected ? '#f59e0b' : '#94a3b8',
+        alpha: isSelected ? 0.95 : clamp(depthAlpha + kindAlphaBoost, 0.28, 0.88),
+        color: isSelected ? '#f59e0b' : edgeColor,
         from: fromPoint,
         isSelected,
         to: toPoint,
-        width: isSelected ? baseWidth + 1.5 : baseWidth
+        width: isSelected ? baseWidth + 1.5 : baseWidth + kindWidthBoost
       }
     ];
   });

@@ -6,7 +6,38 @@ import {
   notebookSignalRouteIntel,
   recordNotebookClue
 } from '../src/engine/sim/notebook';
+import { connectedNeighbors, shortestLegCountBetweenNodes } from '../src/engine/sim/world';
 import { createInitialGameState } from '../src/game/state/gameState';
+
+function findRouteComparisonCase(state: ReturnType<typeof createInitialGameState>, goalNodeId: string) {
+  for (const node of state.world.nodes) {
+    const currentLegs = shortestLegCountBetweenNodes(state, node.id, goalNodeId);
+    if (currentLegs === null || currentLegs === 0) {
+      continue;
+    }
+
+    state.currentNodeId = node.id;
+    const neighbors = connectedNeighbors(state)
+      .map((neighbor) => ({
+        ...neighbor,
+        legs: shortestLegCountBetweenNodes(state, neighbor.nodeId, goalNodeId)
+      }))
+      .filter((neighbor): neighbor is { nodeId: string; distance: number; legs: number } => neighbor.legs !== null);
+
+    const stronger = neighbors.find((neighbor) => neighbor.legs < currentLegs) ?? null;
+    const weaker = neighbors.find((neighbor) => neighbor.legs > currentLegs) ?? null;
+    const best = neighbors.reduce<typeof neighbors[number] | null>(
+      (selected, neighbor) => (selected === null || neighbor.legs < selected.legs ? neighbor : selected),
+      null
+    );
+
+    if (stronger && weaker && best) {
+      return { best, currentNodeId: node.id, currentLegs, stronger, weaker };
+    }
+  }
+
+  throw new Error('Expected a node with both stronger and weaker connected routes');
+}
 
 describe('notebook clues', () => {
   it('records one deterministic clue per core biome and avoids duplicates', () => {
@@ -51,35 +82,37 @@ describe('notebook clues', () => {
 
   it('turns notebook progress into route-triangulation intel', () => {
     const state = createInitialGameState('notebook-triangulation');
-    state.currentNodeId = 'n4';
+    const goalNodeId = 'n9';
+    const routeCase = findRouteComparisonCase(state, goalNodeId);
+    state.currentNodeId = routeCase.currentNodeId;
 
-    const offline = notebookSignalRouteIntel(state, 'n9', 'n5');
+    const offline = notebookSignalRouteIntel(state, goalNodeId, routeCase.stronger.nodeId);
     expect(offline.fieldNote).toContain('bearing offline');
     expect(offline.routeHint).toBeNull();
     expect(offline.revealsObjective).toBe(false);
 
-    recordNotebookClue(state, { nodeType: 'ruin', nodeId: 'n4' });
-    const bearingOnly = notebookSignalRouteIntel(state, 'n9', 'n5');
+    recordNotebookClue(state, { nodeType: 'ruin', nodeId: routeCase.currentNodeId });
+    const bearingOnly = notebookSignalRouteIntel(state, goalNodeId, routeCase.stronger.nodeId);
     expect(bearingOnly.routeHint).toContain('strengthens');
     expect(bearingOnly.routeHint).not.toContain('Source est.');
     expect(bearingOnly.revealsBenefit).toBe(false);
 
-    recordNotebookClue(state, { nodeType: 'nature', nodeId: 'n5' });
-    const withDepth = notebookSignalRouteIntel(state, 'n9', 'n3');
+    recordNotebookClue(state, { nodeType: 'nature', nodeId: routeCase.stronger.nodeId });
+    const withDepth = notebookSignalRouteIntel(state, goalNodeId, routeCase.weaker.nodeId);
     expect(withDepth.fieldNote).toContain('depth online');
     expect(withDepth.routeHint).toContain('weakens');
-    expect(withDepth.routeHint).toContain('Source est. 6 legs.');
+    expect(withDepth.routeHint).toContain(`Source est. ${routeCase.weaker.legs} legs.`);
     expect(withDepth.revealsRisk).toBe(false);
 
-    recordNotebookClue(state, { nodeType: 'anomaly', nodeId: 'n6' });
-    const synthesized = notebookSignalRouteIntel(state, 'n9', 'n5');
+    recordNotebookClue(state, { nodeType: 'anomaly', nodeId: routeCase.weaker.nodeId });
+    const synthesized = notebookSignalRouteIntel(state, goalNodeId, routeCase.best.nodeId);
     expect(synthesized.fieldNote).toContain('synth lock');
     expect(synthesized.routeHint).toContain('Best current lead.');
     expect(synthesized.revealsBenefit).toBe(true);
     expect(synthesized.revealsObjective).toBe(true);
     expect(synthesized.revealsRisk).toBe(true);
 
-    const nonLead = notebookSignalRouteIntel(state, 'n9', 'n3');
+    const nonLead = notebookSignalRouteIntel(state, goalNodeId, routeCase.weaker.nodeId);
     expect(nonLead.routeHint).not.toContain('Best current lead.');
     expect(nonLead.revealsBenefit).toBe(false);
     expect(nonLead.revealsObjective).toBe(false);

@@ -11,3 +11,6 @@ Map readability is central to the route-board presentation of the game. If playe
 
 Known constraints, suspected cause, or likely starting points:
 The playtest suggestion points toward district-like local clusters plus a variable number of inter-district links. Start with deterministic graph generation in [src/engine/gen/worldGraph.ts](/Users/akofink/dev/repos/deeper-trail/src/engine/gen/worldGraph.ts) and map rendering/layout logic in [src/main.ts](/Users/akofink/dev/repos/deeper-trail/src/main.ts).
+
+Resolution note:
+Closed on 2026-03-09 after reshaping seeded maps into a readable spine-with-branches layout and adding edge styling that distinguishes main routes, detours, and crosslinks on the board view.

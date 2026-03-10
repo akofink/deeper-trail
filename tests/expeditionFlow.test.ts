@@ -259,6 +259,12 @@ describe('expedition flow runtime helpers', () => {
   it('branches expedition-goal arrival rewards from the ordered notebook clue sequence', () => {
     const healthState = buildRuntimeState('goal-arrival-health');
     healthState.sim.currentNodeId = healthState.expeditionGoalNodeId;
+    const healthGoalNode = findNode(healthState.sim, healthState.expeditionGoalNodeId);
+    expect(healthGoalNode).toBeDefined();
+    if (!healthGoalNode) {
+      throw new Error('Expected expedition goal node');
+    }
+    healthGoalNode.type = 'ruin';
     healthState.sim.notebook.entries.push(
       {
         id: 'clue-ruin',
@@ -298,6 +304,12 @@ describe('expedition flow runtime helpers', () => {
 
     const fuelState = buildRuntimeState('goal-arrival-fuel');
     fuelState.sim.currentNodeId = fuelState.expeditionGoalNodeId;
+    const fuelGoalNode = findNode(fuelState.sim, fuelState.expeditionGoalNodeId);
+    expect(fuelGoalNode).toBeDefined();
+    if (!fuelGoalNode) {
+      throw new Error('Expected expedition goal node');
+    }
+    fuelGoalNode.type = 'ruin';
     fuelState.sim.notebook.entries.push(
       {
         id: 'clue-ruin',

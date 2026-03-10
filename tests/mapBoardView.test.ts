@@ -78,6 +78,12 @@ describe('mapBoardView', () => {
     expect(selectedEdge?.color).toBe('#f59e0b');
     expect(selectedEdge?.width).toBeGreaterThan(2.9);
 
+    const spineEdge = view.edges.find((edge) => !edge.isSelected && edge.color === '#cbd5e1');
+    const branchEdge = view.edges.find((edge) => edge.color === '#7dd3fc');
+    expect(spineEdge).toBeDefined();
+    expect(branchEdge).toBeDefined();
+    expect(spineEdge && branchEdge ? spineEdge.width > branchEdge.width : false).toBe(true);
+
     const currentNode = view.nodes.find((node) => node.current);
     expect(currentNode?.fill).toBe('#2563eb');
     expect(currentNode?.glowColor).toBe('#2563eb');
