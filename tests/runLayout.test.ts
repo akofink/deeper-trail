@@ -25,4 +25,15 @@ describe('runLayout', () => {
       ['stomper', 0, 42, 0]
     ]);
   });
+
+  it('keeps town relays inside grounded steady-link reach', () => {
+    const groundY = 500;
+    const layout = buildRunLayout(groundY, 'town');
+    const groundedPlayerCenterY = groundY - 22;
+    const maxGroundedReach = 55;
+
+    expect(layout.beacons.map((beacon) => beacon.y)).toEqual([449, 433, 436]);
+    expect(layout.beacons.every((beacon) => groundedPlayerCenterY - beacon.y <= maxGroundedReach)).toBe(true);
+    expect(layout.serviceStops).toHaveLength(2);
+  });
 });

@@ -118,6 +118,8 @@ export function buildRunLayout(groundY: number, nodeType: string): {
 } {
   const hazardTemplates = hazardTemplatesForNodeType(nodeType);
   const beaconRiseIndexes = [0, 2, 4];
+  const beaconBaseHeights = nodeType === 'town' ? [48, 52, 50] : [58, 62, 60];
+  const beaconRiseScale = nodeType === 'town' ? 0.45 : 0.7;
 
   return {
     goalX: 2450,
@@ -131,7 +133,7 @@ export function buildRunLayout(groundY: number, nodeType: string): {
     beacons: beaconRiseIndexes.map((riseIndex, index) => ({
       id: `b${index}`,
       x: [360, 1220, 1980][index] ?? 360,
-      y: groundY - [58, 62, 60][index] - Math.round(encounterRiseAt(nodeType, riseIndex) * 0.7),
+      y: groundY - beaconBaseHeights[index] - Math.round(encounterRiseAt(nodeType, riseIndex) * beaconRiseScale),
       r: 15,
       activated: false
     })),
