@@ -11,3 +11,6 @@ Low obstacle variety weakens replayability and blurs the capability-driven progr
 
 Known constraints, suspected cause, or likely starting points:
 Look at biome generation and obstacle/enemy rule definitions under [src/engine](/Users/akofink/dev/repos/deeper-trail/src/engine). Preserve deterministic generation while expanding the obstacle set and movement-pattern vocabulary.
+
+Resolution note (2026-03-10):
+Closed after replacing the alternating placeholder hazard strip with deterministic per-biome sweeper, stomper, pulsing, and barricade patterns, plus matching run-scene animation/render support and tests.

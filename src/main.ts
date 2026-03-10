@@ -327,6 +327,46 @@ function drawBackdropAccents(graphics: Graphics, state: RuntimeState, nodeType: 
   });
 }
 
+function updateHazardState(state: RuntimeState): void {
+  for (const hazard of state.hazards) {
+    const wave = Math.sin(state.elapsedSeconds * hazard.speed + hazard.phase);
+    hazard.x = hazard.baseX + wave * hazard.amplitudeX;
+    hazard.y = hazard.baseY - Math.max(0, wave) * hazard.amplitudeY;
+    hazard.w = hazard.baseW + (hazard.kind === 'pulsing' ? Math.max(0, wave) * hazard.pulse : 0);
+    hazard.h = hazard.baseH + (hazard.kind === 'pulsing' ? Math.max(0, -wave) * hazard.pulse * 0.55 : 0);
+  }
+}
+
+function drawHazard(graphics: Graphics, hazard: RuntimeState['hazards'][number], cam: number, color: string): void {
+  const x = hazard.x - cam;
+  if (hazard.kind === 'pulsing') {
+    graphics.roundRect(x, hazard.y, hazard.w, hazard.h, 8).fill({ color, alpha: 0.92 });
+    graphics.roundRect(x + 8, hazard.y + 4, Math.max(0, hazard.w - 16), Math.max(0, hazard.h - 8), 6).stroke({
+      color: '#f8fafc',
+      alpha: 0.24,
+      width: 1
+    });
+    return;
+  }
+
+  if (hazard.kind === 'stomper') {
+    graphics.roundRect(x, hazard.y, hazard.w, hazard.h, 6).fill({ color, alpha: 0.94 });
+    graphics.rect(x + Math.round(hazard.w * 0.3), hazard.baseY - 30, Math.max(6, Math.round(hazard.w * 0.4)), 26).fill({
+      color,
+      alpha: 0.42
+    });
+    return;
+  }
+
+  if (hazard.kind === 'sweeper') {
+    graphics.roundRect(x, hazard.y, hazard.w, hazard.h, 5).fill({ color, alpha: 0.94 });
+    graphics.circle(x + hazard.w - 8, hazard.y + hazard.h * 0.5, 6).fill({ color, alpha: 0.8 });
+    return;
+  }
+
+  graphics.rect(x, hazard.y, hazard.w, hazard.h).fill(color);
+}
+
 function drawTerrainBand(
   graphics: Graphics,
   startX: number,
@@ -632,6 +672,7 @@ function shiftRunSceneVertical(state: RuntimeState, deltaY: number): void {
   state.player.y += deltaY;
   for (const hazard of state.hazards) {
     hazard.y += deltaY;
+    hazard.baseY += deltaY;
   }
   for (const collectible of state.collectibles) {
     collectible.y += deltaY;
@@ -898,10 +939,7 @@ async function bootstrap(): Promise<void> {
       p.invuln = Math.max(0, p.invuln - dt);
     }
 
-    for (const hazard of state.hazards) {
-      if (hazard.kind !== 'moving') continue;
-      hazard.x = hazard.baseX + Math.sin(state.elapsedSeconds * hazard.speed + hazard.phase) * hazard.amplitude;
-    }
+    updateHazardState(state);
 
     const playerHitbox = { x: p.x + 2, y: p.y + 2, w: p.w - 4, h: p.h - 4 };
     const landedThisFrame = !wasOnGround && p.onGround;
@@ -1161,7 +1199,7 @@ async function bootstrap(): Promise<void> {
     graphics.rect(-cam, state.groundY, state.goalX + 300, h - state.groundY).fill(colors.ground);
 
     for (const hazard of state.hazards) {
-      graphics.rect(hazard.x - cam, hazard.y, hazard.w, hazard.h).fill(colors.hazard);
+      drawHazard(graphics, hazard, cam, colors.hazard);
     }
     drawRunObjectiveVisuals(graphics, objectiveVisuals, state.groundY, state.elapsedSeconds, cam);
     drawDamageFeedback(graphics, w, h, state, cam);
