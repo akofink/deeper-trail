@@ -9,15 +9,44 @@ describe('generateWorldGraph', () => {
     expect(first).toEqual(second);
   });
 
-  it('builds a connected baseline path', () => {
-    const graph = generateWorldGraph('w-42', 6);
+  it('builds a connected route spine with attached branch nodes', () => {
+    const graph = generateWorldGraph('w-42', 12);
+    const nodeIds = new Set(graph.nodes.map((node) => node.id));
+    const visited = new Set<string>(['n0']);
+    const queue = ['n0'];
 
-    expect(graph.edges).toHaveLength(5);
-    expect(graph.edges[0]).toMatchObject({ from: 'n0', to: 'n1' });
-    expect(graph.edges[4]).toMatchObject({ from: 'n4', to: 'n5' });
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (!current) {
+        continue;
+      }
+      for (const edge of graph.edges) {
+        const neighbor = edge.from === current ? edge.to : edge.to === current ? edge.from : null;
+        if (!neighbor || visited.has(neighbor)) {
+          continue;
+        }
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
+
+    const spineEdges = graph.edges.filter((edge) => edge.kind === 'spine');
+    const branchEdges = graph.edges.filter((edge) => edge.kind === 'branch');
+    const degrees = new Map<string, number>();
+    for (const edge of graph.edges) {
+      degrees.set(edge.from, (degrees.get(edge.from) ?? 0) + 1);
+      degrees.set(edge.to, (degrees.get(edge.to) ?? 0) + 1);
+    }
+
+    expect(visited).toEqual(nodeIds);
+    expect(spineEdges.length).toBeGreaterThanOrEqual(2);
+    expect(spineEdges[0]).toMatchObject({ from: 'n0', to: 'n1' });
+    expect(branchEdges.length).toBeGreaterThanOrEqual(3);
+    expect([...degrees.values()].some((degree) => degree >= 3)).toBe(true);
+    expect([...degrees.values()].some((degree) => degree === 1)).toBe(true);
   });
 
-  it('creates a clustered point cloud with spread on both axes', () => {
+  it('creates a route-board layout with strong forward spread and district offset', () => {
     const graph = generateWorldGraph('cloud-test', 12);
     const xs = graph.nodes.map((node) => node.x);
     const ys = graph.nodes.map((node) => node.y);
@@ -26,13 +55,10 @@ describe('generateWorldGraph', () => {
     const ySpan = Math.max(...ys) - Math.min(...ys);
     const zSpan = Math.max(...zs) - Math.min(...zs);
 
-    expect(xSpan).toBeGreaterThan(350);
-    expect(ySpan).toBeGreaterThan(220);
+    expect(xSpan).toBeGreaterThan(620);
+    expect(ySpan).toBeGreaterThan(180);
     expect(zSpan).toBeGreaterThan(260);
-
-    const quadrants = new Set(
-      graph.nodes.map((node) => `${node.x > 500 ? 'R' : 'L'}${node.y > 350 ? 'B' : 'T'}`)
-    );
-    expect(quadrants.size).toBeGreaterThanOrEqual(3);
+    expect(Math.min(...xs)).toBeGreaterThanOrEqual(60);
+    expect(Math.max(...xs)).toBeLessThanOrEqual(940);
   });
 });
