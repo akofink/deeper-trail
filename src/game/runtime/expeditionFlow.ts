@@ -67,7 +67,7 @@ export function applyArrivalRewards(state: RuntimeState): string {
     } else {
       state.sim.fuel = Math.min(state.sim.fuelCapacity, state.sim.fuel + 4);
     }
-    message += ` Goal decode: ${goalSignal.arrivalBonusNote}.`;
+    message += ` Goal decode: ${goalSignal.arrivalBonusNote}. Source read: ${goalSignal.encounterBonusNote}.`;
   }
 
   message += resolveArrivalEncounter(state, asNodeTypeKey(node.type), firstVisit).message;

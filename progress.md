@@ -596,3 +596,14 @@ TODO next:
 
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially any remaining repeated Pixi text reset/application helpers and scene-local draw setup that can move behind testable view models.
 - Decide whether the next notebook payoff step should branch the actual goal-node encounter by clue mix now that the synthesized run assist affects more than one target.
+
+- Notebook goal-encounter branching pass:
+  - Extended `src/game/runtime/goalSignal.ts` so synthesized expedition-goal runs now carry a deterministic source-signature variant keyed by clue order instead of only a relay primer plus arrival/run bonuses.
+  - The first + second clue pair now mutates the actual source approach with effects like lowered relay shelves, breached entry hazards, extra salvage echoes, quieter moving fields, a shortened final approach, or a vented final channel.
+  - Updated `src/main.ts` to apply that encounter bonus during run reset, and updated `src/game/runtime/expeditionFlow.ts` plus map preview copy so the arrival message and goal-route card both explain the decoded source signature.
+  - Expanded `tests/goalSignal.test.ts` to cover the new preview copy plus representative encounter mutations.
+
+TODO next:
+
+- Decide whether a later notebook slice should branch the actual expedition-goal ending or post-goal encounter text, now that the source approach itself varies by clue order.
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially any remaining repeated Pixi text reset/application helpers and scene-local draw setup that can move behind testable view models.
