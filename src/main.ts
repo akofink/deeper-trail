@@ -1,6 +1,6 @@
 import { Application, Graphics, Text } from 'pixi.js';
 import { noteBiomeHazard } from './engine/sim/exploration';
-import { connectedNeighbors, currentNodeType, expeditionGoalNodeId, findNode } from './engine/sim/world';
+import { connectedNeighbors, currentNodeType, findNode } from './engine/sim/world';
 import {
   getBeaconRuleForNodeType,
   getObjectiveSummary,
@@ -15,14 +15,13 @@ import {
 } from './engine/sim/vehicle';
 import { attemptBeaconActivation, hasBeaconAutoLink } from './game/runtime/beaconActivation';
 import { buildDamageFeedbackView, decayDamageFeedback, triggerDamageFeedback } from './game/runtime/damageFeedback';
-import { biomeByNodeType, buildRunLayout } from './game/runtime/runLayout';
+import { biomeByNodeType } from './game/runtime/runLayout';
 import { buildMapActionChips, buildMapBoardView } from './game/runtime/mapBoardView';
 import { buildMapSceneCardPlan, buildMapSceneCopy } from './game/runtime/mapSceneCards';
 import { buildMapSceneContent } from './game/runtime/mapSceneContent';
 import { buildMapSceneHudViewModel } from './game/runtime/mapSceneHudView';
 import { buildMapSceneTextAssembly } from './game/runtime/mapSceneTextAssembly';
 import { pullCollectibleTowardTarget } from './game/runtime/collectibleMagnetism';
-import { applyGoalSignalEncounterBonus, applyGoalSignalPrimer, applyGoalSignalRunBonus } from './game/runtime/goalSignal';
 import {
   applyCanopyLiftAssist,
   isInsideCanopyLift,
@@ -47,8 +46,21 @@ import { type SceneTextCardSpec } from './game/runtime/sceneTextCards';
 import { buildMeasuredSceneTextCardView, measureSceneTextCard } from './game/runtime/sceneTextMeasure';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import { advanceHorizontalVelocity } from './game/runtime/runMotion';
-import { rechargeShieldCharge, tryConsumeShieldCharge } from './game/runtime/shieldCharge';
-import type { RuntimeState } from './game/runtime/runtimeState';
+import { tryConsumeShieldCharge } from './game/runtime/shieldCharge';
+import {
+  canUseMedPatch,
+  COYOTE_TIME,
+  createInitialRuntimeState,
+  groundYForCanvasHeight,
+  JUMP_BUFFER_TIME,
+  MEDPATCH_HEAL_AMOUNT,
+  MEDPATCH_SCRAP_COST,
+  resetRunFromCurrentNode,
+  shiftRunSceneVertical,
+  START_X,
+  tryUseMedPatch,
+  type RuntimeState
+} from './game/runtime/runtimeState';
 import { encounterRiseAt } from './game/runtime/runTerrainProfile';
 import {
   collectibleMagnetRadius,
@@ -61,7 +73,6 @@ import {
   scrapGainPerCollectible
 } from './game/runtime/vehicleDerivedStats';
 import { advanceWheelRotation } from './game/runtime/vehiclePresentation';
-import { createInitialGameState } from './game/state/gameState';
 import { applyTextView, applyTextViews, clearTextLabels, measureTextView } from './game/render/pixiText';
 import './styles.css';
 
@@ -74,24 +85,16 @@ declare global {
 
 const FIXED_DT = 1 / 60;
 const GRAVITY = 1050;
-const START_X = 80;
-const PLAYER_W = 34;
-const PLAYER_H = 44;
 const DASH_ENERGY_DRAIN_PER_SECOND = 2.6;
 const DASH_ENERGY_RECOVER_PER_SECOND = 0.48;
 const DASH_BOOST_RAMP_PER_SECOND = 8;
 const DASH_BOOST_DECAY_PER_SECOND = 9;
 const DASH_START_BOOST = 0.3;
 const DASH_MIN_SPEED_RATIO = 0.62;
-const GROUND_Y_RATIO = 0.74;
-const COYOTE_TIME = 0.11;
-const JUMP_BUFFER_TIME = 0.12;
 const JUMP_CUT_SPEED = 140;
 const JUMP_CUT_MULTIPLIER = 0.52;
 const FALL_GRAVITY_MULTIPLIER = 1.18;
 const HANG_GRAVITY_MULTIPLIER = 0.88;
-const MEDPATCH_SCRAP_COST = 2;
-const MEDPATCH_HEAL_AMOUNT = 1;
 
 const keys = new Set<string>();
 let previousSpaceDown = false;
@@ -508,137 +511,6 @@ function initialSeedFromLocation(): string | undefined {
   return value ? value : undefined;
 }
 
-function canUseMedPatch(state: RuntimeState): boolean {
-  return state.health < getMaxHealth(state.sim.vehicle) && state.sim.scrap >= MEDPATCH_SCRAP_COST;
-}
-
-function tryUseMedPatch(state: RuntimeState): { didHeal: boolean; reason?: string } {
-  const maxHealth = getMaxHealth(state.sim.vehicle);
-  if (state.health >= maxHealth) {
-    return { didHeal: false, reason: 'Hull integrity already at max HP' };
-  }
-  if (state.sim.scrap < MEDPATCH_SCRAP_COST) {
-    return { didHeal: false, reason: `Need ${MEDPATCH_SCRAP_COST} scrap for a med patch` };
-  }
-
-  state.sim.scrap -= MEDPATCH_SCRAP_COST;
-  state.health = Math.min(maxHealth, state.health + MEDPATCH_HEAL_AMOUNT);
-  return { didHeal: true };
-}
-
-function makeInitialRuntimeState(canvasHeight: number, seed = createRunSeed()): RuntimeState {
-  const sim = createInitialGameState(seed);
-  const groundY = Math.round(canvasHeight * GROUND_Y_RATIO);
-  const nodeType = currentNodeType(sim);
-  const run = buildRunLayout(groundY, nodeType);
-  const maxHealth = getMaxHealth(sim.vehicle);
-
-  return {
-    mode: 'playing',
-    scene: 'run',
-    seed,
-    expeditionGoalNodeId: expeditionGoalNodeId(sim),
-    expeditionComplete: false,
-    score: 0,
-    health: maxHealth,
-    elapsedSeconds: 0,
-    mapMessage: '',
-    mapMessageTimer: 0,
-    runPromptText: '',
-    runPromptTimer: 0,
-    mapSelectionIndex: 0,
-    completedNodeIds: [],
-    freeTravelCharges: 0,
-    dashEnergy: 1,
-    dashBoost: 0,
-    dashDirection: 1,
-    wheelRotation: 0,
-    mapRotation: -0.22,
-    mapRotationVelocity: 0,
-    tookDamageThisRun: false,
-    shieldChargeAvailable: sim.vehicle.shielding >= 2,
-    damageFeedback: undefined,
-    player: {
-      x: START_X,
-      y: groundY - PLAYER_H,
-      vx: 0,
-      vy: 0,
-      w: PLAYER_W,
-      h: PLAYER_H,
-      onGround: true,
-      invuln: 0,
-      coyoteTime: COYOTE_TIME,
-      jumpBufferTime: 0,
-      facing: 1
-    },
-    cameraX: 0,
-    goalX: run.goalX,
-    groundY,
-    collectibles: run.collectibles,
-    hazards: run.hazards,
-    beacons: run.beacons,
-    serviceStops: run.serviceStops,
-    syncGates: run.syncGates,
-    canopyLifts: run.canopyLifts,
-    impactPlates: run.impactPlates,
-    sim
-  };
-}
-
-function resetRunFromCurrentNode(state: RuntimeState): void {
-  const nodeType = currentNodeType(state.sim);
-  const run = buildRunLayout(state.groundY, nodeType);
-  state.mode = 'playing';
-  state.player.x = START_X;
-  state.player.y = state.groundY - state.player.h;
-  state.player.vx = 0;
-  state.player.vy = 0;
-  state.player.onGround = true;
-  state.player.invuln = 0;
-  state.cameraX = 0;
-  state.damageFeedback = undefined;
-  state.goalX = run.goalX;
-  state.collectibles = run.collectibles;
-  state.hazards = run.hazards;
-  state.beacons = run.beacons;
-  state.serviceStops = run.serviceStops;
-  state.syncGates = run.syncGates;
-  state.canopyLifts = run.canopyLifts;
-  state.impactPlates = run.impactPlates;
-  applyGoalSignalPrimer(state);
-  applyGoalSignalEncounterBonus(state);
-  applyGoalSignalRunBonus(state);
-  state.dashEnergy = 1;
-  state.dashBoost = 0;
-  state.wheelRotation = 0;
-  state.tookDamageThisRun = false;
-  state.runPromptText = '';
-  state.runPromptTimer = 0;
-  rechargeShieldCharge(state);
-  if (!state.expeditionComplete) {
-    state.mode = 'playing';
-  }
-}
-
-function shiftRunSceneVertical(state: RuntimeState, deltaY: number): void {
-  if (deltaY === 0) return;
-
-  state.player.y += deltaY;
-  for (const hazard of state.hazards) {
-    hazard.y += deltaY;
-    hazard.baseY += deltaY;
-  }
-  for (const collectible of state.collectibles) {
-    collectible.y += deltaY;
-  }
-  for (const beacon of state.beacons) {
-    beacon.y += deltaY;
-  }
-  for (const lift of state.canopyLifts) {
-    lift.y += deltaY;
-  }
-}
-
 async function bootstrap(): Promise<void> {
   const app = new Application();
   await app.init({ background: '#89c3f0', resizeTo: window, antialias: true });
@@ -781,7 +653,7 @@ async function bootstrap(): Promise<void> {
     return label;
   });
 
-  let state = makeInitialRuntimeState(app.screen.height, initialSeedFromLocation());
+  let state = createInitialRuntimeState(app.screen.height, initialSeedFromLocation() ?? createRunSeed());
 
   function screenWidth(): number {
     return Math.max(1, app.screen.width);
@@ -1373,14 +1245,14 @@ async function bootstrap(): Promise<void> {
     }
 
     if (event.code === 'KeyN' && state.scene === 'map') {
-      state = makeInitialRuntimeState(app.screen.height);
+      state = createInitialRuntimeState(app.screen.height, createRunSeed());
       event.preventDefault();
       return;
     }
 
     if ((event.code === 'Enter' || event.code === 'KeyR') && (state.mode === 'won' || state.mode === 'lost')) {
       if (state.mode === 'lost') {
-        state = makeInitialRuntimeState(app.screen.height);
+        state = createInitialRuntimeState(app.screen.height, createRunSeed());
       } else {
         resetRunFromCurrentNode(state);
         state.mode = 'playing';
@@ -1426,7 +1298,7 @@ async function bootstrap(): Promise<void> {
   });
 
   window.addEventListener('resize', () => {
-    const nextGroundY = Math.round(screenHeight() * GROUND_Y_RATIO);
+    const nextGroundY = groundYForCanvasHeight(screenHeight());
     const deltaY = nextGroundY - state.groundY;
     state.groundY = nextGroundY;
 
