@@ -44,15 +44,15 @@ import { buildExitLockedMessage, buildRunCompletionMessage } from './game/runtim
 import { buildRunActionChips, buildRunSceneOverlayCard } from './game/runtime/runSceneView';
 import { type SceneTextCardSpec } from './game/runtime/sceneTextCards';
 import {
-  buildCenteredTextView,
-  buildChipLabelView,
-  buildHudRowLabelView,
-  buildHudRowValueView,
+  buildCenteredTextViews,
+  buildChipLabelTextViews,
+  buildHudRowTextViews,
   buildModuleLabelTextViews,
   buildPanelHeaderTextViews,
   buildSceneTextCardMeasureView,
   buildSceneTextCardView,
   buildSceneTextCardWrappedMeasureView,
+  buildStackedHudLabelViews,
   type SceneTextView
 } from './game/runtime/sceneTextView';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
@@ -1171,18 +1171,18 @@ async function bootstrap(): Promise<void> {
     drawRunObjectiveVisuals(graphics, objectiveVisuals, state.groundY, state.elapsedSeconds, cam);
     drawDamageFeedback(graphics, w, h, state, cam);
     const beaconLabelViews = buildBeaconLabelViews(objectiveVisuals, cam);
-    beaconLabelViews.forEach((view, index) => {
+    const beaconMeasures = beaconLabelViews.map((view, index) => {
       const label = beaconLabels[index];
-      if (!label) return;
-      const measured = measureTextView(label, {
+      if (!label) return { width: 0, height: 0 };
+      return measureTextView(label, {
         align: 'center',
         fill: view.fill,
         text: view.text,
         x: label.x,
         y: label.y
       });
-      applyTextView(label, buildCenteredTextView(view.text, view.x, view.y, measured, view.fill));
     });
+    applyTextViews(beaconLabels, buildCenteredTextViews(beaconLabelViews, beaconMeasures));
 
     for (const item of state.collectibles) {
       if (item.collected) continue;
@@ -1200,27 +1200,49 @@ async function bootstrap(): Promise<void> {
     const hudLayout = runHudView.layout;
     drawPanel(graphics, hudLayout.leftPanelX, 10, hudLayout.leftPanelWidth, hudLayout.leftPanelHeight);
     drawPanel(graphics, hudLayout.rightPanelX, 10, hudLayout.rightPanelWidth, hudLayout.rightPanelHeight);
-    runHudView.leftRows.forEach((row, index) => {
-      const label = runLeftRowLabels[index];
-      const value = runLeftRowValues[index];
-      if (!label || !value) return;
-      const labelMeasure = measureTextView(label, { fill: '#94a3b8', text: row.label, x: label.x, y: label.y });
-      const valueMeasure = measureTextView(value, { align: 'right', fill: '#e2e8f0', text: row.value, x: value.x, y: value.y });
-      applyTextView(label, buildHudRowLabelView(row.label, hudLayout.rowLabelX, row.y, labelMeasure.height));
-      applyTextView(value, buildHudRowValueView(row.value, hudLayout.rowValueX, row.y, valueMeasure));
-    });
-    runHudView.rightRows.forEach((row, index) => {
-      const label = runRightRowLabels[index];
-      if (!label) return;
-      const labelMeasure = measureTextView(label, { fill: '#94a3b8', text: row.label, x: label.x, y: label.y });
-      applyTextView(label, buildHudRowLabelView(row.label, hudLayout.rightRowLabelX, row.y, labelMeasure.height));
-      if (index < 2) {
-        const value = runRightRowValues[index];
-        if (!value) return;
-        const valueMeasure = measureTextView(value, { align: 'right', fill: '#e2e8f0', text: row.value, x: value.x, y: value.y });
-        applyTextView(value, buildHudRowValueView(row.value, hudLayout.rightRowValueX, row.y, valueMeasure));
-      }
-    });
+    const runLeftLabelMeasures = runHudView.leftRows.map((row, index) =>
+      measureTextView(runLeftRowLabels[index]!, { fill: '#94a3b8', text: row.label, x: runLeftRowLabels[index]!.x, y: runLeftRowLabels[index]!.y })
+    );
+    const runLeftValueMeasures = runHudView.leftRows.map((row, index) =>
+      measureTextView(runLeftRowValues[index]!, {
+        align: 'right',
+        fill: '#e2e8f0',
+        text: row.value,
+        x: runLeftRowValues[index]!.x,
+        y: runLeftRowValues[index]!.y
+      })
+    );
+    const runLeftTextViews = buildHudRowTextViews(
+      runHudView.leftRows,
+      hudLayout.rowLabelX,
+      hudLayout.rowValueX,
+      runLeftLabelMeasures,
+      runLeftValueMeasures
+    );
+    applyTextViews(runLeftRowLabels, runLeftTextViews.labelViews);
+    applyTextViews(runLeftRowValues, runLeftTextViews.valueViews);
+
+    const runRightLabelMeasures = runHudView.rightRows.map((row, index) =>
+      measureTextView(runRightRowLabels[index]!, { fill: '#94a3b8', text: row.label, x: runRightRowLabels[index]!.x, y: runRightRowLabels[index]!.y })
+    );
+    const runRightValueRows = runHudView.rightRows.slice(0, runRightRowValues.length);
+    const runRightValueMeasures = runRightValueRows.map((row, index) =>
+      measureTextView(runRightRowValues[index]!, {
+        align: 'right',
+        fill: '#e2e8f0',
+        text: row.value,
+        x: runRightRowValues[index]!.x,
+        y: runRightRowValues[index]!.y
+      })
+    );
+    applyTextViews(
+      runRightRowLabels,
+      buildHudRowTextViews(runHudView.rightRows, hudLayout.rightRowLabelX, hudLayout.rightRowValueX, runRightLabelMeasures, []).labelViews
+    );
+    applyTextViews(
+      runRightRowValues,
+      buildHudRowTextViews(runRightValueRows, hudLayout.rightRowLabelX, hudLayout.rightRowValueX, [], runRightValueMeasures).valueViews
+    );
     drawPips(graphics, hudLayout.leftPipsX, runHudView.leftRows[0].y - 3, runHudView.healthTotal, runHudView.healthFilled, '#f97316');
     drawGauge(graphics, hudLayout.leftGaugeX, runHudView.leftRows[1].y - 6, hudLayout.leftGaugeWidth, 12, state.sim.fuel / state.sim.fuelCapacity, '#38bdf8');
     drawGauge(
@@ -1251,19 +1273,21 @@ async function bootstrap(): Promise<void> {
       overlay.text = '';
     }
     const runChips = buildRunActionChips(state, w, h);
-    runChips.forEach((chip, index) => {
+    runChips.forEach((chip) => {
       drawChip(graphics, chip.x, chip.y, chip.w, chip.color, chip.height);
+    });
+    const runChipMeasures = runChips.map((chip, index) => {
       const label = chipLabels[index];
-      if (!label) return;
-      const measured = measureTextView(label, {
+      if (!label) return { width: 0, height: 0 };
+      return measureTextView(label, {
         align: 'center',
         fill: chip.labelFill,
         text: chip.label,
         x: label.x,
         y: label.y
       });
-      applyTextView(label, buildChipLabelView(chip.label, measured, chip.x, chip.y, chip.w, chip.labelFill, chip.height));
     });
+    applyTextViews(chipLabels, buildChipLabelTextViews(runChips, runChipMeasures));
   }
 
   function drawMapScene(): void {
@@ -1380,22 +1404,45 @@ async function bootstrap(): Promise<void> {
     const mapHudLayout = mapHudView.layout;
     drawPanel(graphics, mapHudLayout.leftPanelX, mapHudLayout.leftPanelY, mapHudLayout.leftPanelWidth, mapHudLayout.leftPanelHeight);
     drawPanel(graphics, mapHudLayout.rightPanelX, mapHudLayout.rightPanelY, mapHudLayout.rightPanelWidth, mapHudLayout.rightPanelHeight);
-    mapHudView.leftRows.forEach((row, index) => {
-      const label = mapLeftRowLabels[index];
-      const value = mapLeftRowValues[index];
-      if (!label || !value) return;
-      const labelMeasure = measureTextView(label, { fill: '#94a3b8', text: row.label, x: label.x, y: label.y });
-      const valueMeasure = measureTextView(value, { align: 'right', fill: '#e2e8f0', text: row.value, x: value.x, y: value.y });
-      applyTextView(label, buildHudRowLabelView(row.label, mapHudLayout.leftLabelX, row.y, labelMeasure.height));
-      applyTextView(value, buildHudRowValueView(row.value, mapHudLayout.leftValueX, row.y, valueMeasure));
-    });
-    mapHudView.rightHeaderLines.forEach((line, index) => {
-      const label = mapRightHeaderLines[index];
-      if (!label) return;
-      const y = index === 0 ? mapHudLayout.rightHeaderLine1Y : mapHudLayout.rightHeaderLine2Y;
-      const labelMeasure = measureTextView(label, { fill: '#94a3b8', text: line, x: label.x, y: label.y });
-      applyTextView(label, buildHudRowLabelView(line, mapHudLayout.rightLabelX, y, labelMeasure.height));
-    });
+    const mapLeftLabelMeasures = mapHudView.leftRows.map((row, index) =>
+      measureTextView(mapLeftRowLabels[index]!, { fill: '#94a3b8', text: row.label, x: mapLeftRowLabels[index]!.x, y: mapLeftRowLabels[index]!.y })
+    );
+    const mapLeftValueMeasures = mapHudView.leftRows.map((row, index) =>
+      measureTextView(mapLeftRowValues[index]!, {
+        align: 'right',
+        fill: '#e2e8f0',
+        text: row.value,
+        x: mapLeftRowValues[index]!.x,
+        y: mapLeftRowValues[index]!.y
+      })
+    );
+    const mapLeftTextViews = buildHudRowTextViews(
+      mapHudView.leftRows,
+      mapHudLayout.leftLabelX,
+      mapHudLayout.leftValueX,
+      mapLeftLabelMeasures,
+      mapLeftValueMeasures
+    );
+    applyTextViews(mapLeftRowLabels, mapLeftTextViews.labelViews);
+    applyTextViews(mapLeftRowValues, mapLeftTextViews.valueViews);
+
+    const mapHeaderMeasures = mapHudView.rightHeaderLines.map((line, index) =>
+      measureTextView(mapRightHeaderLines[index]!, {
+        fill: '#94a3b8',
+        text: line,
+        x: mapRightHeaderLines[index]!.x,
+        y: mapRightHeaderLines[index]!.y
+      })
+    );
+    applyTextViews(
+      mapRightHeaderLines,
+      buildStackedHudLabelViews(
+        mapHudView.rightHeaderLines,
+        mapHudLayout.rightLabelX,
+        [mapHudLayout.rightHeaderLine1Y, mapHudLayout.rightHeaderLine2Y],
+        mapHeaderMeasures
+      )
+    );
     drawGauge(graphics, mapHudLayout.gaugeX, mapHudView.leftRows[1].y - 6, mapHudLayout.gaugeWidth, 12, mapHudView.fuelRatio, '#38bdf8');
     drawPips(graphics, mapHudLayout.pipsX, mapHudView.leftRows[0].y - 3, mapHudView.freeTripTotal, mapHudView.freeTripFilled, '#facc15');
     drawModuleMeters(graphics, mapHudView.moduleMeters);
@@ -1432,19 +1479,21 @@ async function bootstrap(): Promise<void> {
     }
 
     const mapChips = buildMapActionChips(w, mapSceneLayout.chipY, mapSceneLayout.chipHeight, state.expeditionComplete);
-    mapChips.forEach((chip, index) => {
+    mapChips.forEach((chip) => {
       drawChip(graphics, chip.x, chip.y, chip.w, chip.color, chip.height);
+    });
+    const mapChipMeasures = mapChips.map((chip, index) => {
       const label = chipLabels[index];
-      if (!label) return;
-      const measured = measureTextView(label, {
+      if (!label) return { width: 0, height: 0 };
+      return measureTextView(label, {
         align: 'center',
         fill: chip.labelFill,
         text: chip.label,
         x: label.x,
         y: label.y
       });
-      applyTextView(label, buildChipLabelView(chip.label, measured, chip.x, chip.y, chip.w, chip.labelFill, chip.height));
     });
+    applyTextViews(chipLabels, buildChipLabelTextViews(mapChips, mapChipMeasures));
   }
 
   async function toggleFullscreen(): Promise<void> {

@@ -1,14 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildCenteredTextView,
+  buildCenteredTextViews,
+  buildChipLabelTextViews,
   buildChipLabelView,
   buildHudRowLabelView,
+  buildHudRowTextViews,
   buildHudRowValueView,
   buildModuleLabelTextViews,
   buildPanelHeaderTextViews,
   buildSceneTextCardMeasureView,
   buildSceneTextCardView,
-  buildSceneTextCardWrappedMeasureView
+  buildSceneTextCardWrappedMeasureView,
+  buildStackedHudLabelViews
 } from '../src/game/runtime/sceneTextView';
 
 describe('sceneTextView', () => {
@@ -52,10 +56,91 @@ describe('sceneTextView', () => {
     });
   });
 
+  it('builds centered text views for a list of labels', () => {
+    expect(
+      buildCenteredTextViews(
+        [
+          { fill: '#fff', text: 'B1', x: 100, y: 80 },
+          { fill: '#0ff', text: 'B2', x: 220, y: 140 }
+        ],
+        [
+          { width: 18, height: 10 },
+          { width: 22, height: 12 }
+        ]
+      )
+    ).toEqual([
+      { align: 'center', fill: '#fff', text: 'B1', x: 91, y: 75 },
+      { align: 'center', fill: '#0ff', text: 'B2', x: 209, y: 134 }
+    ]);
+  });
+
   it('maps missing module label slots to empty text views', () => {
     expect(buildModuleLabelTextViews([{ text: 'ENGINE', x: 10, y: 20 }, null])).toEqual([
       { fill: '#cbd5e1', text: 'ENGINE', x: 10, y: 20 },
       { fill: '#cbd5e1', text: '', x: 0, y: 0 }
+    ]);
+  });
+
+  it('builds paired hud row label and value views from measured rows', () => {
+    expect(
+      buildHudRowTextViews(
+        [
+          { label: 'DAY', value: '3', y: 50 },
+          { label: 'FUEL', value: '4/6', y: 74 }
+        ],
+        20,
+        180,
+        [
+          { width: 18, height: 10 },
+          { width: 24, height: 12 }
+        ],
+        [
+          { width: 8, height: 10 },
+          { width: 28, height: 12 }
+        ]
+      )
+    ).toEqual({
+      labelViews: [
+        { fill: '#94a3b8', text: 'DAY', x: 20, y: 45 },
+        { fill: '#94a3b8', text: 'FUEL', x: 20, y: 68 }
+      ],
+      valueViews: [
+        { align: 'right', fill: '#e2e8f0', text: '3', x: 172, y: 45 },
+        { align: 'right', fill: '#e2e8f0', text: '4/6', x: 152, y: 68 }
+      ]
+    });
+  });
+
+  it('builds stacked hud labels and chip labels in batches', () => {
+    expect(
+      buildStackedHudLabelViews(
+        ['VEHICLE', 'Condition avg 4.2'],
+        320,
+        [40, 58],
+        [
+          { width: 60, height: 12 },
+          { width: 96, height: 10 }
+        ]
+      )
+    ).toEqual([
+      { fill: '#94a3b8', text: 'VEHICLE', x: 320, y: 34 },
+      { fill: '#94a3b8', text: 'Condition avg 4.2', x: 320, y: 53 }
+    ]);
+
+    expect(
+      buildChipLabelTextViews(
+        [
+          { height: 30, label: 'Enter\nTravel', labelFill: '#64748b', w: 88, x: 40, y: 400 },
+          { height: 24, label: 'A\nMap', labelFill: '#dbeafe', w: 82, x: 140, y: 404 }
+        ],
+        [
+          { width: 36, height: 18 },
+          { width: 26, height: 16 }
+        ]
+      )
+    ).toEqual([
+      { align: 'center', fill: '#64748b', text: 'Enter\nTravel', x: 66, y: 406 },
+      { align: 'center', fill: '#dbeafe', text: 'A\nMap', x: 168, y: 408 }
     ]);
   });
 
