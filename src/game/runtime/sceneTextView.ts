@@ -36,6 +36,22 @@ export interface PanelHeaderTextViews {
   title: SceneTextView;
 }
 
+export interface HudRowTextSpec {
+  label: string;
+  value?: string;
+  y: number;
+}
+
+export interface ChipLabelSpec {
+  color?: string;
+  height: number;
+  label: string;
+  labelFill: string;
+  w: number;
+  x: number;
+  y: number;
+}
+
 export function buildChipLabelView(
   text: string,
   measured: MeasuredTextSize,
@@ -99,6 +115,46 @@ export function buildCenteredTextView(
     x: Math.round(centerX - measured.width * 0.5),
     y: Math.round(centerY - measured.height * 0.5)
   };
+}
+
+export function buildCenteredTextViews(
+  labels: Array<{ fill: string; text: string; x: number; y: number }>,
+  measures: MeasuredTextSize[]
+): SceneTextView[] {
+  return labels.map((label, index) =>
+    buildCenteredTextView(label.text, label.x, label.y, measures[index] ?? { width: 0, height: 0 }, label.fill)
+  );
+}
+
+export function buildHudRowTextViews(
+  rows: HudRowTextSpec[],
+  labelX: number,
+  rightX: number,
+  labelMeasures: MeasuredTextSize[],
+  valueMeasures: MeasuredTextSize[]
+): { labelViews: SceneTextView[]; valueViews: SceneTextView[] } {
+  return {
+    labelViews: rows.map((row, index) => buildHudRowLabelView(row.label, labelX, row.y, labelMeasures[index]?.height ?? 0)),
+    valueViews: rows.map((row, index) =>
+      buildHudRowValueView(row.value ?? '', rightX, row.y, valueMeasures[index] ?? { width: 0, height: 0 })
+    )
+  };
+}
+
+export function buildStackedHudLabelViews(
+  lines: string[],
+  x: number,
+  centerYs: number[],
+  measures: MeasuredTextSize[],
+  fill = '#94a3b8'
+): SceneTextView[] {
+  return lines.map((line, index) => buildHudRowLabelView(line, x, centerYs[index] ?? 0, measures[index]?.height ?? 0, fill));
+}
+
+export function buildChipLabelTextViews(chips: ChipLabelSpec[], measures: MeasuredTextSize[]): SceneTextView[] {
+  return chips.map((chip, index) =>
+    buildChipLabelView(chip.label, measures[index] ?? { width: 0, height: 0 }, chip.x, chip.y, chip.w, chip.labelFill, chip.height)
+  );
 }
 
 export function buildModuleLabelTextViews(
