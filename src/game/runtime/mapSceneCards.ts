@@ -1,5 +1,7 @@
 import type { MapSceneLayout } from './mapSceneLayout';
+import { buildMapSceneLayout } from './mapSceneLayout';
 import type { SceneTextCardSpec } from './sceneTextCards';
+import type { MeasuredTextSize } from './sceneTextView';
 
 export interface MapSceneCopyInput {
   expeditionComplete: boolean;
@@ -25,6 +27,11 @@ export interface MapSceneCardViews {
   celebrationCard: MapSceneTextCardView | null;
   notesCard: MapSceneTextCardView;
   routeCard: MapSceneTextCardView | null;
+}
+
+export interface MapSceneCardPlan {
+  layout: MapSceneLayout;
+  views: MapSceneCardViews;
 }
 
 export interface MapSceneHudLayout {
@@ -159,5 +166,76 @@ export function buildMapSceneCardViews(input: {
           y: input.layout.routeCard.y
         }
       : null
+  };
+}
+
+export function buildMapSceneMeasureCardSpecs(input: {
+  fieldNotesText: string;
+  layout: MapSceneLayout;
+  routeText: string;
+}): { notesCard: SceneTextCardSpec; routeCard: SceneTextCardSpec } {
+  return {
+    notesCard: {
+      align: 'left',
+      fill: '#0f172a',
+      fontSize: 13,
+      maxWidth: input.layout.notesCard.wrapWidth + 36,
+      minWidth: 220,
+      paddingX: 18,
+      paddingY: 16,
+      text: input.fieldNotesText,
+      tone: 'light',
+      x: 0,
+      y: 0
+    },
+    routeCard: {
+      align: 'left',
+      fill: '#e2e8f0',
+      fontSize: 15,
+      maxWidth: input.layout.routeCard.wrapWidth + 36,
+      minWidth: 220,
+      paddingX: 18,
+      paddingY: 16,
+      text: input.routeText,
+      tone: 'dark',
+      x: 0,
+      y: 0
+    }
+  };
+}
+
+export function buildMapSceneCardPlan(input: {
+  celebrationText: string | null;
+  fieldNotesText: string;
+  measureCard: (card: SceneTextCardSpec) => MeasuredTextSize;
+  routeText: string;
+  screenHeight: number;
+  screenWidth: number;
+  showRouteCard: boolean;
+}): MapSceneCardPlan {
+  const measureLayout = buildMapSceneLayout(input.screenWidth, input.screenHeight, 0, 0);
+  const measureCards = buildMapSceneMeasureCardSpecs({
+    fieldNotesText: input.fieldNotesText,
+    layout: measureLayout,
+    routeText: input.routeText
+  });
+  const routeMeasure = input.measureCard(measureCards.routeCard);
+  const notesMeasure = input.measureCard(measureCards.notesCard);
+  const layout = buildMapSceneLayout(
+    input.screenWidth,
+    input.screenHeight,
+    routeMeasure.height + 32,
+    notesMeasure.height + 32
+  );
+
+  return {
+    layout,
+    views: buildMapSceneCardViews({
+      celebrationText: input.celebrationText,
+      fieldNotesText: input.fieldNotesText,
+      layout,
+      routeText: input.routeText,
+      showRouteCard: input.showRouteCard
+    })
   };
 }

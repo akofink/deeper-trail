@@ -17,10 +17,9 @@ import { attemptBeaconActivation, hasBeaconAutoLink } from './game/runtime/beaco
 import { buildDamageFeedbackView, decayDamageFeedback, triggerDamageFeedback } from './game/runtime/damageFeedback';
 import { biomeByNodeType, buildRunLayout } from './game/runtime/runLayout';
 import { buildMapActionChips, buildMapBoardView } from './game/runtime/mapBoardView';
-import { buildMapSceneCardViews, buildMapSceneCopy } from './game/runtime/mapSceneCards';
+import { buildMapSceneCardPlan, buildMapSceneCopy } from './game/runtime/mapSceneCards';
 import { buildMapSceneContent } from './game/runtime/mapSceneContent';
 import { buildMapSceneHudViewModel } from './game/runtime/mapSceneHudView';
-import { buildMapSceneLayout } from './game/runtime/mapSceneLayout';
 import { buildMapSceneTextAssembly } from './game/runtime/mapSceneTextAssembly';
 import { pullCollectibleTowardTarget } from './game/runtime/collectibleMagnetism';
 import { applyGoalSignalEncounterBonus, applyGoalSignalPrimer, applyGoalSignalRunBonus } from './game/runtime/goalSignal';
@@ -1304,36 +1303,16 @@ async function bootstrap(): Promise<void> {
       score: state.score,
       seed: state.seed
     });
-    const mapSceneMeasureLayout = buildMapSceneLayout(w, h, 0, 0);
-    const routeMeasureCard = {
-      align: 'left',
-      fill: '#e2e8f0',
-      fontSize: 15,
-      maxWidth: mapSceneMeasureLayout.routeCard.wrapWidth + 36,
-      minWidth: 220,
-      paddingX: 18,
-      paddingY: 16,
-      text: mapSceneCopy.routeText,
-      tone: 'dark',
-      x: 0,
-      y: 0
-    } satisfies SceneTextCardSpec;
-    const notesMeasureCard = {
-      align: 'left',
-      fill: '#0f172a',
-      fontSize: 13,
-      maxWidth: mapSceneMeasureLayout.notesCard.wrapWidth + 36,
-      minWidth: 220,
-      paddingX: 18,
-      paddingY: 16,
-      text: mapSceneContent.fieldNotes.join('\n'),
-      tone: 'light',
-      x: 0,
-      y: 0
-    } satisfies SceneTextCardSpec;
-    const routeMeasure = measureTextCard(overlay, routeMeasureCard);
-    const notesMeasure = measureTextCard(fieldNotesText, notesMeasureCard);
-    const mapSceneLayout = buildMapSceneLayout(w, h, routeMeasure.height + 32, notesMeasure.height + 32);
+    const mapSceneCards = buildMapSceneCardPlan({
+      celebrationText: mapSceneCopy.celebrationText,
+      fieldNotesText: mapSceneContent.fieldNotes.join('\n'),
+      measureCard: (card) => measureTextCard(card.fill === '#0f172a' ? fieldNotesText : overlay, card),
+      routeText: mapSceneCopy.routeText,
+      screenHeight: h,
+      screenWidth: w,
+      showRouteCard: mapSceneCopy.showRouteCard
+    });
+    const mapSceneLayout = mapSceneCards.layout;
     const mapHudView = buildMapSceneHudViewModel(state, w, mapSceneContent.completionState, moduleLabels.length);
     const mapHudLayout = mapHudView.layout;
     const mapChips = buildMapActionChips(w, mapSceneLayout.chipY, mapSceneLayout.chipHeight, state.expeditionComplete);
@@ -1356,13 +1335,7 @@ async function bootstrap(): Promise<void> {
     applyTextView(panelSeed, mapTextAssembly.header.seed);
     applyTextViews(moduleLabels, mapTextAssembly.moduleLabels);
 
-    const mapCardViews = buildMapSceneCardViews({
-      celebrationText: mapSceneCopy.celebrationText,
-      fieldNotesText: mapSceneContent.fieldNotes.join('\n'),
-      layout: mapSceneLayout,
-      routeText: mapSceneCopy.routeText,
-      showRouteCard: mapSceneCopy.showRouteCard
-    });
+    const mapCardViews = mapSceneCards.views;
 
     if (mapCardViews.routeCard) {
       applyTextCard(graphics, overlay, mapCardViews.routeCard);
