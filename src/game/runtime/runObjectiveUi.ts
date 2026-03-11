@@ -3,6 +3,7 @@ import {
   canActivateBeacon,
   canChargeAnomalyLock,
   getBeaconRuleForNodeType,
+  isCanopyLiftWindowOpen,
   isSteadyLinkReady,
   nextRequiredBeaconIndex
 } from '../../engine/sim/runObjectives';
@@ -109,12 +110,18 @@ function canopyLiftPromptText(state: RuntimeState): string | null {
     w: state.player.w,
     h: state.player.h
   };
-  for (const lift of state.canopyLifts) {
+  for (let index = 0; index < state.canopyLifts.length; index += 1) {
+    const lift = state.canopyLifts[index];
     if (lift.charted || !isInsideCanopyLift(lift, bounds)) continue;
+    const windowOpen = isCanopyLiftWindowOpen(state.elapsedSeconds, index);
+
+    if (!windowOpen) {
+      return !state.player.onGround ? 'Bloom resting: hold position for the next gust' : 'Bloom resting: wait, then jump on the next gust';
+    }
 
     return !state.player.onGround
-      ? `Stay airborne in the bloom ${quantizedPercent(lift.progress, 0.6)}%`
-      : 'Jump into the bloom and stay airborne';
+      ? `Bloom open: stay airborne ${quantizedPercent(lift.progress, 0.6)}%`
+      : 'Bloom open: jump and ride the updraft';
   }
 
   return null;

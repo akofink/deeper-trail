@@ -71,12 +71,12 @@ export function drawRunObjectiveVisuals(
   for (const lift of objectiveVisuals.canopyLifts) {
     const left = lift.x - lift.width * 0.5 - cameraX;
     const top = lift.y - lift.height * 0.5;
-    const activeAlpha = lift.charted ? 0.24 : 0.18 + Math.sin(elapsedSeconds * 3 + lift.x * 0.01) * 0.03;
+    const activeAlpha = lift.charted ? 0.24 : lift.phaseOpen ? 0.26 : 0.12 + Math.sin(elapsedSeconds * 3 + lift.x * 0.01) * 0.02;
     graphics.roundRect(left, top, lift.width, lift.height, 28).fill({ color: '#84cc16', alpha: activeAlpha });
     graphics.roundRect(left, top, lift.width, lift.height, 28).stroke({
-      color: lift.charted ? '#bef264' : '#4d7c0f',
-      alpha: lift.charted ? 0.72 : 0.45,
-      width: lift.charted ? 2.8 : 1.8
+      color: lift.charted ? '#bef264' : lift.phaseOpen ? '#d9f99d' : '#4d7c0f',
+      alpha: lift.charted ? 0.72 : lift.phaseOpen ? 0.72 : 0.38,
+      width: lift.charted ? 2.8 : lift.phaseOpen ? 2.4 : 1.5
     });
     drawGauge(
       graphics,
@@ -90,9 +90,9 @@ export function drawRunObjectiveVisuals(
     );
     if (!lift.charted) {
       graphics.circle(lift.x - cameraX, lift.y, lift.pulseRadius).stroke({
-        color: '#ecfccb',
-        alpha: 0.3,
-        width: 2
+        color: lift.phaseOpen ? '#f7fee7' : '#65a30d',
+        alpha: lift.phaseOpen ? 0.46 : 0.18,
+        width: lift.phaseOpen ? 2.6 : 1.4
       });
     }
   }

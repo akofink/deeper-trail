@@ -134,4 +134,26 @@ describe('run objective update helper', () => {
     expect(result.message).toContain('locked');
     expect(result.durationSeconds).toBe(1.8);
   });
+
+  it('does not advance a canopy lift while its gust window is closed', () => {
+    const state = buildRuntimeState();
+    const node = state.sim.world.nodes.find((item) => item.id === state.sim.currentNodeId);
+    if (!node) throw new Error('Expected node');
+    node.type = 'nature';
+    state.elapsedSeconds = 1.1;
+    state.canopyLifts = [{ id: 'cl0', x: 17, y: 22, w: 70, h: 80, progress: 0.3, charted: false }];
+    state.player.x = 0;
+    state.player.y = 0;
+    state.player.onGround = false;
+
+    const result = updateRunObjectives(state, {
+      dt: 0.1,
+      landedThisFrame: false,
+      landingSpeed: 0
+    });
+
+    expect(state.canopyLifts[0]?.progress).toBeLessThan(0.3);
+    expect(state.canopyLifts[0]?.charted).toBe(false);
+    expect(result.message).toBeNull();
+  });
 });

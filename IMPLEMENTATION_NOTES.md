@@ -48,7 +48,7 @@
   - current relay rule set is a good baseline pattern:
   - `town` uses steady relay links plus service bays that reward grounded low-speed holding,
   - `ruin` uses ordered links plus impact plates that reward hard landings on marked slabs,
-  - `nature` uses airborne links plus canopy lifts that reward sustained jump control in vertical draft zones,
+  - `nature` uses airborne links plus canopy lifts that reward sustained jump control timed to deterministic gust windows in vertical draft zones,
   - `anomaly` uses boost-linked relays gated by deterministic sync windows plus fly-through sync gates,
   - scanner lv.2+ should make anomaly timing more legible by exposing deterministic phase-lock progress, while lv.3+ can cash that lock out via auto-link instead of just wider range.
 

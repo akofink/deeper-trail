@@ -1,4 +1,5 @@
 import type { CanopyLift } from '../state/runObjectives';
+import { isCanopyLiftWindowOpen } from '../../engine/sim/runObjectives';
 
 export const CANOPY_LIFT_HOLD_SECONDS = 0.6;
 const CANOPY_LIFT_DECAY_PER_SECOND = 1.6;
@@ -40,18 +41,23 @@ export function applyCanopyLiftAssist(currentVy: number, dt: number): number {
   return Math.max(CANOPY_LIFT_MAX_RISE_SPEED, currentVy - CANOPY_LIFT_ACCELERATION * dt);
 }
 
+export function canopyLiftChargeWindowOpen(elapsedSeconds: number, liftIndex: number): boolean {
+  return isCanopyLiftWindowOpen(elapsedSeconds, liftIndex);
+}
+
 export function updateCanopyLiftProgress(
   lift: CanopyLift,
   dt: number,
   inZone: boolean,
-  isAirborne: boolean
+  isAirborne: boolean,
+  chargeWindowOpen: boolean
 ): { completedNow: boolean } {
   if (lift.charted) {
     lift.progress = CANOPY_LIFT_HOLD_SECONDS;
     return { completedNow: false };
   }
 
-  if (inZone && isAirborne) {
+  if (inZone && isAirborne && chargeWindowOpen) {
     lift.progress = clamp(lift.progress + dt, 0, CANOPY_LIFT_HOLD_SECONDS);
   } else {
     lift.progress = clamp(lift.progress - dt * CANOPY_LIFT_DECAY_PER_SECOND, 0, CANOPY_LIFT_HOLD_SECONDS);

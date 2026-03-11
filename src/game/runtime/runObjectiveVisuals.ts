@@ -1,6 +1,7 @@
 import {
   anomalyLockProgressRatio,
   getBeaconRuleForNodeType,
+  isCanopyLiftWindowOpen,
   isPhaseWindowOpen,
   isSteadyLinkReady,
   nextRequiredBeaconIndex,
@@ -35,6 +36,7 @@ export interface RunObjectiveVisualState {
     height: number;
     progressRatio: number;
     charted: boolean;
+    phaseOpen: boolean;
     pulseRadius: number;
   }>;
   syncGates: Array<{
@@ -92,7 +94,7 @@ export function buildRunObjectiveVisualState(state: RuntimeState): RunObjectiveV
       width: plate.w,
       shattered: plate.shattered
     })),
-    canopyLifts: state.canopyLifts.map((lift) => ({
+    canopyLifts: state.canopyLifts.map((lift, index) => ({
       id: lift.id,
       x: lift.x,
       y: lift.y,
@@ -100,6 +102,7 @@ export function buildRunObjectiveVisualState(state: RuntimeState): RunObjectiveV
       height: lift.h,
       progressRatio: lift.progress / 0.6,
       charted: lift.charted,
+      phaseOpen: isCanopyLiftWindowOpen(state.elapsedSeconds, index),
       pulseRadius: Math.min(lift.w, lift.h) * 0.24 + Math.sin(state.elapsedSeconds * 4 + lift.x * 0.02) * 4
     })),
     syncGates: state.syncGates.map((gate, index) => ({

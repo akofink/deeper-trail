@@ -105,10 +105,11 @@ describe('run objective ui helpers', () => {
 
     ruinNode.type = 'nature';
     state.impactPlates = [];
+    state.elapsedSeconds = 0.1;
     state.canopyLifts = [{ id: 'cl0', x: 17, y: 22, w: 70, h: 80, progress: 0.3, charted: false }];
     state.player.onGround = false;
 
-    expect(runObjectivePrompt(state)).toBe('Stay airborne in the bloom 50%');
+    expect(runObjectivePrompt(state)).toBe('Bloom open: stay airborne 50%');
   });
 
   it('falls back to beacon prompts and exposes compact objective labels', () => {

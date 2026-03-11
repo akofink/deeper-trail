@@ -105,6 +105,7 @@ describe('run objective visuals helper', () => {
     state.canopyLifts = [{ id: 'cl0', x: 180, y: 160, w: 80, h: 100, progress: 0.3, charted: false }];
     visuals = buildRunObjectiveVisualState(state);
     expect(visuals.canopyLifts[0]?.progressRatio).toBeCloseTo(0.5);
+    expect(visuals.canopyLifts[0]?.phaseOpen).toBe(true);
     expect(visuals.canopyLifts[0]?.pulseRadius).toBeGreaterThan(0);
   });
 });
