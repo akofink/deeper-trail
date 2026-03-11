@@ -77,6 +77,7 @@
 - Run-scene overlay banners and footer chip copy now belong in `game/runtime/runSceneView.ts` so prompt priority and control labels can be regression-tested without Pixi draw calls.
 - Final measured run-scene HUD/beacon/chip text placement now belongs in `game/runtime/runSceneTextAssembly.ts` so the shell applies one scene-level text plan instead of duplicating row/value/chip measurement code inline.
 - Exit-lock and post-run completion message assembly now belongs in `game/runtime/runCompletion.ts` so run-resolution copy can be regression-tested without stepping the Pixi shell.
+- Debug/export snapshot assembly now belongs in `game/runtime/debugState.ts` so browser automation can assert route intel and objective progress without `main.ts` rebuilding a large JSON payload inline.
 - World-node helper lookups belong in deterministic helpers (`engine/sim/world.ts`) so map travel, route cards, and automation all read the same node/neighbor logic.
 
 ## Current practical world-render guidance
