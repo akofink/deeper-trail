@@ -44,12 +44,7 @@ import { buildExitLockedMessage, buildRunCompletionMessage } from './game/runtim
 import { buildRunActionChips, buildRunSceneOverlayCard } from './game/runtime/runSceneView';
 import { buildRunSceneTextAssembly } from './game/runtime/runSceneTextAssembly';
 import { type SceneTextCardSpec } from './game/runtime/sceneTextCards';
-import {
-  buildSceneTextCardMeasureView,
-  buildSceneTextCardView,
-  buildSceneTextCardWrappedMeasureView,
-  type SceneTextView
-} from './game/runtime/sceneTextView';
+import { buildMeasuredSceneTextCardView, measureSceneTextCard } from './game/runtime/sceneTextMeasure';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import { advanceHorizontalVelocity } from './game/runtime/runMotion';
 import { rechargeShieldCharge, tryConsumeShieldCharge } from './game/runtime/shieldCharge';
@@ -67,6 +62,7 @@ import {
 } from './game/runtime/vehicleDerivedStats';
 import { advanceWheelRotation } from './game/runtime/vehiclePresentation';
 import { createInitialGameState } from './game/state/gameState';
+import { applyTextView, applyTextViews, clearTextLabels, measureTextView } from './game/render/pixiText';
 import './styles.css';
 
 declare global {
@@ -158,40 +154,6 @@ function drawChip(graphics: Graphics, x: number, y: number, labelWidth: number, 
   graphics.roundRect(x, y, labelWidth, height, 12).stroke({ color, alpha: 0.32, width: 1 });
 }
 
-function applyTextView(label: Text, view: SceneTextView): void {
-  label.text = view.text;
-  if (view.fill) label.style.fill = view.fill;
-  if (view.align) label.style.align = view.align;
-  if (view.fontSize) label.style.fontSize = view.fontSize;
-  if (view.wordWrap !== undefined) label.style.wordWrap = view.wordWrap;
-  if (view.wordWrapWidth !== undefined) label.style.wordWrapWidth = view.wordWrapWidth;
-  label.x = view.x;
-  label.y = view.y;
-}
-
-function measureTextView(label: Text, view: SceneTextView): { height: number; width: number } {
-  applyTextView(label, {
-    ...view,
-    x: label.x,
-    y: label.y
-  });
-  return {
-    height: label.height,
-    width: label.width
-  };
-}
-
-function applyTextViews(labels: Text[], views: SceneTextView[]): void {
-  labels.forEach((label, index) => {
-    const view = views[index];
-    if (!view) {
-      label.text = '';
-      return;
-    }
-    applyTextView(label, view);
-  });
-}
-
 function drawMapBackdrop(graphics: Graphics, w: number, h: number): void {
   graphics.rect(0, 0, w, h).fill('#edf2f7');
   graphics.circle(w * 0.16, h * 0.22, 130).fill({ color: '#ffffff', alpha: 0.2 });
@@ -209,10 +171,7 @@ function drawMessageCard(graphics: Graphics, x: number, y: number, w: number, h:
 }
 
 function applyTextCard(graphics: Graphics, textNode: Text, card: SceneTextCardSpec): { width: number; height: number } {
-  applyTextView(textNode, buildSceneTextCardMeasureView(card));
-  const measuredWidth = textNode.width;
-  applyTextView(textNode, buildSceneTextCardWrappedMeasureView(card, measuredWidth));
-  const cardView = buildSceneTextCardView(card, { width: textNode.width, height: textNode.height });
+  const cardView = buildMeasuredSceneTextCardView(card, (view) => measureTextView(textNode, view));
 
   drawMessageCard(graphics, cardView.x, cardView.y, cardView.cardWidth, cardView.cardHeight, cardView.tone);
 
@@ -220,20 +179,8 @@ function applyTextCard(graphics: Graphics, textNode: Text, card: SceneTextCardSp
   return { width: cardView.cardWidth, height: cardView.cardHeight };
 }
 
-function clearTextLabels(labels: Text[]): void {
-  labels.forEach((label) => {
-    label.text = '';
-  });
-}
-
 function measureTextCard(textNode: Text, card: SceneTextCardSpec): { height: number; width: number } {
-  applyTextView(textNode, buildSceneTextCardMeasureView(card));
-  const measuredWidth = textNode.width;
-  applyTextView(textNode, buildSceneTextCardWrappedMeasureView(card, measuredWidth));
-  return {
-    height: textNode.height,
-    width: textNode.width
-  };
+  return measureSceneTextCard(card, (view) => measureTextView(textNode, view));
 }
 
 function drawModuleMeters(graphics: Graphics, moduleMeters: Array<{

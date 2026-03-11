@@ -1,5 +1,6 @@
 import type { SceneActionChip } from './sceneActionChips';
 import type { MapSceneHudViewModel } from './mapSceneHudView';
+import { measureTextViews } from './sceneTextMeasure';
 import {
   buildChipLabelTextViews,
   buildHudRowTextViews,
@@ -26,75 +27,54 @@ export interface BuildMapSceneTextAssemblyArgs {
   measureText: (view: SceneTextView) => MeasuredTextSize;
 }
 
-function measureChipLabels(
-  chips: SceneActionChip[],
-  measureText: (view: SceneTextView) => MeasuredTextSize
-): MeasuredTextSize[] {
-  return chips.map((chip) =>
-    measureText({
-      align: 'center',
-      fill: chip.labelFill,
-      text: chip.label,
-      x: chip.x,
-      y: chip.y
-    })
-  );
-}
-
-function measureHudRowLabels(
-  rows: Array<{ label: string; y: number }>,
-  measureText: (view: SceneTextView) => MeasuredTextSize
-): MeasuredTextSize[] {
-  return rows.map((row) =>
-    measureText({
-      fill: '#94a3b8',
-      text: row.label,
-      x: 0,
-      y: row.y
-    })
-  );
-}
-
-function measureHudRowValues(
-  rows: Array<{ value: string; y: number }>,
-  measureText: (view: SceneTextView) => MeasuredTextSize
-): MeasuredTextSize[] {
-  return rows.map((row) =>
-    measureText({
-      align: 'right',
-      fill: '#e2e8f0',
-      text: row.value,
-      x: 0,
-      y: row.y
-    })
-  );
-}
-
-function measureStackedLabels(
-  lines: string[],
-  measureText: (view: SceneTextView) => MeasuredTextSize
-): MeasuredTextSize[] {
-  return lines.map((line) =>
-    measureText({
-      fill: '#94a3b8',
-      text: line,
-      x: 0,
-      y: 0
-    })
-  );
-}
-
 export function buildMapSceneTextAssembly({
   chips,
   hud,
   measureText
 }: BuildMapSceneTextAssemblyArgs): MapSceneTextAssembly {
-  const leftMeasures = measureHudRowLabels(hud.leftRows, measureText);
-  const leftValueMeasures = measureHudRowValues(hud.leftRows, measureText);
-  const headerMeasures = measureStackedLabels(hud.rightHeaderLines, measureText);
+  const leftMeasures = measureTextViews(
+    hud.leftRows.map((row) => ({
+      fill: '#94a3b8',
+      text: row.label,
+      x: 0,
+      y: row.y
+    })),
+    measureText
+  );
+  const leftValueMeasures = measureTextViews(
+    hud.leftRows.map((row) => ({
+      align: 'right' as const,
+      fill: '#e2e8f0',
+      text: row.value,
+      x: 0,
+      y: row.y
+    })),
+    measureText
+  );
+  const headerMeasures = measureTextViews(
+    hud.rightHeaderLines.map((line) => ({
+      fill: '#94a3b8',
+      text: line,
+      x: 0,
+      y: 0
+    })),
+    measureText
+  );
 
   return {
-    chipLabels: buildChipLabelTextViews(chips, measureChipLabels(chips, measureText)),
+    chipLabels: buildChipLabelTextViews(
+      chips,
+      measureTextViews(
+        chips.map((chip) => ({
+          align: 'center' as const,
+          fill: chip.labelFill,
+          text: chip.label,
+          x: chip.x,
+          y: chip.y
+        })),
+        measureText
+      )
+    ),
     header: buildPanelHeaderTextViews(hud.headerLayout, hud),
     leftRowLabels: buildHudRowTextViews(
       hud.leftRows,
