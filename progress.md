@@ -664,3 +664,13 @@ TODO next:
 
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially remaining frame-reset/setup helpers like shared scene text-node clearing and any other repeated scene-local setup work.
 - Decide whether a later notebook slice should branch the actual expedition-goal ending or post-goal encounter text, now that the source approach itself varies by clue order.
+
+- Shared scene-text reset extraction pass:
+  - Extended `src/game/render/pixiText.ts` with single-label and grouped-label reset helpers so scene entry can clear Pixi text state through one helper instead of repeating parallel `label.text = ''` lists in `src/main.ts`.
+  - Updated `src/main.ts` to use the shared reset helper at the start of both run/map draws and to clear overlay/celebration labels through the same text-helper layer.
+  - Added `tests/pixiText.test.ts` for grouped reset behavior and extra-label clearing, and updated `IMPLEMENTATION_NOTES.md`.
+
+TODO next:
+
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially other repeated frame/setup work that can move behind render helpers once text-reset duplication is gone.
+- Decide whether a later notebook slice should branch the actual expedition-goal ending or post-goal encounter text, now that the source approach itself varies by clue order.

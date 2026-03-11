@@ -65,7 +65,7 @@ import {
 } from './game/runtime/vehicleDerivedStats';
 import { advanceWheelRotation } from './game/runtime/vehiclePresentation';
 import { drawMapBoard } from './game/render/mapBoardRenderer';
-import { applyTextView, applyTextViews, clearTextLabels, measureTextView } from './game/render/pixiText';
+import { applyTextView, applyTextViews, clearTextLabel, measureTextView, resetSceneText } from './game/render/pixiText';
 import {
   applyTextCard,
   drawChip,
@@ -595,18 +595,20 @@ async function bootstrap(): Promise<void> {
 
     graphics.clear();
     playerGraphics.clear();
-    panelSeed.text = '';
-    celebrationOverlay.text = '';
-    fieldNotesText.text = '';
-    clearTextLabels(runLeftRowLabels);
-    clearTextLabels(runLeftRowValues);
-    clearTextLabels(runRightRowLabels);
-    clearTextLabels(runRightRowValues);
-    clearTextLabels(mapLeftRowLabels);
-    clearTextLabels(mapLeftRowValues);
-    clearTextLabels(mapRightHeaderLines);
-    clearTextLabels(chipLabels);
-    clearTextLabels(beaconLabels);
+    resetSceneText({
+      singleLabels: [panelSeed, celebrationOverlay, fieldNotesText],
+      groups: [
+        { labels: runLeftRowLabels },
+        { labels: runLeftRowValues },
+        { labels: runRightRowLabels },
+        { labels: runRightRowValues },
+        { labels: mapLeftRowLabels },
+        { labels: mapLeftRowValues },
+        { labels: mapRightHeaderLines },
+        { labels: chipLabels },
+        { labels: beaconLabels }
+      ]
+    });
     graphics.rect(0, 0, w, h).fill(colors.sky);
     graphics.rect(0, h * 0.5, w, h * 0.5).fill(colors.back);
     drawRunBackdropAccents(graphics, state, nodeType, w, h);
@@ -707,7 +709,7 @@ async function bootstrap(): Promise<void> {
     if (runOverlayCard) {
       applyTextCard(graphics, overlay, runOverlayCard);
     } else {
-      overlay.text = '';
+      clearTextLabel(overlay);
     }
     runChips.forEach((chip) => {
       drawChip(graphics, chip.x, chip.y, chip.w, chip.color, chip.height);
@@ -722,17 +724,20 @@ async function bootstrap(): Promise<void> {
 
     graphics.clear();
     playerGraphics.clear();
-    panelSeed.text = '';
-    fieldNotesText.text = '';
-    clearTextLabels(runLeftRowLabels);
-    clearTextLabels(runLeftRowValues);
-    clearTextLabels(runRightRowLabels);
-    clearTextLabels(runRightRowValues);
-    clearTextLabels(mapLeftRowLabels);
-    clearTextLabels(mapLeftRowValues);
-    clearTextLabels(mapRightHeaderLines);
-    clearTextLabels(chipLabels);
-    clearTextLabels(beaconLabels);
+    resetSceneText({
+      singleLabels: [panelSeed, fieldNotesText],
+      groups: [
+        { labels: runLeftRowLabels },
+        { labels: runLeftRowValues },
+        { labels: runRightRowLabels },
+        { labels: runRightRowValues },
+        { labels: mapLeftRowLabels },
+        { labels: mapLeftRowValues },
+        { labels: mapRightHeaderLines },
+        { labels: chipLabels },
+        { labels: beaconLabels }
+      ]
+    });
     drawMapBackdrop(graphics, w, h);
 
     const options = connectedNeighbors(state.sim);
@@ -796,11 +801,11 @@ async function bootstrap(): Promise<void> {
     if (mapCardViews.routeCard) {
       applyTextCard(graphics, overlay, mapCardViews.routeCard);
     } else {
-      overlay.text = '';
+      clearTextLabel(overlay);
     }
     applyTextCard(graphics, fieldNotesText, mapCardViews.notesCard);
 
-    celebrationOverlay.text = '';
+    clearTextLabel(celebrationOverlay);
     if (mapCardViews.celebrationCard) {
       applyTextCard(graphics, celebrationOverlay, mapCardViews.celebrationCard);
       mapSceneLayout.celebrationAccents.forEach((accent) => {

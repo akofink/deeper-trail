@@ -1,6 +1,15 @@
 import type { Text } from 'pixi.js';
 import type { SceneTextView } from '../runtime/sceneTextView';
 
+export interface SceneTextResetGroup {
+  readonly labels: Text[];
+}
+
+export interface SceneTextResetPlan {
+  readonly singleLabels?: Text[];
+  readonly groups?: SceneTextResetGroup[];
+}
+
 export function applyTextView(label: Text, view: SceneTextView): void {
   label.text = view.text;
   if (view.fill) label.style.fill = view.fill;
@@ -39,4 +48,13 @@ export function clearTextLabels(labels: Text[]): void {
   labels.forEach((label) => {
     label.text = '';
   });
+}
+
+export function clearTextLabel(label: Text): void {
+  label.text = '';
+}
+
+export function resetSceneText(plan: SceneTextResetPlan): void {
+  plan.singleLabels?.forEach(clearTextLabel);
+  plan.groups?.forEach(({ labels }) => clearTextLabels(labels));
 }
