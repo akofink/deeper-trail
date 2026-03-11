@@ -1265,7 +1265,7 @@ async function bootstrap(): Promise<void> {
     } else {
       overlay.text = '';
     }
-    const runChips = buildRunActionChips(state, h);
+    const runChips = buildRunActionChips(state, w, h);
     runChips.forEach((chip, index) => {
       drawChip(graphics, chip.x, chip.y, chip.w, chip.color, chip.height);
       const label = chipLabels[index];

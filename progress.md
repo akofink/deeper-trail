@@ -558,3 +558,14 @@ TODO next:
 
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially shared HUD/draw helper plumbing like chip composition, overlay-card state, and repeated text-node reset/application work.
 - Decide whether later notebook payoff should mutate more than one relay/objective on the goal run or branch the actual goal-node encounter by clue mix.
+
+- Shared chip-row composition extraction pass:
+  - Added `src/game/runtime/sceneActionChips.ts` so run/map footer control chips now share one deterministic row-layout helper instead of duplicating scene-local x math.
+  - Updated `src/game/runtime/runSceneView.ts` and `src/game/runtime/mapBoardView.ts` to describe chip specs and let the shared helper center or compact them within safe insets on tighter widths.
+  - Updated `src/main.ts` to consume the revised run-chip builder signature and added `tests/sceneActionChips.test.ts` plus tighter-width assertions in `tests/runSceneView.test.ts` and `tests/mapBoardView.test.ts`.
+  - Updated `IMPLEMENTATION_NOTES.md`; `npm run typecheck` and `npm run test -- sceneActionChips runSceneView mapBoardView` pass.
+
+TODO next:
+
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially shared overlay-card measurement/application work and repeated text-node reset/application plumbing.
+- Decide whether later notebook payoff should mutate more than one relay/objective on the goal run or branch the actual goal-node encounter by clue mix.

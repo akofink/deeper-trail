@@ -2,6 +2,7 @@ import { connectedNeighbors } from '../../engine/sim/world';
 import { mapNodePalette } from './runLayout';
 import type { RuntimeState } from './runtimeState';
 import { projectMapPoint } from './mapProjection';
+import { buildSceneActionChipRow, type SceneActionChip } from './sceneActionChips';
 
 export interface MapBoardPoint {
   x: number;
@@ -33,16 +34,6 @@ export interface MapBoardNodeView {
   selected: boolean;
   starRadius: number | null;
   visited: boolean;
-  x: number;
-  y: number;
-}
-
-export interface MapActionChip {
-  color: string;
-  height: number;
-  label: string;
-  labelFill: string;
-  w: number;
   x: number;
   y: number;
 }
@@ -145,23 +136,25 @@ export function buildMapActionChips(
   chipY: number,
   chipHeight: number,
   expeditionComplete: boolean
-): MapActionChip[] {
-  const chipStartX = Math.round(screenWidth * 0.5 - 292);
-
-  return [
-    { x: chipStartX, y: chipY, w: 98, height: chipHeight, color: '#60a5fa', label: 'Up/Down\nRoute', labelFill: '#64748b' },
-    { x: chipStartX + 108, y: chipY, w: 88, height: chipHeight, color: '#7dd3fc', label: 'Q/E\nRotate', labelFill: '#64748b' },
-    { x: chipStartX + 206, y: chipY, w: 88, height: chipHeight, color: '#fbbf24', label: 'Enter\nTravel', labelFill: '#64748b' },
-    { x: chipStartX + 304, y: chipY, w: 88, height: chipHeight, color: '#34d399', label: 'B\nRepair', labelFill: '#64748b' },
-    { x: chipStartX + 402, y: chipY, w: 88, height: chipHeight, color: '#94a3b8', label: 'C\nInstall', labelFill: '#64748b' },
-    {
-      x: chipStartX + 500,
-      y: chipY,
-      w: 88,
-      height: chipHeight,
-      color: '#64748b',
-      label: expeditionComplete ? 'N\nNew' : 'A\nReturn',
-      labelFill: '#64748b'
-    }
-  ];
+): SceneActionChip[] {
+  return buildSceneActionChipRow(
+    screenWidth,
+    chipY,
+    chipHeight,
+    [
+      { width: 98, minWidth: 80, color: '#60a5fa', label: 'Up/Down\nRoute', labelFill: '#64748b' },
+      { width: 88, minWidth: 72, color: '#7dd3fc', label: 'Q/E\nRotate', labelFill: '#64748b' },
+      { width: 88, minWidth: 72, color: '#fbbf24', label: 'Enter\nTravel', labelFill: '#64748b' },
+      { width: 88, minWidth: 72, color: '#34d399', label: 'B\nRepair', labelFill: '#64748b' },
+      { width: 88, minWidth: 72, color: '#94a3b8', label: 'C\nInstall', labelFill: '#64748b' },
+      {
+        width: 88,
+        minWidth: 72,
+        color: '#64748b',
+        label: expeditionComplete ? 'N\nNew' : 'A\nReturn',
+        labelFill: '#64748b'
+      }
+    ],
+    { align: 'center', gap: 10, leftInset: 20, rightInset: 20, minGap: 6 }
+  );
 }
