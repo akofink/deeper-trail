@@ -66,10 +66,12 @@
 - Shared text-view placement and style descriptors now belong in `game/runtime/sceneTextView.ts` so chip labels, HUD rows, panel headers, module labels, relay labels, and text-card text state can be regression-tested without mutating Pixi `Text` objects inline.
 - Measured batch placement for repeated chip-label, HUD-row, stacked-header, and centered-beacon text now also belongs in `game/runtime/sceneTextView.ts` so `main.ts` only measures/applies Pixi text nodes instead of rebuilding the same placement loops scene-by-scene.
 - Map-scene HUD row/header/module-label assembly now belongs in `game/runtime/mapSceneHudView.ts` so the Pixi shell can consume a single map HUD view model instead of rebuilding label positions inline.
+- Final measured map-scene HUD/header/chip text placement now belongs in `game/runtime/mapSceneTextAssembly.ts` so `main.ts` only supplies Pixi text measurement/application rather than rebuilding per-label placement loops inline.
 - Scene HUD title/meta/row-label content now belongs in `game/runtime/sceneHudContent.ts` so map/run panel copy can be regression-tested without spinning up Pixi text nodes.
 - Shared HUD header, module-label placement, and module-meter cell geometry now belongs in `game/runtime/sceneHudView.ts` so panel text anchors and subsystem level/condition grids stay consistent across scenes.
 - Shared footer chip-row composition now belongs in `game/runtime/sceneActionChips.ts` so run/map controls can share deterministic spacing and compact cleanly on narrower widths instead of hard-coding scene-local x positions.
 - Run-scene overlay banners and footer chip copy now belong in `game/runtime/runSceneView.ts` so prompt priority and control labels can be regression-tested without Pixi draw calls.
+- Final measured run-scene HUD/beacon/chip text placement now belongs in `game/runtime/runSceneTextAssembly.ts` so the shell applies one scene-level text plan instead of duplicating row/value/chip measurement code inline.
 - Exit-lock and post-run completion message assembly now belongs in `game/runtime/runCompletion.ts` so run-resolution copy can be regression-tested without stepping the Pixi shell.
 - World-node helper lookups belong in deterministic helpers (`engine/sim/world.ts`) so map travel, route cards, and automation all read the same node/neighbor logic.
 
