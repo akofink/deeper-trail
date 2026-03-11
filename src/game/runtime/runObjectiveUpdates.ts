@@ -1,5 +1,5 @@
 import type { RuntimeState } from './runtimeState';
-import { isInsideCanopyLift, updateCanopyLiftProgress } from './canopyLifts';
+import { canopyLiftChargeWindowOpen, isInsideCanopyLift, updateCanopyLiftProgress } from './canopyLifts';
 import { canShatterImpactPlate } from './impactPlates';
 import {
   ANOMALY_SCAN_LOCK_SECONDS,
@@ -92,9 +92,16 @@ export function updateRunObjectives(state: RuntimeState, input: RunObjectiveUpda
     durationSeconds = 2.2;
   }
 
-  for (const lift of state.canopyLifts) {
+  for (let index = 0; index < state.canopyLifts.length; index += 1) {
+    const lift = state.canopyLifts[index];
     const inZone = isInsideCanopyLift(lift, playerBounds);
-    const update = updateCanopyLiftProgress(lift, input.dt, inZone, !state.player.onGround);
+    const update = updateCanopyLiftProgress(
+      lift,
+      input.dt,
+      inZone,
+      !state.player.onGround,
+      canopyLiftChargeWindowOpen(state.elapsedSeconds, index)
+    );
     if (update.completedNow) {
       state.score += 20;
       message = `Lift ${lift.id.toUpperCase()} charted.`;

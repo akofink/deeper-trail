@@ -24,6 +24,9 @@ const BOOST_LINK_DASH_THRESHOLD = 0.2;
 const PHASE_LINK_PERIOD_SECONDS = 1.6;
 const PHASE_LINK_OPEN_SECONDS = 0.48;
 const PHASE_LINK_OFFSET_SECONDS = 0.23;
+const CANOPY_GUST_PERIOD_SECONDS = 1.8;
+const CANOPY_GUST_OPEN_SECONDS = 0.72;
+const CANOPY_GUST_OFFSET_SECONDS = 0.31;
 const STEADY_LINK_MAX_SPEED = 85;
 
 export function getBeaconRuleForNodeType(nodeType: string): BeaconRule {
@@ -44,6 +47,11 @@ export function canChargeAnomalyLock(currentSpeed: number, dashBoost: number, el
     isPhaseWindowOpen(elapsedSeconds, beaconIndex) &&
     (currentSpeed >= BOOST_LINK_SPEED || dashBoost >= BOOST_LINK_DASH_THRESHOLD)
   );
+}
+
+export function isCanopyLiftWindowOpen(elapsedSeconds: number, liftIndex: number): boolean {
+  const phaseTime = (elapsedSeconds + liftIndex * CANOPY_GUST_OFFSET_SECONDS) % CANOPY_GUST_PERIOD_SECONDS;
+  return phaseTime >= 0 && phaseTime < CANOPY_GUST_OPEN_SECONDS;
 }
 
 export function anomalyLockProgressRatio(progress: number): number {

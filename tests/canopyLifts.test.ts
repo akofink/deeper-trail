@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   applyCanopyLiftAssist,
   CANOPY_LIFT_HOLD_SECONDS,
+  canopyLiftChargeWindowOpen,
   isInsideCanopyLift,
   totalCanopyLiftProgress,
   updateCanopyLiftProgress,
@@ -30,11 +31,11 @@ describe('canopy lift runtime rules', () => {
   it('completes a lift after holding airborne inside the zone long enough', () => {
     const lift = makeLift();
 
-    const first = updateCanopyLiftProgress(lift, CANOPY_LIFT_HOLD_SECONDS * 0.5, true, true);
+    const first = updateCanopyLiftProgress(lift, CANOPY_LIFT_HOLD_SECONDS * 0.5, true, true, true);
     expect(first.completedNow).toBe(false);
     expect(lift.progress).toBeGreaterThan(0);
 
-    const second = updateCanopyLiftProgress(lift, CANOPY_LIFT_HOLD_SECONDS * 0.6, true, true);
+    const second = updateCanopyLiftProgress(lift, CANOPY_LIFT_HOLD_SECONDS * 0.6, true, true, true);
     expect(second.completedNow).toBe(true);
     expect(lift.charted).toBe(true);
     expect(lift.progress).toBe(CANOPY_LIFT_HOLD_SECONDS);
@@ -43,12 +44,25 @@ describe('canopy lift runtime rules', () => {
   it('bleeds progress off when the player leaves or lands early', () => {
     const lift = makeLift();
 
-    updateCanopyLiftProgress(lift, CANOPY_LIFT_HOLD_SECONDS * 0.5, true, true);
+    updateCanopyLiftProgress(lift, CANOPY_LIFT_HOLD_SECONDS * 0.5, true, true, true);
     const heldProgress = lift.progress;
 
-    updateCanopyLiftProgress(lift, 0.2, true, false);
+    updateCanopyLiftProgress(lift, 0.2, true, false, true);
     expect(lift.progress).toBeLessThan(heldProgress);
     expect(lift.charted).toBe(false);
+  });
+
+  it('only charges progress while the gust window is open', () => {
+    const lift = makeLift();
+
+    updateCanopyLiftProgress(lift, 0.2, true, true, false);
+    expect(lift.progress).toBe(0);
+
+    updateCanopyLiftProgress(lift, 0.2, true, true, true);
+    expect(lift.progress).toBeGreaterThan(0);
+
+    expect(canopyLiftChargeWindowOpen(0.1, 0)).toBe(true);
+    expect(canopyLiftChargeWindowOpen(1.1, 0)).toBe(false);
   });
 
   it('detects when the player intersects the lift and adds upward assist', () => {
