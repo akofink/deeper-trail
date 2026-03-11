@@ -119,7 +119,7 @@ describe('runSceneView', () => {
   it('switches the run interaction chip label when auto-link is installed', () => {
     const state = buildRuntimeState();
 
-    expect(buildRunActionChips(state, 720)[3]).toMatchObject({
+    expect(buildRunActionChips(state, 720, 720)[3]).toMatchObject({
       y: 662,
       height: 34,
       label: 'Enter\nLink',
@@ -128,6 +128,15 @@ describe('runSceneView', () => {
 
     state.sim.vehicle.scanner = 3;
 
-    expect(buildRunActionChips(state, 720)[3]?.label).toBe('Scan\nAuto-link');
+    expect(buildRunActionChips(state, 720, 720)[3]?.label).toBe('Scan\nAuto-link');
+  });
+
+  it('keeps the run chip row inside the screen on tighter widths', () => {
+    const state = buildRuntimeState();
+    const chips = buildRunActionChips(state, 430, 720);
+
+    expect(chips[0]?.x).toBe(20);
+    expect(chips[1]?.x).toBeGreaterThan(chips[0]!.x + chips[0]!.w);
+    expect(chips.at(-1)!.x + chips.at(-1)!.w).toBeLessThanOrEqual(410);
   });
 });

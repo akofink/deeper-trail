@@ -2,6 +2,7 @@ import { hasAutoLinkScanner } from '../../engine/sim/vehicle';
 import { currentNodeType } from '../../engine/sim/world';
 import { objectiveShortLabel, runObjectiveProgress } from './runObjectiveUi';
 import type { RuntimeState } from './runtimeState';
+import { buildSceneActionChipRow, type SceneActionChip } from './sceneActionChips';
 
 export interface RunSceneOverlayCard {
   align: 'center';
@@ -13,16 +14,6 @@ export interface RunSceneOverlayCard {
   paddingY: number;
   text: string;
   tone: 'dark';
-  x: number;
-  y: number;
-}
-
-export interface RunSceneActionChip {
-  color: string;
-  height: number;
-  label: string;
-  labelFill: string;
-  w: number;
   x: number;
   y: number;
 }
@@ -91,23 +82,27 @@ export function buildRunSceneOverlayCard(state: RuntimeState, screenWidth: numbe
   };
 }
 
-export function buildRunActionChips(state: RuntimeState, screenHeight: number): RunSceneActionChip[] {
+export function buildRunActionChips(state: RuntimeState, screenWidth: number, screenHeight: number): SceneActionChip[] {
   const chipY = screenHeight - 58;
   const height = 34;
 
-  return [
-    { x: 20, y: chipY, w: 94, height, color: '#60a5fa', label: 'Arrows\nMove', labelFill: '#dbeafe' },
-    { x: 122, y: chipY, w: 94, height, color: '#fbbf24', label: 'Space\nJump', labelFill: '#dbeafe' },
-    { x: 224, y: chipY, w: 92, height, color: '#a78bfa', label: 'Shift\nDash', labelFill: '#dbeafe' },
-    {
-      x: 324,
-      y: chipY,
-      w: 92,
-      height,
-      color: '#34d399',
-      label: hasAutoLinkScanner(state.sim.vehicle) ? 'Scan\nAuto-link' : 'Enter\nLink',
-      labelFill: '#dbeafe'
-    },
-    { x: 424, y: chipY, w: 82, height, color: '#64748b', label: 'A\nMap', labelFill: '#dbeafe' }
-  ];
+  return buildSceneActionChipRow(
+    screenWidth,
+    chipY,
+    height,
+    [
+      { width: 94, minWidth: 76, color: '#60a5fa', label: 'Arrows\nMove', labelFill: '#dbeafe' },
+      { width: 94, minWidth: 76, color: '#fbbf24', label: 'Space\nJump', labelFill: '#dbeafe' },
+      { width: 92, minWidth: 72, color: '#a78bfa', label: 'Shift\nDash', labelFill: '#dbeafe' },
+      {
+        width: 92,
+        minWidth: 78,
+        color: '#34d399',
+        label: hasAutoLinkScanner(state.sim.vehicle) ? 'Scan\nAuto-link' : 'Enter\nLink',
+        labelFill: '#dbeafe'
+      },
+      { width: 82, minWidth: 68, color: '#64748b', label: 'A\nMap', labelFill: '#dbeafe' }
+    ],
+    { align: 'left', gap: 8, leftInset: 20, rightInset: 20, minGap: 5 }
+  );
 }
