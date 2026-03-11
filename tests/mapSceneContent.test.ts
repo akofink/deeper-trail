@@ -287,6 +287,6 @@ describe('map scene content helper', () => {
     expect(content.routeDetail).toContain('SIGNAL');
     expect(content.routeDetail).toContain('B1 pre-linked');
     expect(content.routeDetail).toContain('phase reserve: +4 fuel on arrival');
-    expect(content.routeDetail).toContain('ruin line: first barrier collapsed');
+    expect(content.routeDetail).toContain('ruin line: first barrier collapsed and one site objective starts resolved');
   });
 });

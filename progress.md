@@ -576,7 +576,12 @@ TODO next:
   - Updated `src/main.ts` to apply and measure cards through the shared helper, and collapsed repeated label clearing/module-label application into local helpers.
   - Added `tests/sceneTextCards.test.ts` and updated `IMPLEMENTATION_NOTES.md`.
 
+- Goal-run mystery payoff extension:
+  - Extended `src/game/runtime/goalSignal.ts` so the synthesized third-clue assist now pre-solves the first available local secondary objective in addition to its existing primary assist.
+  - Goal-route preview text now advertises the stronger payoff, and `tests/goalSignal.test.ts` now covers ruin/service-stop, nature/canopy-lift, and anomaly/sync-gate variants.
+  - Updated `docs/06-puzzles-and-meta-mystery.md` and `IMPLEMENTATION_NOTES.md`; targeted goal-signal tests and typecheck pass.
+
 TODO next:
 
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially repeated Pixi text-style/reset plumbing and any remaining scene-local draw helper setup that can move behind testable view models.
-- Decide whether later notebook payoff should mutate more than one relay/objective on the goal run or branch the actual goal-node encounter by clue mix.
+- Decide whether the next notebook payoff step should branch the actual goal-node encounter by clue mix now that the synthesized run assist affects more than one target.

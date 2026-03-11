@@ -1,5 +1,7 @@
 import { notebookCoreClueSequence } from '../../engine/sim/notebook';
+import { CANOPY_LIFT_HOLD_SECONDS } from './canopyLifts';
 import type { RuntimeState } from './runtimeState';
+import { SERVICE_STOP_HOLD_SECONDS } from './serviceStops';
 
 const RELAY_INDEX_BY_CLUE = {
   ruin: 0,
@@ -52,16 +54,16 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
     finalClue === 'ruin'
       ? {
           runBonusType: 'clear-hazard' as const,
-          runBonusNote: 'ruin line: first barrier collapsed'
+          runBonusNote: 'ruin line: first barrier collapsed and one site objective starts resolved'
         }
       : finalClue === 'nature'
         ? {
             runBonusType: 'lower-beacon' as const,
-            runBonusNote: 'grove line: first relay drops into easier reach'
+            runBonusNote: 'grove line: first relay drops into easier reach and one site objective starts charted'
           }
         : {
             runBonusType: 'start-shield' as const,
-            runBonusNote: 'anomaly line: shield charge starts primed'
+            runBonusNote: 'anomaly line: shield charge starts primed and one site objective starts stabilized'
           };
 
   return {
@@ -103,10 +105,37 @@ export function applyGoalSignalRunBonus(state: RuntimeState): boolean {
     return false;
   }
 
+  let secondaryObjectiveResolved = false;
+  const firstServiceStop = state.serviceStops.find((stop) => !stop.serviced);
+  if (firstServiceStop) {
+    firstServiceStop.serviced = true;
+    firstServiceStop.progress = SERVICE_STOP_HOLD_SECONDS;
+    secondaryObjectiveResolved = true;
+  } else {
+    const firstSyncGate = state.syncGates.find((gate) => !gate.stabilized);
+    if (firstSyncGate) {
+      firstSyncGate.stabilized = true;
+      secondaryObjectiveResolved = true;
+    } else {
+      const firstCanopyLift = state.canopyLifts.find((lift) => !lift.charted);
+      if (firstCanopyLift) {
+        firstCanopyLift.charted = true;
+        firstCanopyLift.progress = CANOPY_LIFT_HOLD_SECONDS;
+        secondaryObjectiveResolved = true;
+      } else {
+        const firstImpactPlate = state.impactPlates.find((plate) => !plate.shattered);
+        if (firstImpactPlate) {
+          firstImpactPlate.shattered = true;
+          secondaryObjectiveResolved = true;
+        }
+      }
+    }
+  }
+
   if (profile.runBonusType === 'clear-hazard') {
     const firstHazard = state.hazards[0];
     if (!firstHazard) {
-      return false;
+      return secondaryObjectiveResolved;
     }
     firstHazard.w = 0;
     firstHazard.h = 0;
@@ -122,7 +151,7 @@ export function applyGoalSignalRunBonus(state: RuntimeState): boolean {
   if (profile.runBonusType === 'lower-beacon') {
     const firstRelay = state.beacons.find((beacon, index) => !beacon.activated && index !== profile.primerBeaconIndex) ?? state.beacons[0];
     if (!firstRelay) {
-      return false;
+      return secondaryObjectiveResolved;
     }
     firstRelay.y += 20;
     return true;
@@ -133,7 +162,7 @@ export function applyGoalSignalRunBonus(state: RuntimeState): boolean {
     return true;
   }
 
-  return false;
+  return secondaryObjectiveResolved;
 }
 
 export function goalSignalPrimerNote(selectedNodeId: string | null, state: RuntimeState): string | null {

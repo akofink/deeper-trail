@@ -72,5 +72,6 @@ Use a “mystery graph”:
   - the map route card now previews a seed-stable source profile instead of a generic synthesis warning,
   - the first discovered core clue decides which source relay starts pre-linked,
   - the second discovered core clue decides the arrival bonus at the goal node,
-  - the third discovered core clue decides a run-layout assist such as a collapsed barrier, easier relay reach, or a primed shield charge.
+  - the third discovered core clue decides a run-layout assist such as a collapsed barrier, easier relay reach, or a primed shield charge,
+  - that same third clue now also pre-solves the first local secondary objective on the goal run so synthesis changes more than one verb target.
 - The current notebook is still intentionally lightweight: it is a discovery layer and route-intel aid, not yet a full branching puzzle graph.
