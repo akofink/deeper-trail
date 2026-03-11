@@ -1,5 +1,10 @@
 Original prompt: Build and iterate the playable web game in the games/202601-2d-journey--deeper-trail workspace, validating changes with a Playwright loop. [$develop-web-game](/mnt/c/Users/ajkof/.codex/skills/develop-web-game/SKILL.md)
 
+- Expedition-ending variant pass:
+  - Extended `src/game/runtime/goalSignal.ts` so each synthesized goal-source profile now carries a named ending variant plus a condensed summary of its arrival, encounter, and run-side payoff.
+  - Updated `src/main.ts`, `src/game/runtime/runCompletion.ts`, `src/game/runtime/runSceneView.ts`, and `src/game/runtime/mapSceneCards.ts` so expedition-ending win text now surfaces the decoded variant in the run banner, immediate completion message, and post-run celebration card.
+  - Updated `tests/goalSignal.test.ts`, `tests/runCompletion.test.ts`, `tests/runSceneView.test.ts`, and `tests/mapSceneCards.test.ts`; targeted Vitest coverage plus `tests/expeditionFlow.test.ts` pass.
+
 - Initialized progress tracking file.
 - Confirmed current state: project boots Pixi canvas with only title text, no gameplay loop yet.
 - Confirmed Playwright client requirements: must expose `window.render_game_to_text` and `window.advanceTime(ms)` for deterministic stepping and state capture.

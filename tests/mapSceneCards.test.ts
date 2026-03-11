@@ -11,6 +11,7 @@ import { buildMapSceneLayout } from '../src/game/runtime/mapSceneLayout';
 describe('map scene card copy', () => {
   it('shows the route card while an expedition is still active', () => {
     const copy = buildMapSceneCopy({
+      celebrationDetail: null,
       expeditionComplete: false,
       installHint: 'Install available',
       mapMessage: 'Route locked',
@@ -30,6 +31,7 @@ describe('map scene card copy', () => {
 
   it('replaces the route card with a celebration card once the expedition is complete', () => {
     const copy = buildMapSceneCopy({
+      celebrationDetail: 'Echo Salvage Orchard: source cache online.',
       expeditionComplete: true,
       installHint: 'Install available',
       mapMessage: 'Route locked',
@@ -43,6 +45,7 @@ describe('map scene card copy', () => {
 
     expect(copy.showRouteCard).toBe(false);
     expect(copy.celebrationText).toContain('SIGNAL SOURCE REACHED');
+    expect(copy.celebrationText).toContain('Echo Salvage Orchard: source cache online.');
     expect(copy.celebrationText).toContain('Seed 6618abd4 complete');
     expect(copy.routeText).toContain('Route locked');
   });
@@ -61,6 +64,7 @@ describe('map scene card copy', () => {
 
   it('builds reusable route, notes, and celebration card views from the map copy and layout', () => {
     const copy = buildMapSceneCopy({
+      celebrationDetail: 'Echo Salvage Orchard: source cache online.',
       expeditionComplete: true,
       installHint: 'Install available',
       mapMessage: 'Route locked',
@@ -146,6 +150,7 @@ describe('map scene card copy', () => {
 
   it('plans measured map cards before building the final positioned card views', () => {
     const copy = buildMapSceneCopy({
+      celebrationDetail: null,
       expeditionComplete: false,
       installHint: 'Install available',
       mapMessage: 'Route locked',

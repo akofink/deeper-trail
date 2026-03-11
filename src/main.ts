@@ -16,6 +16,7 @@ import { buildMapSceneContent } from './game/runtime/mapSceneContent';
 import { buildMapSceneHudViewModel } from './game/runtime/mapSceneHudView';
 import { buildMapSceneTextAssembly } from './game/runtime/mapSceneTextAssembly';
 import { buildDebugStateSnapshot } from './game/runtime/debugState';
+import { goalSignalEndingSummary, goalSignalProfile } from './game/runtime/goalSignal';
 import { pullCollectibleTowardTarget } from './game/runtime/collectibleMagnetism';
 import {
   applyCanopyLiftAssist,
@@ -492,6 +493,7 @@ async function bootstrap(): Promise<void> {
       const completion = completeCurrentNodeRun(state);
       state.mapMessage = buildRunCompletionMessage({
         expeditionCompleted: completion.expeditionCompleted,
+        expeditionEndingTitle: completion.expeditionCompleted ? goalSignalProfile(state)?.endingTitle : null,
         flawlessRecovery: completion.flawlessRecovery,
         latestNotebookEntryTitle:
           completion.notebookUpdate.newEntries[completion.notebookUpdate.newEntries.length - 1]?.title
@@ -737,6 +739,7 @@ async function bootstrap(): Promise<void> {
       hasCompletedCurrentNode: hasCompletedCurrentNode(state)
     });
     const mapSceneCopy = buildMapSceneCopy({
+      celebrationDetail: state.expeditionComplete ? goalSignalEndingSummary(state) : null,
       expeditionComplete: state.expeditionComplete,
       installHint: mapSceneContent.installHint,
       mapMessage: state.mapMessage,

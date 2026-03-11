@@ -12,6 +12,8 @@ const RELAY_INDEX_BY_CLUE = {
 export interface GoalSignalProfile {
   primerBeaconId: string;
   primerBeaconIndex: number;
+  endingTitle: string;
+  endingSummary: string;
   arrivalBonusNote: string;
   runBonusNote: string;
   encounterBonusNote: string;
@@ -46,30 +48,36 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
   const encounterBonus =
     leadClue === 'ruin' && middleClue === 'nature'
       ? {
+          endingTitle: 'Grounded Relay Vault',
           encounterBonusType: 'lower-relays' as const,
           encounterBonusNote: 'ruin/grove braid: the source shelves its relay line into grounded reach'
         }
       : leadClue === 'ruin' && middleClue === 'anomaly'
         ? {
+            endingTitle: 'Breached Entry Core',
             encounterBonusType: 'clear-front-hazards' as const,
             encounterBonusNote: 'ruin/phase braid: the source breaches its entry barricades'
           }
         : leadClue === 'nature' && middleClue === 'ruin'
           ? {
+              endingTitle: 'Echo Salvage Orchard',
               encounterBonusType: 'extra-salvage' as const,
               encounterBonusNote: 'grove/quarry braid: salvage echoes line the source path'
             }
           : leadClue === 'nature' && middleClue === 'anomaly'
             ? {
+                endingTitle: 'Quiet Phase Garden',
                 encounterBonusType: 'soften-movers' as const,
                 encounterBonusNote: 'grove/phase braid: the source quiets its moving fields'
               }
             : leadClue === 'anomaly' && middleClue === 'ruin'
               ? {
+                  endingTitle: 'Folded Quarry Threshold',
                   encounterBonusType: 'shorter-run' as const,
                   encounterBonusNote: 'phase/quarry braid: the source folds the last approach closer'
                 }
               : {
+                  endingTitle: 'Vented Bloom Channel',
                   encounterBonusType: 'clear-tail-hazard' as const,
                   encounterBonusNote: 'phase/grove braid: the source vents a clean final channel'
                 };
@@ -107,6 +115,8 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
   return {
     primerBeaconId,
     primerBeaconIndex,
+    endingTitle: encounterBonus.endingTitle,
+    endingSummary: `${encounterBonus.endingTitle}: ${arrivalBonus.arrivalBonusNote}; ${encounterBonus.encounterBonusNote}; ${runBonus.runBonusNote}.`,
     arrivalBonusNote: arrivalBonus.arrivalBonusNote,
     runBonusNote: runBonus.runBonusNote,
     encounterBonusNote: encounterBonus.encounterBonusNote,
@@ -294,4 +304,8 @@ export function goalSignalPrimerNote(selectedNodeId: string | null, state: Runti
   }
 
   return `Synthesis route: ${profile.primerBeaconId} pre-linked; ${profile.arrivalBonusNote}; ${profile.encounterBonusNote}; ${profile.runBonusNote}.`;
+}
+
+export function goalSignalEndingSummary(state: RuntimeState): string | null {
+  return goalSignalProfile(state)?.endingSummary ?? null;
 }

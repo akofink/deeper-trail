@@ -77,6 +77,45 @@ describe('runSceneView', () => {
     });
   });
 
+  it('shows the decoded ending title on expedition-ending win overlays', () => {
+    const state = buildRuntimeState();
+    state.mode = 'won';
+    state.expeditionComplete = true;
+    state.sim.notebook.entries.push(
+      {
+        id: 'clue-anomaly',
+        clueKey: 'anomaly',
+        sourceNodeType: 'anomaly',
+        sourceNodeId: 'n1',
+        dayDiscovered: 1,
+        title: 'Anomaly',
+        body: 'Anomaly'
+      },
+      {
+        id: 'clue-ruin',
+        clueKey: 'ruin',
+        sourceNodeType: 'ruin',
+        sourceNodeId: 'n2',
+        dayDiscovered: 2,
+        title: 'Ruin',
+        body: 'Ruin'
+      },
+      {
+        id: 'clue-nature',
+        clueKey: 'nature',
+        sourceNodeType: 'nature',
+        sourceNodeId: 'n3',
+        dayDiscovered: 3,
+        title: 'Nature',
+        body: 'Nature'
+      }
+    );
+    state.sim.notebook.synthesisUnlocked = true;
+    state.sim.currentNodeId = state.expeditionGoalNodeId;
+
+    expect(buildRunSceneOverlayCard(state, 900)?.text).toBe('Signal source reached.\nFolded Quarry Threshold');
+  });
+
   it('suppresses the overlay when there is no active prompt or banner', () => {
     const state = buildRuntimeState();
 

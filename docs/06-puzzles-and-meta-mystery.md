@@ -75,5 +75,6 @@ Use a “mystery graph”:
   - the ordered pair formed by the first and second clues now selects a deterministic source-signature variant, such as a breached entry, quieter moving hazards, extra salvage echoes, or a shortened final approach,
   - the third discovered core clue decides a run-layout assist such as a collapsed barrier, easier relay reach, or a primed shield charge,
   - that same third clue now also pre-solves the first local secondary objective on the goal run so synthesis changes more than one verb target,
+  - clearing the goal now surfaces that decoded source-signature variant directly in the win banner and post-run celebration card instead of collapsing every successful run into the same generic ending text,
   - the goal encounter is still deterministic and replayable: the same clue order produces the same source signature every run.
 - The current notebook is still intentionally lightweight: it is a discovery layer and route-intel aid, not yet a full branching puzzle graph.
