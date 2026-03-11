@@ -96,6 +96,44 @@ describe('runSceneHudView', () => {
     expect(view.healthTotal).toBe(3);
     expect(view.healthFilled).toBe(2);
     expect(view.paceRatio).toBeCloseTo(0.5261992619926199);
+    expect(view.healthPips).toEqual({
+      count: 3,
+      fillColor: '#f97316',
+      filled: 2,
+      x: 92,
+      y: 60
+    });
+    expect(view.fuelGauge).toEqual({
+      fill: '#38bdf8',
+      h: 12,
+      ratio: 0.7,
+      w: 230,
+      x: 90,
+      y: 83
+    });
+    expect(view.paceGauge).toEqual({
+      fill: '#f59e0b',
+      h: 10,
+      ratio: 0.5261992619926199,
+      w: 230,
+      x: 90,
+      y: 110
+    });
+    expect(view.objectivePips).toEqual({
+      count: 3,
+      fillColor: '#22c55e',
+      filled: 2,
+      x: 660,
+      y: 46
+    });
+    expect(view.boostGauge).toEqual({
+      fill: '#a78bfa',
+      h: 12,
+      ratio: 0.64,
+      w: 196,
+      x: 660,
+      y: 69
+    });
     expect(view.moduleLabels).toEqual([
       { text: MODULE_LABELS[0], x: 628, y: 117 },
       { text: MODULE_LABELS[1].slice(0, 5), x: 712, y: 117 },

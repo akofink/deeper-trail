@@ -1191,19 +1191,54 @@ async function bootstrap(): Promise<void> {
     applyTextViews(runLeftRowValues, runTextAssembly.leftRowValues);
     applyTextViews(runRightRowLabels, runTextAssembly.rightRowLabels);
     applyTextViews(runRightRowValues, runTextAssembly.rightRowValues);
-    drawPips(graphics, hudLayout.leftPipsX, runHudView.leftRows[0].y - 3, runHudView.healthTotal, runHudView.healthFilled, '#f97316');
-    drawGauge(graphics, hudLayout.leftGaugeX, runHudView.leftRows[1].y - 6, hudLayout.leftGaugeWidth, 12, state.sim.fuel / state.sim.fuelCapacity, '#38bdf8');
+    drawPips(
+      graphics,
+      runHudView.healthPips.x,
+      runHudView.healthPips.y,
+      runHudView.healthPips.count,
+      runHudView.healthPips.filled,
+      runHudView.healthPips.fillColor,
+      runHudView.healthPips.emptyColor
+    );
     drawGauge(
       graphics,
-      hudLayout.leftGaugeX,
-      runHudView.leftRows[2].y - 5,
-      hudLayout.leftGaugeWidth,
-      10,
-      runHudView.paceRatio,
-      '#f59e0b'
+      runHudView.fuelGauge.x,
+      runHudView.fuelGauge.y,
+      runHudView.fuelGauge.w,
+      runHudView.fuelGauge.h,
+      runHudView.fuelGauge.ratio,
+      runHudView.fuelGauge.fill,
+      runHudView.fuelGauge.track
     );
-    drawPips(graphics, hudLayout.rightPipsX, runHudView.rightRows[0].y - 3, runHudView.objectiveTotal, runHudView.objectiveCompleted, '#22c55e');
-    drawGauge(graphics, hudLayout.rightGaugeX, 69, hudLayout.rightGaugeWidth, 12, state.dashEnergy, '#a78bfa');
+    drawGauge(
+      graphics,
+      runHudView.paceGauge.x,
+      runHudView.paceGauge.y,
+      runHudView.paceGauge.w,
+      runHudView.paceGauge.h,
+      runHudView.paceGauge.ratio,
+      runHudView.paceGauge.fill,
+      runHudView.paceGauge.track
+    );
+    drawPips(
+      graphics,
+      runHudView.objectivePips.x,
+      runHudView.objectivePips.y,
+      runHudView.objectivePips.count,
+      runHudView.objectivePips.filled,
+      runHudView.objectivePips.fillColor,
+      runHudView.objectivePips.emptyColor
+    );
+    drawGauge(
+      graphics,
+      runHudView.boostGauge.x,
+      runHudView.boostGauge.y,
+      runHudView.boostGauge.w,
+      runHudView.boostGauge.h,
+      runHudView.boostGauge.ratio,
+      runHudView.boostGauge.fill,
+      runHudView.boostGauge.track
+    );
     drawModuleMeters(graphics, runHudView.moduleMeters);
 
     applyTextView(hud, runTextAssembly.header.title);
