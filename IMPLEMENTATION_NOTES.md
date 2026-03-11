@@ -39,6 +39,7 @@
   - objective rules should live in deterministic sim helpers rather than being embedded entirely in the render/input layer,
   - if a beacon/objective has special activation constraints, surface that rule both on the map route card and in the in-run prompt before the player fails it,
   - biome variation should prefer changing the player's verbs or timing requirements over just changing colors or hazard spacing,
+  - synthesized expedition-goal payoff should mutate more than one target when possible; a pre-linked relay alone is too small to read as a mystery payoff,
   - scanner route intel should unlock in readable tiers instead of dumping every route detail from the start:
   - lv.2 reveals biome benefits on unvisited routes,
   - lv.3 reveals biome objective patterns on unvisited routes and completes the scanner's route-reading loop alongside auto-link,

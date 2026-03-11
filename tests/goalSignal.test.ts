@@ -36,7 +36,8 @@ function buildRuntimeState(): RuntimeState {
     shieldChargeAvailable: false,
     beacons: [
       { id: 'b0', x: 0, y: 0, r: 15, activated: false },
-      { id: 'b1', x: 50, y: 0, r: 15, activated: false }
+      { id: 'b1', x: 50, y: 0, r: 15, activated: false },
+      { id: 'b2', x: 100, y: 0, r: 15, activated: false }
     ],
     serviceStops: [],
     syncGates: [],
@@ -150,7 +151,9 @@ describe('goal signal primer helpers', () => {
 
     expect(goalSignalPrimerNote(state.expeditionGoalNodeId, state)).toContain('B1 pre-linked');
     expect(goalSignalPrimerNote(state.expeditionGoalNodeId, state)).toContain('source cache: +2 scrap on arrival');
-    expect(goalSignalPrimerNote(state.expeditionGoalNodeId, state)).toContain('anomaly line: shield charge starts primed');
+    expect(goalSignalPrimerNote(state.expeditionGoalNodeId, state)).toContain(
+      'anomaly line: shield charge starts primed and one site objective starts stabilized'
+    );
     expect(goalSignalPrimerNote('n1', state)).toBeNull();
   });
 
@@ -203,9 +206,93 @@ describe('goal signal primer helpers', () => {
         phase: 0
       }
     ];
+    state.serviceStops = [{ id: 'svc-0', x: 40, w: 80, progress: 0, serviced: false }];
 
     expect(applyGoalSignalRunBonus(state)).toBe(true);
     expect(state.hazards[0]?.w).toBe(0);
     expect(state.hazards[0]?.speed).toBe(0);
+    expect(state.serviceStops[0]?.serviced).toBe(true);
+    expect(state.serviceStops[0]?.progress).toBeGreaterThan(0);
+  });
+
+  it('charts a secondary objective alongside the nature relay assist', () => {
+    const state = buildRuntimeState();
+    state.sim.notebook.entries.push(
+      {
+        id: 'clue-ruin',
+        clueKey: 'ruin',
+        sourceNodeType: 'ruin',
+        sourceNodeId: 'n1',
+        dayDiscovered: 1,
+        title: 'Ruin',
+        body: 'Ruin'
+      },
+      {
+        id: 'clue-anomaly',
+        clueKey: 'anomaly',
+        sourceNodeType: 'anomaly',
+        sourceNodeId: 'n2',
+        dayDiscovered: 2,
+        title: 'Anomaly',
+        body: 'Anomaly'
+      },
+      {
+        id: 'clue-nature',
+        clueKey: 'nature',
+        sourceNodeType: 'nature',
+        sourceNodeId: 'n3',
+        dayDiscovered: 3,
+        title: 'Nature',
+        body: 'Nature'
+      }
+    );
+    state.sim.notebook.synthesisUnlocked = true;
+    state.sim.currentNodeId = state.expeditionGoalNodeId;
+    state.canopyLifts = [{ id: 'lift-0', x: 80, y: -40, w: 40, h: 120, progress: 0, charted: false }];
+
+    expect(applyGoalSignalRunBonus(state)).toBe(true);
+    expect(state.beacons[1]?.y).toBe(20);
+    expect(state.canopyLifts[0]?.charted).toBe(true);
+    expect(state.canopyLifts[0]?.progress).toBeGreaterThan(0);
+  });
+
+  it('stabilizes a secondary objective alongside the anomaly shield assist', () => {
+    const state = buildRuntimeState();
+    state.sim.notebook.entries.push(
+      {
+        id: 'clue-ruin',
+        clueKey: 'ruin',
+        sourceNodeType: 'ruin',
+        sourceNodeId: 'n1',
+        dayDiscovered: 1,
+        title: 'Ruin',
+        body: 'Ruin'
+      },
+      {
+        id: 'clue-nature',
+        clueKey: 'nature',
+        sourceNodeType: 'nature',
+        sourceNodeId: 'n2',
+        dayDiscovered: 2,
+        title: 'Nature',
+        body: 'Nature'
+      },
+      {
+        id: 'clue-anomaly',
+        clueKey: 'anomaly',
+        sourceNodeType: 'anomaly',
+        sourceNodeId: 'n3',
+        dayDiscovered: 3,
+        title: 'Anomaly',
+        body: 'Anomaly'
+      }
+    );
+    state.sim.notebook.synthesisUnlocked = true;
+    state.sim.currentNodeId = state.expeditionGoalNodeId;
+    state.syncGates = [{ id: 'gate-0', x: 120, y: -20, w: 50, h: 50, stabilized: false }];
+
+    expect(applyGoalSignalRunBonus(state)).toBe(true);
+    expect(state.shieldChargeAvailable).toBe(true);
+    expect(state.syncGates[0]?.stabilized).toBe(true);
   });
 });
