@@ -15,6 +15,7 @@ export interface PanelHeaderLayout {
 }
 
 export interface ModuleLabelLayout {
+  text?: string;
   x: number;
   y: number;
 }

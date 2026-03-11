@@ -585,3 +585,14 @@ TODO next:
 
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially repeated Pixi text-style/reset plumbing and any remaining scene-local draw helper setup that can move behind testable view models.
 - Decide whether the next notebook payoff step should branch the actual goal-node encounter by clue mix now that the synthesized run assist affects more than one target.
+
+- Shared text-view extraction pass:
+  - Added `src/game/runtime/sceneTextView.ts` so chip labels, HUD rows, panel headers, beacon labels, module labels, and text-card text state now share one pure view/layout helper instead of rebuilding Pixi text mutation inline in `src/main.ts`.
+  - Updated `src/main.ts` to measure/apply those view descriptors through thin local Pixi helpers, trimming repeated style/reset/position logic from both run and map scene draws.
+  - Added `tests/sceneTextView.test.ts` and updated `IMPLEMENTATION_NOTES.md`.
+  - Validation: `npm run typecheck` passes; `npm run test -- --run tests/sceneTextView.test.ts tests/sceneTextCards.test.ts tests/runSceneHudView.test.ts tests/mapSceneHudView.test.ts` passes.
+
+TODO next:
+
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially any remaining repeated Pixi text reset/application helpers and scene-local draw setup that can move behind testable view models.
+- Decide whether the next notebook payoff step should branch the actual goal-node encounter by clue mix now that the synthesized run assist affects more than one target.
