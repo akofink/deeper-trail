@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildMapSceneCardViews, buildMapSceneCopy, buildMapSceneHudLayout } from '../src/game/runtime/mapSceneCards';
+import {
+  buildMapSceneCardPlan,
+  buildMapSceneCardViews,
+  buildMapSceneCopy,
+  buildMapSceneHudLayout,
+  buildMapSceneMeasureCardSpecs
+} from '../src/game/runtime/mapSceneCards';
 import { buildMapSceneLayout } from '../src/game/runtime/mapSceneLayout';
 
 describe('map scene card copy', () => {
@@ -96,6 +102,87 @@ describe('map scene card copy', () => {
       tone: 'dark',
       x: layout.celebrationCard.x,
       y: layout.celebrationCard.y
+    });
+  });
+
+  it('builds dedicated measurement cards from the temporary wrap-width layout', () => {
+    const layout = buildMapSceneLayout(960, 540, 0, 0);
+
+    expect(
+      buildMapSceneMeasureCardSpecs({
+        fieldNotesText: 'Visited ruin 1x',
+        layout,
+        routeText: 'Route board details'
+      })
+    ).toEqual({
+      notesCard: {
+        align: 'left',
+        fill: '#0f172a',
+        fontSize: 13,
+        maxWidth: layout.notesCard.wrapWidth + 36,
+        minWidth: 220,
+        paddingX: 18,
+        paddingY: 16,
+        text: 'Visited ruin 1x',
+        tone: 'light',
+        x: 0,
+        y: 0
+      },
+      routeCard: {
+        align: 'left',
+        fill: '#e2e8f0',
+        fontSize: 15,
+        maxWidth: layout.routeCard.wrapWidth + 36,
+        minWidth: 220,
+        paddingX: 18,
+        paddingY: 16,
+        text: 'Route board details',
+        tone: 'dark',
+        x: 0,
+        y: 0
+      }
+    });
+  });
+
+  it('plans measured map cards before building the final positioned card views', () => {
+    const copy = buildMapSceneCopy({
+      expeditionComplete: false,
+      installHint: 'Install available',
+      mapMessage: 'Route locked',
+      mapMessageTimer: 0,
+      repairHint: 'Repair available',
+      routeDetail: 'Route board details',
+      scannerHint: 'Scanner offline',
+      score: 312,
+      seed: 'abc123'
+    });
+    const measuredWidths: number[] = [];
+    const plan = buildMapSceneCardPlan({
+      celebrationText: copy.celebrationText,
+      fieldNotesText: 'Visited ruin 1x\nNotebook clue tracked',
+      measureCard: (card) => {
+        measuredWidths.push(card.maxWidth);
+        return { width: card.maxWidth - 40, height: card.text.split('\n').length * 18 };
+      },
+      routeText: copy.routeText,
+      screenHeight: 540,
+      screenWidth: 960,
+      showRouteCard: copy.showRouteCard
+    });
+
+    const measureLayout = buildMapSceneLayout(960, 540, 0, 0);
+
+    expect(measuredWidths).toEqual([measureLayout.routeCard.wrapWidth + 36, measureLayout.notesCard.wrapWidth + 36]);
+    expect(plan.layout.routeCard.y).toBeLessThanOrEqual(plan.layout.chipY - 46);
+    expect(plan.views.routeCard).toMatchObject({
+      text: copy.routeText,
+      x: plan.layout.routeCard.x,
+      y: plan.layout.routeCard.y
+    });
+    expect(plan.views.notesCard).toMatchObject({
+      text: 'Visited ruin 1x\nNotebook clue tracked',
+      x: plan.layout.notesCard.x,
+      y: plan.layout.notesCard.y
     });
   });
 });

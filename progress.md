@@ -607,3 +607,14 @@ TODO next:
 
 - Decide whether a later notebook slice should branch the actual expedition-goal ending or post-goal encounter text, now that the source approach itself varies by clue order.
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially any remaining repeated Pixi text reset/application helpers and scene-local draw setup that can move behind testable view models.
+
+- Map-scene card planning extraction pass:
+  - Extended `src/game/runtime/mapSceneCards.ts` with deterministic measurement-card specs plus a `buildMapSceneCardPlan(...)` helper that owns the temporary wrap-width layout, text-card measurement inputs, and final route/notes/celebration card positioning.
+  - Updated `src/main.ts` to consume the planned map-card layout/views instead of rebuilding route/notes measurement specs and second-pass layout math inline during `drawMapScene()`.
+  - Expanded `tests/mapSceneCards.test.ts` to cover the temporary measurement specs and the measured final card-plan flow, and updated `IMPLEMENTATION_NOTES.md`.
+  - Validation: `npm run typecheck` passes; `npm run test -- --run tests/mapSceneCards.test.ts` passes.
+
+TODO next:
+
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially repeated Pixi text reset/application helpers and any remaining scene-local draw setup that can move behind testable view models.
+- Decide whether a later notebook slice should branch the actual expedition-goal ending or post-goal encounter text, now that the source approach itself varies by clue order.

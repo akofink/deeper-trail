@@ -62,6 +62,7 @@
 - Map-scene route/detail/notebook text assembly now belongs in `game/runtime/mapSceneContent.ts` so the map renderer can focus on layout/drawing instead of building long dynamic copy blocks inline.
 - Map-board projection/emphasis state now belongs in `game/runtime/mapBoardView.ts` so selected routes, goal rings, and chip labels can be regression-tested without Pixi drawing calls.
 - Map-scene card/footer placement now belongs in `game/runtime/mapSceneLayout.ts` so text-card positioning is derived from measured content instead of repeated inline coordinates.
+- Map-scene card measurement/planning now belongs in `game/runtime/mapSceneCards.ts` so the Pixi shell asks one helper for measured route/notes/celebration card layout instead of rebuilding temporary wrap-width specs and final placement inline.
 - Shared text-card specs and measured card geometry now belong in `game/runtime/sceneTextCards.ts` so run/map overlay cards share one deterministic wrap-width and placement path instead of duplicating card math in `main.ts`.
 - Shared text-view placement and style descriptors now belong in `game/runtime/sceneTextView.ts` so chip labels, HUD rows, panel headers, module labels, relay labels, and text-card text state can be regression-tested without mutating Pixi `Text` objects inline.
 - Measured batch placement for repeated chip-label, HUD-row, stacked-header, and centered-beacon text now also belongs in `game/runtime/sceneTextView.ts` so `main.ts` only measures/applies Pixi text nodes instead of rebuilding the same placement loops scene-by-scene.
