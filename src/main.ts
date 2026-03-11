@@ -42,8 +42,6 @@ import { buildBeaconLabelViews, drawRunExitFlag, drawRunObjectiveVisuals } from 
 import { buildExitLockedMessage, buildRunCompletionMessage } from './game/runtime/runCompletion';
 import { buildRunActionChips, buildRunSceneOverlayCard } from './game/runtime/runSceneView';
 import { buildRunSceneTextAssembly } from './game/runtime/runSceneTextAssembly';
-import { type SceneTextCardSpec } from './game/runtime/sceneTextCards';
-import { buildMeasuredSceneTextCardView, measureSceneTextCard } from './game/runtime/sceneTextMeasure';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import { advanceHorizontalVelocity } from './game/runtime/runMotion';
 import { tryConsumeShieldCharge } from './game/runtime/shieldCharge';
@@ -74,6 +72,15 @@ import {
 } from './game/runtime/vehicleDerivedStats';
 import { advanceWheelRotation } from './game/runtime/vehiclePresentation';
 import { applyTextView, applyTextViews, clearTextLabels, measureTextView } from './game/render/pixiText';
+import {
+  applyTextCard,
+  drawChip,
+  drawGauge,
+  drawModuleMeters,
+  drawPanel,
+  drawPips,
+  measureTextCard
+} from './game/render/pixiPrimitives';
 import './styles.css';
 
 declare global {
@@ -116,47 +123,6 @@ function distanceSq(ax: number, ay: number, bx: number, by: number): number {
   return dx * dx + dy * dy;
 }
 
-function drawPanel(graphics: Graphics, x: number, y: number, w: number, h: number, alpha = 0.88): void {
-  graphics.roundRect(x, y, w, h, 18).fill({ color: '#0f172a', alpha });
-  graphics.roundRect(x, y, w, h, 18).stroke({ color: '#e2e8f0', alpha: 0.2, width: 1.5 });
-}
-
-function drawGauge(
-  graphics: Graphics,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  ratio: number,
-  fill: string,
-  track = '#1f2937'
-): void {
-  graphics.roundRect(x, y, w, h, Math.min(8, h * 0.5)).fill(track);
-  const fillWidth = clamp(w * ratio, 0, w);
-  if (fillWidth > 0) {
-    graphics.roundRect(x, y, fillWidth, h, Math.min(8, h * 0.5)).fill(fill);
-  }
-}
-
-function drawPips(
-  graphics: Graphics,
-  x: number,
-  y: number,
-  count: number,
-  filled: number,
-  fillColor: string,
-  emptyColor = '#334155'
-): void {
-  for (let i = 0; i < count; i += 1) {
-    graphics.roundRect(x + i * 16, y, 12, 12, 4).fill(i < filled ? fillColor : emptyColor);
-  }
-}
-
-function drawChip(graphics: Graphics, x: number, y: number, labelWidth: number, color: string, height = 24): void {
-  graphics.roundRect(x, y, labelWidth, height, 12).fill({ color, alpha: 0.14 });
-  graphics.roundRect(x, y, labelWidth, height, 12).stroke({ color, alpha: 0.32, width: 1 });
-}
-
 function drawMapBackdrop(graphics: Graphics, w: number, h: number): void {
   graphics.rect(0, 0, w, h).fill('#edf2f7');
   graphics.circle(w * 0.16, h * 0.22, 130).fill({ color: '#ffffff', alpha: 0.2 });
@@ -164,53 +130,6 @@ function drawMapBackdrop(graphics: Graphics, w: number, h: number): void {
   graphics.roundRect(80, h * 0.28, w - 160, 1, 0).stroke({ color: '#cbd5e1', alpha: 0.4, width: 1 });
   graphics.roundRect(120, h * 0.52, w - 240, 1, 0).stroke({ color: '#cbd5e1', alpha: 0.28, width: 1 });
   graphics.roundRect(160, h * 0.76, w - 320, 1, 0).stroke({ color: '#cbd5e1', alpha: 0.22, width: 1 });
-}
-
-function drawMessageCard(graphics: Graphics, x: number, y: number, w: number, h: number, tone: 'dark' | 'light' = 'dark'): void {
-  const color = tone === 'dark' ? '#0f172a' : '#f8fafc';
-  const stroke = tone === 'dark' ? '#cbd5e1' : '#94a3b8';
-  graphics.roundRect(x, y, w, h, 18).fill({ color, alpha: tone === 'dark' ? 0.88 : 0.94 });
-  graphics.roundRect(x, y, w, h, 18).stroke({ color: stroke, alpha: 0.22, width: 1.2 });
-}
-
-function applyTextCard(graphics: Graphics, textNode: Text, card: SceneTextCardSpec): { width: number; height: number } {
-  const cardView = buildMeasuredSceneTextCardView(card, (view) => measureTextView(textNode, view));
-
-  drawMessageCard(graphics, cardView.x, cardView.y, cardView.cardWidth, cardView.cardHeight, cardView.tone);
-
-  applyTextView(textNode, cardView.text);
-  return { width: cardView.cardWidth, height: cardView.cardHeight };
-}
-
-function measureTextCard(textNode: Text, card: SceneTextCardSpec): { height: number; width: number } {
-  return measureSceneTextCard(card, (view) => measureTextView(textNode, view));
-}
-
-function drawModuleMeters(graphics: Graphics, moduleMeters: Array<{
-  cellHeight: number;
-  cellWidth: number;
-  conditionColor: string;
-  conditionRatio: number;
-  gaugeHeight: number;
-  gaugeWidth: number;
-  levelRatio: number;
-  x: number;
-  y: number;
-}>): void {
-  moduleMeters.forEach((meter) => {
-    graphics.roundRect(meter.x, meter.y, meter.cellWidth, meter.cellHeight, 10).fill({ color: '#111827', alpha: 0.9 });
-    drawGauge(graphics, meter.x + 30, meter.y + 6, meter.gaugeWidth, meter.gaugeHeight, meter.levelRatio, '#60a5fa', '#1e293b');
-    drawGauge(
-      graphics,
-      meter.x + 30,
-      meter.y + 16,
-      meter.gaugeWidth,
-      meter.gaugeHeight,
-      meter.conditionRatio,
-      meter.conditionColor,
-      '#1e293b'
-    );
-  });
 }
 
 function drawBackdropAccents(graphics: Graphics, state: RuntimeState, nodeType: string, w: number, h: number): void {

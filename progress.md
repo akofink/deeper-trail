@@ -630,3 +630,15 @@ TODO next:
 
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially shared draw-primitive helpers like panel/gauge/module-meter rendering and any remaining scene-local draw setup that can move behind reusable helpers.
 - Decide whether a later notebook slice should branch the actual expedition-goal ending or post-goal encounter text, now that the source approach itself varies by clue order.
+
+- Shared Pixi draw-primitive extraction pass:
+  - Added `src/game/render/pixiPrimitives.ts` so shared panel, gauge, pip, chip, module-meter, and text-card drawing now lives outside `src/main.ts`.
+  - Updated `src/main.ts` to import those helpers and keep the run/map scene functions focused on orchestration and scene-specific geometry.
+  - Added `tests/pixiPrimitives.test.ts` with recorder-based coverage for gauge clamping, shared primitive styling, module-meter stacking, and text-card measurement/application.
+  - Updated `IMPLEMENTATION_NOTES.md`.
+  - Validation: `npm run typecheck` passes; `npm run test -- --run tests/pixiPrimitives.test.ts tests/sceneHudView.test.ts tests/runSceneTextAssembly.test.ts tests/mapSceneTextAssembly.test.ts` passes.
+
+TODO next:
+
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially any repeated scene-local draw setup that can move behind reusable render helpers or testable view builders.
+- Decide whether a later notebook slice should branch the actual expedition-goal ending or post-goal encounter text, now that the source approach itself varies by clue order.
