@@ -653,3 +653,14 @@ TODO next:
 
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially remaining frame-reset/setup helpers like shared scene text-node clearing and other scene-local backdrop/setup code.
 - Decide whether a later notebook slice should branch the actual expedition-goal ending or post-goal encounter text, now that the source approach itself varies by clue order.
+
+- Run-scene render extraction pass:
+  - Added `src/game/render/runSceneRenderer.ts` so the remaining map backdrop, run backdrop/terrain, hazard, damage-feedback, and avatar draw passes now live outside `src/main.ts`.
+  - Updated `src/main.ts` to import the shared render helpers and keep the scene functions focused on orchestration, HUD assembly, and state-driven draw ordering.
+  - Added `tests/runSceneRenderer.test.ts` with recorder coverage for backdrop guides, biome terrain accents, hazard-shape variants, damage overlay rendering, and avatar presentation state.
+  - Updated `IMPLEMENTATION_NOTES.md`.
+
+TODO next:
+
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially remaining frame-reset/setup helpers like shared scene text-node clearing and any other repeated scene-local setup work.
+- Decide whether a later notebook slice should branch the actual expedition-goal ending or post-goal encounter text, now that the source approach itself varies by clue order.
