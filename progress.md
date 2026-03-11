@@ -618,3 +618,15 @@ TODO next:
 
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially repeated Pixi text reset/application helpers and any remaining scene-local draw setup that can move behind testable view models.
 - Decide whether a later notebook slice should branch the actual expedition-goal ending or post-goal encounter text, now that the source approach itself varies by clue order.
+
+- Shared text-measurement + Pixi text-helper extraction pass:
+  - Added `src/game/runtime/sceneTextMeasure.ts` so card measurement and small batches of text-measurement specs now share one pure helper instead of duplicating first-pass/second-pass wrap logic across scene assemblies and `src/main.ts`.
+  - Added `src/game/render/pixiText.ts` so Pixi `Text` mutation/reset/measurement lives outside `src/main.ts`, leaving the shell to consume shared helpers rather than owning the low-level text-node plumbing directly.
+  - Updated `src/game/runtime/runSceneTextAssembly.ts`, `src/game/runtime/mapSceneTextAssembly.ts`, and `src/main.ts` to use the shared measurement helpers.
+  - Added `tests/sceneTextMeasure.test.ts`.
+  - Validation: `npm run typecheck` passes; `npm run test -- tests/sceneTextMeasure.test.ts tests/runSceneTextAssembly.test.ts tests/mapSceneTextAssembly.test.ts tests/sceneTextView.test.ts` passes.
+
+TODO next:
+
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially shared draw-primitive helpers like panel/gauge/module-meter rendering and any remaining scene-local draw setup that can move behind reusable helpers.
+- Decide whether a later notebook slice should branch the actual expedition-goal ending or post-goal encounter text, now that the source approach itself varies by clue order.
