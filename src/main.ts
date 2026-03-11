@@ -42,11 +42,19 @@ import { buildRunSceneDepthView } from './game/runtime/runSceneDepthView';
 import { buildBeaconLabelViews, drawRunExitFlag, drawRunObjectiveVisuals } from './game/runtime/runSceneObjectiveView';
 import { buildExitLockedMessage, buildRunCompletionMessage } from './game/runtime/runCompletion';
 import { buildRunActionChips, buildRunSceneOverlayCard } from './game/runtime/runSceneView';
+import { type SceneTextCardSpec } from './game/runtime/sceneTextCards';
 import {
-  buildSceneTextCardLayout,
-  initialSceneTextCardWrapWidth,
-  type SceneTextCardSpec
-} from './game/runtime/sceneTextCards';
+  buildCenteredTextView,
+  buildChipLabelView,
+  buildHudRowLabelView,
+  buildHudRowValueView,
+  buildModuleLabelTextViews,
+  buildPanelHeaderTextViews,
+  buildSceneTextCardMeasureView,
+  buildSceneTextCardView,
+  buildSceneTextCardWrappedMeasureView,
+  type SceneTextView
+} from './game/runtime/sceneTextView';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import { advanceHorizontalVelocity } from './game/runtime/runMotion';
 import { rechargeShieldCharge, tryConsumeShieldCharge } from './game/runtime/shieldCharge';
@@ -155,26 +163,38 @@ function drawChip(graphics: Graphics, x: number, y: number, labelWidth: number, 
   graphics.roundRect(x, y, labelWidth, height, 12).stroke({ color, alpha: 0.32, width: 1 });
 }
 
-function layoutChipLabel(label: Text, text: string, x: number, y: number, width: number, fill: string, height = 24): void {
-  label.text = text;
-  label.style.fill = fill;
-  label.style.align = 'center';
-  label.x = x + Math.round((width - label.width) * 0.5);
-  label.y = y + Math.round((height - label.height) * 0.5);
+function applyTextView(label: Text, view: SceneTextView): void {
+  label.text = view.text;
+  if (view.fill) label.style.fill = view.fill;
+  if (view.align) label.style.align = view.align;
+  if (view.fontSize) label.style.fontSize = view.fontSize;
+  if (view.wordWrap !== undefined) label.style.wordWrap = view.wordWrap;
+  if (view.wordWrapWidth !== undefined) label.style.wordWrapWidth = view.wordWrapWidth;
+  label.x = view.x;
+  label.y = view.y;
 }
 
-function layoutHudRowLabel(label: Text, text: string, x: number, centerY: number, fill = '#94a3b8'): void {
-  label.text = text;
-  label.style.fill = fill;
-  label.x = x;
-  label.y = Math.round(centerY - label.height * 0.5);
+function measureTextView(label: Text, view: SceneTextView): { height: number; width: number } {
+  applyTextView(label, {
+    ...view,
+    x: label.x,
+    y: label.y
+  });
+  return {
+    height: label.height,
+    width: label.width
+  };
 }
 
-function layoutHudRowValue(label: Text, text: string, rightX: number, centerY: number, fill = '#e2e8f0'): void {
-  label.text = text;
-  label.style.fill = fill;
-  label.x = Math.round(rightX - label.width);
-  label.y = Math.round(centerY - label.height * 0.5);
+function applyTextViews(labels: Text[], views: SceneTextView[]): void {
+  labels.forEach((label, index) => {
+    const view = views[index];
+    if (!view) {
+      label.text = '';
+      return;
+    }
+    applyTextView(label, view);
+  });
 }
 
 function drawMapBackdrop(graphics: Graphics, w: number, h: number): void {
@@ -194,23 +214,15 @@ function drawMessageCard(graphics: Graphics, x: number, y: number, w: number, h:
 }
 
 function applyTextCard(graphics: Graphics, textNode: Text, card: SceneTextCardSpec): { width: number; height: number } {
-  textNode.text = card.text;
-  textNode.style.fontSize = card.fontSize;
-  textNode.style.fill = card.fill;
-  textNode.style.align = card.align;
-  textNode.style.wordWrap = true;
-  textNode.style.wordWrapWidth = initialSceneTextCardWrapWidth(card);
+  applyTextView(textNode, buildSceneTextCardMeasureView(card));
   const measuredWidth = textNode.width;
-  const preLayout = buildSceneTextCardLayout(card, measuredWidth, 0);
-  textNode.style.wordWrapWidth = preLayout.wordWrapWidth;
-  const layout = buildSceneTextCardLayout(card, textNode.width, textNode.height);
-  textNode.style.wordWrapWidth = layout.wordWrapWidth;
+  applyTextView(textNode, buildSceneTextCardWrappedMeasureView(card, measuredWidth));
+  const cardView = buildSceneTextCardView(card, { width: textNode.width, height: textNode.height });
 
-  drawMessageCard(graphics, card.x, card.y, layout.cardWidth, layout.cardHeight, card.tone);
+  drawMessageCard(graphics, cardView.x, cardView.y, cardView.cardWidth, cardView.cardHeight, cardView.tone);
 
-  textNode.x = layout.textX;
-  textNode.y = layout.textY;
-  return { width: layout.cardWidth, height: layout.cardHeight };
+  applyTextView(textNode, cardView.text);
+  return { width: cardView.cardWidth, height: cardView.cardHeight };
 }
 
 function clearTextLabels(labels: Text[]): void {
@@ -219,25 +231,14 @@ function clearTextLabels(labels: Text[]): void {
   });
 }
 
-function applyModuleLabels(labels: Text[], moduleLayouts: Array<{ text: string; x: number; y: number } | null | undefined>): void {
-  labels.forEach((label, index) => {
-    const layout = moduleLayouts[index];
-    label.text = layout?.text ?? '';
-    label.style.fill = '#cbd5e1';
-    label.x = layout?.x ?? 0;
-    label.y = layout?.y ?? 0;
-  });
+function applyModuleLabels(labels: Text[], moduleLayouts: Array<{ text?: string; x: number; y: number } | null | undefined>): void {
+  applyTextViews(labels, buildModuleLabelTextViews(moduleLayouts));
 }
 
 function measureTextCard(textNode: Text, card: SceneTextCardSpec): { height: number; width: number } {
-  textNode.text = card.text;
-  textNode.style.fontSize = card.fontSize;
-  textNode.style.fill = card.fill;
-  textNode.style.align = card.align;
-  textNode.style.wordWrap = true;
-  textNode.style.wordWrapWidth = initialSceneTextCardWrapWidth(card);
+  applyTextView(textNode, buildSceneTextCardMeasureView(card));
   const measuredWidth = textNode.width;
-  textNode.style.wordWrapWidth = buildSceneTextCardLayout(card, measuredWidth, 0).wordWrapWidth;
+  applyTextView(textNode, buildSceneTextCardWrappedMeasureView(card, measuredWidth));
   return {
     height: textNode.height,
     width: textNode.width
@@ -1172,10 +1173,14 @@ async function bootstrap(): Promise<void> {
     beaconLabelViews.forEach((view, index) => {
       const label = beaconLabels[index];
       if (!label) return;
-      label.text = view.text;
-      label.style.fill = view.fill;
-      label.x = view.x - Math.round(label.width * 0.5);
-      label.y = view.y - Math.round(label.height * 0.5);
+      const measured = measureTextView(label, {
+        align: 'center',
+        fill: view.fill,
+        text: view.text,
+        x: label.x,
+        y: label.y
+      });
+      applyTextView(label, buildCenteredTextView(view.text, view.x, view.y, measured, view.fill));
     });
 
     for (const item of state.collectibles) {
@@ -1195,13 +1200,24 @@ async function bootstrap(): Promise<void> {
     drawPanel(graphics, hudLayout.leftPanelX, 10, hudLayout.leftPanelWidth, hudLayout.leftPanelHeight);
     drawPanel(graphics, hudLayout.rightPanelX, 10, hudLayout.rightPanelWidth, hudLayout.rightPanelHeight);
     runHudView.leftRows.forEach((row, index) => {
-      layoutHudRowLabel(runLeftRowLabels[index], row.label, hudLayout.rowLabelX, row.y);
-      layoutHudRowValue(runLeftRowValues[index], row.value, hudLayout.rowValueX, row.y);
+      const label = runLeftRowLabels[index];
+      const value = runLeftRowValues[index];
+      if (!label || !value) return;
+      const labelMeasure = measureTextView(label, { fill: '#94a3b8', text: row.label, x: label.x, y: label.y });
+      const valueMeasure = measureTextView(value, { align: 'right', fill: '#e2e8f0', text: row.value, x: value.x, y: value.y });
+      applyTextView(label, buildHudRowLabelView(row.label, hudLayout.rowLabelX, row.y, labelMeasure.height));
+      applyTextView(value, buildHudRowValueView(row.value, hudLayout.rowValueX, row.y, valueMeasure));
     });
     runHudView.rightRows.forEach((row, index) => {
-      layoutHudRowLabel(runRightRowLabels[index], row.label, hudLayout.rightRowLabelX, row.y);
+      const label = runRightRowLabels[index];
+      if (!label) return;
+      const labelMeasure = measureTextView(label, { fill: '#94a3b8', text: row.label, x: label.x, y: label.y });
+      applyTextView(label, buildHudRowLabelView(row.label, hudLayout.rightRowLabelX, row.y, labelMeasure.height));
       if (index < 2) {
-        layoutHudRowValue(runRightRowValues[index], row.value, hudLayout.rightRowValueX, row.y);
+        const value = runRightRowValues[index];
+        if (!value) return;
+        const valueMeasure = measureTextView(value, { align: 'right', fill: '#e2e8f0', text: row.value, x: value.x, y: value.y });
+        applyTextView(value, buildHudRowValueView(row.value, hudLayout.rightRowValueX, row.y, valueMeasure));
       }
     });
     drawPips(graphics, hudLayout.leftPipsX, runHudView.leftRows[0].y - 3, runHudView.healthTotal, runHudView.healthFilled, '#f97316');
@@ -1220,20 +1236,10 @@ async function bootstrap(): Promise<void> {
     drawModuleMeters(graphics, runHudView.moduleMeters);
 
     const runHeaderLayout = runHudView.headerLayout;
-    hud.text = runHudView.title;
-    hud.style.fontSize = 18;
-    hud.style.fill = '#e2e8f0';
-    hud.x = runHeaderLayout.titleX;
-    hud.y = runHeaderLayout.titleY;
-    panelMeta.text = runHudView.meta;
-    panelMeta.style.fill = '#cbd5e1';
-    panelMeta.style.fontSize = 12;
-    panelMeta.x = runHeaderLayout.metaX;
-    panelMeta.y = runHeaderLayout.metaY;
-    panelSeed.text = runHudView.seed;
-    panelSeed.style.fill = '#94a3b8';
-    panelSeed.x = runHeaderLayout.seedX;
-    panelSeed.y = runHeaderLayout.seedY;
+    const runHeaderText = buildPanelHeaderTextViews(runHeaderLayout, runHudView);
+    applyTextView(hud, runHeaderText.title);
+    applyTextView(panelMeta, runHeaderText.meta);
+    applyTextView(panelSeed, runHeaderText.seed);
 
     applyModuleLabels(moduleLabels, runHudView.moduleLabels);
 
@@ -1247,7 +1253,15 @@ async function bootstrap(): Promise<void> {
     runChips.forEach((chip, index) => {
       drawChip(graphics, chip.x, chip.y, chip.w, chip.color, chip.height);
       const label = chipLabels[index];
-      if (label) layoutChipLabel(label, chip.label, chip.x, chip.y, chip.w, chip.labelFill, chip.height);
+      if (!label) return;
+      const measured = measureTextView(label, {
+        align: 'center',
+        fill: chip.labelFill,
+        text: chip.label,
+        x: label.x,
+        y: label.y
+      });
+      applyTextView(label, buildChipLabelView(chip.label, measured, chip.x, chip.y, chip.w, chip.labelFill, chip.height));
     });
   }
 
@@ -1366,32 +1380,30 @@ async function bootstrap(): Promise<void> {
     drawPanel(graphics, mapHudLayout.leftPanelX, mapHudLayout.leftPanelY, mapHudLayout.leftPanelWidth, mapHudLayout.leftPanelHeight);
     drawPanel(graphics, mapHudLayout.rightPanelX, mapHudLayout.rightPanelY, mapHudLayout.rightPanelWidth, mapHudLayout.rightPanelHeight);
     mapHudView.leftRows.forEach((row, index) => {
-      layoutHudRowLabel(mapLeftRowLabels[index], row.label, mapHudLayout.leftLabelX, row.y);
-      layoutHudRowValue(mapLeftRowValues[index], row.value, mapHudLayout.leftValueX, row.y);
+      const label = mapLeftRowLabels[index];
+      const value = mapLeftRowValues[index];
+      if (!label || !value) return;
+      const labelMeasure = measureTextView(label, { fill: '#94a3b8', text: row.label, x: label.x, y: label.y });
+      const valueMeasure = measureTextView(value, { align: 'right', fill: '#e2e8f0', text: row.value, x: value.x, y: value.y });
+      applyTextView(label, buildHudRowLabelView(row.label, mapHudLayout.leftLabelX, row.y, labelMeasure.height));
+      applyTextView(value, buildHudRowValueView(row.value, mapHudLayout.leftValueX, row.y, valueMeasure));
     });
     mapHudView.rightHeaderLines.forEach((line, index) => {
+      const label = mapRightHeaderLines[index];
+      if (!label) return;
       const y = index === 0 ? mapHudLayout.rightHeaderLine1Y : mapHudLayout.rightHeaderLine2Y;
-      layoutHudRowLabel(mapRightHeaderLines[index], line, mapHudLayout.rightLabelX, y);
+      const labelMeasure = measureTextView(label, { fill: '#94a3b8', text: line, x: label.x, y: label.y });
+      applyTextView(label, buildHudRowLabelView(line, mapHudLayout.rightLabelX, y, labelMeasure.height));
     });
     drawGauge(graphics, mapHudLayout.gaugeX, mapHudView.leftRows[1].y - 6, mapHudLayout.gaugeWidth, 12, mapHudView.fuelRatio, '#38bdf8');
     drawPips(graphics, mapHudLayout.pipsX, mapHudView.leftRows[0].y - 3, mapHudView.freeTripTotal, mapHudView.freeTripFilled, '#facc15');
     drawModuleMeters(graphics, mapHudView.moduleMeters);
 
     const mapHeaderLayout = mapHudView.headerLayout;
-    hud.text = mapHudView.title;
-    hud.style.fontSize = 18;
-    hud.style.fill = '#e2e8f0';
-    hud.x = mapHeaderLayout.titleX;
-    hud.y = mapHeaderLayout.titleY;
-    panelMeta.text = mapHudView.meta;
-    panelMeta.style.fill = '#cbd5e1';
-    panelMeta.style.fontSize = 12;
-    panelMeta.x = mapHeaderLayout.metaX;
-    panelMeta.y = mapHeaderLayout.metaY;
-    panelSeed.text = mapHudView.seed;
-    panelSeed.style.fill = '#94a3b8';
-    panelSeed.x = mapHeaderLayout.seedX;
-    panelSeed.y = mapHeaderLayout.seedY;
+    const mapHeaderText = buildPanelHeaderTextViews(mapHeaderLayout, mapHudView);
+    applyTextView(hud, mapHeaderText.title);
+    applyTextView(panelMeta, mapHeaderText.meta);
+    applyTextView(panelSeed, mapHeaderText.seed);
 
     applyModuleLabels(moduleLabels, mapHudView.moduleLabels);
 
@@ -1422,9 +1434,15 @@ async function bootstrap(): Promise<void> {
     mapChips.forEach((chip, index) => {
       drawChip(graphics, chip.x, chip.y, chip.w, chip.color, chip.height);
       const label = chipLabels[index];
-      if (label) {
-        layoutChipLabel(label, chip.label, chip.x, chip.y, chip.w, chip.labelFill, chip.height);
-      }
+      if (!label) return;
+      const measured = measureTextView(label, {
+        align: 'center',
+        fill: chip.labelFill,
+        text: chip.label,
+        x: label.x,
+        y: label.y
+      });
+      applyTextView(label, buildChipLabelView(chip.label, measured, chip.x, chip.y, chip.w, chip.labelFill, chip.height));
     });
   }
 
