@@ -642,3 +642,14 @@ TODO next:
 
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially any repeated scene-local draw setup that can move behind reusable render helpers or testable view builders.
 - Decide whether a later notebook slice should branch the actual expedition-goal ending or post-goal encounter text, now that the source approach itself varies by clue order.
+
+- Map-board render extraction pass:
+  - Added `src/game/render/mapBoardRenderer.ts` so the map scene's edge/node drawing lives outside `src/main.ts` and consumes the existing deterministic `MapBoardView`.
+  - Updated `src/main.ts` to call `drawMapBoard(...)` instead of owning the board-edge, glow, outline, and goal-star loops inline.
+  - Added `tests/mapBoardRenderer.test.ts` with recorder-based coverage for edge ordering, decorated-node accent order, and the stronger current-node glow alpha.
+  - Validation: `npm run check` passes in this environment; browser smoke scripts still report the existing Chromium-launch skips but exit successfully.
+
+TODO next:
+
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially remaining frame-reset/setup helpers like shared scene text-node clearing and other scene-local backdrop/setup code.
+- Decide whether a later notebook slice should branch the actual expedition-goal ending or post-goal encounter text, now that the source approach itself varies by clue order.
