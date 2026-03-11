@@ -569,3 +569,14 @@ TODO next:
 
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially shared overlay-card measurement/application work and repeated text-node reset/application plumbing.
 - Decide whether later notebook payoff should mutate more than one relay/objective on the goal run or branch the actual goal-node encounter by clue mix.
+
+- Shared text-card measurement extraction pass:
+  - Added `src/game/runtime/sceneTextCards.ts` so run/map overlay cards now share one deterministic spec + measured-layout helper instead of duplicating wrap-width and placement math inside `src/main.ts`.
+  - Updated `src/game/runtime/runSceneView.ts` and `src/game/runtime/mapSceneCards.ts` to describe overlay/route/notes cards with the shared `SceneTextCardSpec`.
+  - Updated `src/main.ts` to apply and measure cards through the shared helper, and collapsed repeated label clearing/module-label application into local helpers.
+  - Added `tests/sceneTextCards.test.ts` and updated `IMPLEMENTATION_NOTES.md`.
+
+TODO next:
+
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially repeated Pixi text-style/reset plumbing and any remaining scene-local draw helper setup that can move behind testable view models.
+- Decide whether later notebook payoff should mutate more than one relay/objective on the goal run or branch the actual goal-node encounter by clue mix.

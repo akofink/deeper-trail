@@ -3,19 +3,11 @@ import { currentNodeType } from '../../engine/sim/world';
 import { objectiveShortLabel, runObjectiveProgress } from './runObjectiveUi';
 import type { RuntimeState } from './runtimeState';
 import { buildSceneActionChipRow, type SceneActionChip } from './sceneActionChips';
+import type { SceneTextCardSpec } from './sceneTextCards';
 
-export interface RunSceneOverlayCard {
+export interface RunSceneOverlayCard extends SceneTextCardSpec {
   align: 'center';
-  fontSize: number;
-  fill: string;
-  maxWidth: number;
-  minWidth: number;
-  paddingX: number;
-  paddingY: number;
-  text: string;
   tone: 'dark';
-  x: number;
-  y: number;
 }
 
 const OVERLAY_Y = 150;
