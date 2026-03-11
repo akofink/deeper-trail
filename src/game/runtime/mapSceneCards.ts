@@ -1,4 +1,5 @@
 import type { MapSceneLayout } from './mapSceneLayout';
+import type { SceneTextCardSpec } from './sceneTextCards';
 
 export interface MapSceneCopyInput {
   expeditionComplete: boolean;
@@ -18,19 +19,7 @@ export interface MapSceneCopy {
   showRouteCard: boolean;
 }
 
-export interface MapSceneTextCardView {
-  align: 'left' | 'center';
-  fill: string;
-  fontSize: number;
-  maxWidth: number;
-  minWidth: number;
-  paddingX: number;
-  paddingY: number;
-  text: string;
-  tone: 'dark' | 'light';
-  x: number;
-  y: number;
-}
+export type MapSceneTextCardView = SceneTextCardSpec;
 
 export interface MapSceneCardViews {
   celebrationCard: MapSceneTextCardView | null;

@@ -42,6 +42,11 @@ import { buildRunSceneDepthView } from './game/runtime/runSceneDepthView';
 import { buildBeaconLabelViews, drawRunExitFlag, drawRunObjectiveVisuals } from './game/runtime/runSceneObjectiveView';
 import { buildExitLockedMessage, buildRunCompletionMessage } from './game/runtime/runCompletion';
 import { buildRunActionChips, buildRunSceneOverlayCard } from './game/runtime/runSceneView';
+import {
+  buildSceneTextCardLayout,
+  initialSceneTextCardWrapWidth,
+  type SceneTextCardSpec
+} from './game/runtime/sceneTextCards';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import { advanceHorizontalVelocity } from './game/runtime/runMotion';
 import { rechargeShieldCharge, tryConsumeShieldCharge } from './game/runtime/shieldCharge';
@@ -188,47 +193,55 @@ function drawMessageCard(graphics: Graphics, x: number, y: number, w: number, h:
   graphics.roundRect(x, y, w, h, 18).stroke({ color: stroke, alpha: 0.22, width: 1.2 });
 }
 
-function layoutTextCard(
-  graphics: Graphics,
-  text: Text,
-  textValue: string,
-  options: {
-    tone?: 'dark' | 'light';
-    x: number;
-    y: number;
-    maxWidth: number;
-    minWidth?: number;
-    paddingX?: number;
-    paddingY?: number;
-    align?: 'left' | 'center';
-    fill?: string;
-    fontSize?: number;
-  }
-): { width: number; height: number } {
-  const paddingX = options.paddingX ?? 18;
-  const paddingY = options.paddingY ?? 14;
-  text.text = textValue;
-  text.style.wordWrap = true;
-  text.style.wordWrapWidth = Math.max(120, options.maxWidth - paddingX * 2);
-  text.style.align = options.align ?? 'left';
-  text.style.fill = options.fill ?? (options.tone === 'light' ? '#0f172a' : '#e2e8f0');
-  if (options.fontSize) {
-    text.style.fontSize = options.fontSize;
-  }
+function applyTextCard(graphics: Graphics, textNode: Text, card: SceneTextCardSpec): { width: number; height: number } {
+  textNode.text = card.text;
+  textNode.style.fontSize = card.fontSize;
+  textNode.style.fill = card.fill;
+  textNode.style.align = card.align;
+  textNode.style.wordWrap = true;
+  textNode.style.wordWrapWidth = initialSceneTextCardWrapWidth(card);
+  const measuredWidth = textNode.width;
+  const preLayout = buildSceneTextCardLayout(card, measuredWidth, 0);
+  textNode.style.wordWrapWidth = preLayout.wordWrapWidth;
+  const layout = buildSceneTextCardLayout(card, textNode.width, textNode.height);
+  textNode.style.wordWrapWidth = layout.wordWrapWidth;
 
-  const desiredWidth = Math.max(options.minWidth ?? 220, Math.min(options.maxWidth, text.width + paddingX * 2));
-  text.style.wordWrapWidth = desiredWidth - paddingX * 2;
-  const cardHeight = text.height + paddingY * 2;
+  drawMessageCard(graphics, card.x, card.y, layout.cardWidth, layout.cardHeight, card.tone);
 
-  drawMessageCard(graphics, options.x, options.y, desiredWidth, cardHeight, options.tone ?? 'dark');
+  textNode.x = layout.textX;
+  textNode.y = layout.textY;
+  return { width: layout.cardWidth, height: layout.cardHeight };
+}
 
-  if ((options.align ?? 'left') === 'center') {
-    text.x = options.x + Math.round((desiredWidth - text.width) * 0.5);
-  } else {
-    text.x = options.x + paddingX;
-  }
-  text.y = options.y + Math.round((cardHeight - text.height) * 0.5);
-  return { width: desiredWidth, height: cardHeight };
+function clearTextLabels(labels: Text[]): void {
+  labels.forEach((label) => {
+    label.text = '';
+  });
+}
+
+function applyModuleLabels(labels: Text[], moduleLayouts: Array<{ text: string; x: number; y: number } | null | undefined>): void {
+  labels.forEach((label, index) => {
+    const layout = moduleLayouts[index];
+    label.text = layout?.text ?? '';
+    label.style.fill = '#cbd5e1';
+    label.x = layout?.x ?? 0;
+    label.y = layout?.y ?? 0;
+  });
+}
+
+function measureTextCard(textNode: Text, card: SceneTextCardSpec): { height: number; width: number } {
+  textNode.text = card.text;
+  textNode.style.fontSize = card.fontSize;
+  textNode.style.fill = card.fill;
+  textNode.style.align = card.align;
+  textNode.style.wordWrap = true;
+  textNode.style.wordWrapWidth = initialSceneTextCardWrapWidth(card);
+  const measuredWidth = textNode.width;
+  textNode.style.wordWrapWidth = buildSceneTextCardLayout(card, measuredWidth, 0).wordWrapWidth;
+  return {
+    height: textNode.height,
+    width: textNode.width
+  };
 }
 
 function drawModuleMeters(graphics: Graphics, moduleMeters: Array<{
@@ -1135,33 +1148,15 @@ async function bootstrap(): Promise<void> {
     panelSeed.text = '';
     celebrationOverlay.text = '';
     fieldNotesText.text = '';
-    runLeftRowLabels.forEach((label) => {
-      label.text = '';
-    });
-    runLeftRowValues.forEach((label) => {
-      label.text = '';
-    });
-    runRightRowLabels.forEach((label) => {
-      label.text = '';
-    });
-    runRightRowValues.forEach((label) => {
-      label.text = '';
-    });
-    mapLeftRowLabels.forEach((label) => {
-      label.text = '';
-    });
-    mapLeftRowValues.forEach((label) => {
-      label.text = '';
-    });
-    mapRightHeaderLines.forEach((label) => {
-      label.text = '';
-    });
-    chipLabels.forEach((label) => {
-      label.text = '';
-    });
-    beaconLabels.forEach((label) => {
-      label.text = '';
-    });
+    clearTextLabels(runLeftRowLabels);
+    clearTextLabels(runLeftRowValues);
+    clearTextLabels(runRightRowLabels);
+    clearTextLabels(runRightRowValues);
+    clearTextLabels(mapLeftRowLabels);
+    clearTextLabels(mapLeftRowValues);
+    clearTextLabels(mapRightHeaderLines);
+    clearTextLabels(chipLabels);
+    clearTextLabels(beaconLabels);
     graphics.rect(0, 0, w, h).fill(colors.sky);
     graphics.rect(0, h * 0.5, w, h * 0.5).fill(colors.back);
     drawBackdropAccents(graphics, state, nodeType, w, h);
@@ -1240,28 +1235,11 @@ async function bootstrap(): Promise<void> {
     panelSeed.x = runHeaderLayout.seedX;
     panelSeed.y = runHeaderLayout.seedY;
 
-    moduleLabels.forEach((label, index) => {
-      const layout = runHudView.moduleLabels[index];
-      label.text = layout?.text ?? '';
-      label.style.fill = '#cbd5e1';
-      label.x = layout?.x ?? 0;
-      label.y = layout?.y ?? 0;
-    });
+    applyModuleLabels(moduleLabels, runHudView.moduleLabels);
 
     const runOverlayCard = buildRunSceneOverlayCard(state, w);
     if (runOverlayCard) {
-      layoutTextCard(graphics, overlay, runOverlayCard.text, {
-        tone: runOverlayCard.tone,
-        x: runOverlayCard.x,
-        y: runOverlayCard.y,
-        maxWidth: runOverlayCard.maxWidth,
-        minWidth: runOverlayCard.minWidth,
-        paddingX: runOverlayCard.paddingX,
-        paddingY: runOverlayCard.paddingY,
-        align: runOverlayCard.align,
-        fill: runOverlayCard.fill,
-        fontSize: runOverlayCard.fontSize
-      });
+      applyTextCard(graphics, overlay, runOverlayCard);
     } else {
       overlay.text = '';
     }
@@ -1282,33 +1260,15 @@ async function bootstrap(): Promise<void> {
     playerGraphics.clear();
     panelSeed.text = '';
     fieldNotesText.text = '';
-    runLeftRowLabels.forEach((label) => {
-      label.text = '';
-    });
-    runLeftRowValues.forEach((label) => {
-      label.text = '';
-    });
-    runRightRowLabels.forEach((label) => {
-      label.text = '';
-    });
-    runRightRowValues.forEach((label) => {
-      label.text = '';
-    });
-    mapLeftRowLabels.forEach((label) => {
-      label.text = '';
-    });
-    mapLeftRowValues.forEach((label) => {
-      label.text = '';
-    });
-    mapRightHeaderLines.forEach((label) => {
-      label.text = '';
-    });
-    chipLabels.forEach((label) => {
-      label.text = '';
-    });
-    beaconLabels.forEach((label) => {
-      label.text = '';
-    });
+    clearTextLabels(runLeftRowLabels);
+    clearTextLabels(runLeftRowValues);
+    clearTextLabels(runRightRowLabels);
+    clearTextLabels(runRightRowValues);
+    clearTextLabels(mapLeftRowLabels);
+    clearTextLabels(mapLeftRowValues);
+    clearTextLabels(mapRightHeaderLines);
+    clearTextLabels(chipLabels);
+    clearTextLabels(beaconLabels);
     drawMapBackdrop(graphics, w, h);
 
     const options = connectedNeighbors(state.sim);
@@ -1371,16 +1331,36 @@ async function bootstrap(): Promise<void> {
       score: state.score,
       seed: state.seed
     });
-    overlay.text = mapSceneCopy.routeText;
-    overlay.style.wordWrap = true;
-    overlay.style.fontSize = 15;
-    fieldNotesText.text = mapSceneContent.fieldNotes.join('\n');
-    fieldNotesText.style.wordWrap = true;
-    fieldNotesText.style.fontSize = 13;
     const mapSceneMeasureLayout = buildMapSceneLayout(w, h, 0, 0);
-    overlay.style.wordWrapWidth = mapSceneMeasureLayout.routeCard.wrapWidth;
-    fieldNotesText.style.wordWrapWidth = mapSceneMeasureLayout.notesCard.wrapWidth;
-    const mapSceneLayout = buildMapSceneLayout(w, h, overlay.height + 32, fieldNotesText.height + 32);
+    const routeMeasureCard = {
+      align: 'left',
+      fill: '#e2e8f0',
+      fontSize: 15,
+      maxWidth: mapSceneMeasureLayout.routeCard.wrapWidth + 36,
+      minWidth: 220,
+      paddingX: 18,
+      paddingY: 16,
+      text: mapSceneCopy.routeText,
+      tone: 'dark',
+      x: 0,
+      y: 0
+    } satisfies SceneTextCardSpec;
+    const notesMeasureCard = {
+      align: 'left',
+      fill: '#0f172a',
+      fontSize: 13,
+      maxWidth: mapSceneMeasureLayout.notesCard.wrapWidth + 36,
+      minWidth: 220,
+      paddingX: 18,
+      paddingY: 16,
+      text: mapSceneContent.fieldNotes.join('\n'),
+      tone: 'light',
+      x: 0,
+      y: 0
+    } satisfies SceneTextCardSpec;
+    const routeMeasure = measureTextCard(overlay, routeMeasureCard);
+    const notesMeasure = measureTextCard(fieldNotesText, notesMeasureCard);
+    const mapSceneLayout = buildMapSceneLayout(w, h, routeMeasure.height + 32, notesMeasure.height + 32);
     const mapHudView = buildMapSceneHudViewModel(state, w, mapSceneContent.completionState, moduleLabels.length);
     const mapHudLayout = mapHudView.layout;
     drawPanel(graphics, mapHudLayout.leftPanelX, mapHudLayout.leftPanelY, mapHudLayout.leftPanelWidth, mapHudLayout.leftPanelHeight);
@@ -1413,13 +1393,7 @@ async function bootstrap(): Promise<void> {
     panelSeed.x = mapHeaderLayout.seedX;
     panelSeed.y = mapHeaderLayout.seedY;
 
-    moduleLabels.forEach((label, index) => {
-      const layout = mapHudView.moduleLabels[index];
-      label.text = layout?.text ?? '';
-      label.style.fill = '#cbd5e1';
-      label.x = layout?.x ?? 0;
-      label.y = layout?.y ?? 0;
-    });
+    applyModuleLabels(moduleLabels, mapHudView.moduleLabels);
 
     const mapCardViews = buildMapSceneCardViews({
       celebrationText: mapSceneCopy.celebrationText,
@@ -1430,48 +1404,15 @@ async function bootstrap(): Promise<void> {
     });
 
     if (mapCardViews.routeCard) {
-      layoutTextCard(graphics, overlay, mapCardViews.routeCard.text, {
-        tone: mapCardViews.routeCard.tone,
-        x: mapCardViews.routeCard.x,
-        y: mapCardViews.routeCard.y,
-        maxWidth: mapCardViews.routeCard.maxWidth,
-        minWidth: mapCardViews.routeCard.minWidth,
-        paddingX: mapCardViews.routeCard.paddingX,
-        paddingY: mapCardViews.routeCard.paddingY,
-        align: mapCardViews.routeCard.align,
-        fill: mapCardViews.routeCard.fill,
-        fontSize: mapCardViews.routeCard.fontSize
-      });
+      applyTextCard(graphics, overlay, mapCardViews.routeCard);
     } else {
       overlay.text = '';
     }
-    layoutTextCard(graphics, fieldNotesText, mapCardViews.notesCard.text, {
-      tone: mapCardViews.notesCard.tone,
-      x: mapCardViews.notesCard.x,
-      y: mapCardViews.notesCard.y,
-      maxWidth: mapCardViews.notesCard.maxWidth,
-      minWidth: mapCardViews.notesCard.minWidth,
-      paddingX: mapCardViews.notesCard.paddingX,
-      paddingY: mapCardViews.notesCard.paddingY,
-      align: mapCardViews.notesCard.align,
-      fill: mapCardViews.notesCard.fill,
-      fontSize: mapCardViews.notesCard.fontSize
-    });
+    applyTextCard(graphics, fieldNotesText, mapCardViews.notesCard);
 
     celebrationOverlay.text = '';
     if (mapCardViews.celebrationCard) {
-      layoutTextCard(graphics, celebrationOverlay, mapCardViews.celebrationCard.text, {
-        tone: mapCardViews.celebrationCard.tone,
-        x: mapCardViews.celebrationCard.x,
-        y: mapCardViews.celebrationCard.y,
-        maxWidth: mapCardViews.celebrationCard.maxWidth,
-        minWidth: mapCardViews.celebrationCard.minWidth,
-        paddingX: mapCardViews.celebrationCard.paddingX,
-        paddingY: mapCardViews.celebrationCard.paddingY,
-        align: mapCardViews.celebrationCard.align,
-        fill: mapCardViews.celebrationCard.fill,
-        fontSize: mapCardViews.celebrationCard.fontSize
-      });
+      applyTextCard(graphics, celebrationOverlay, mapCardViews.celebrationCard);
       mapSceneLayout.celebrationAccents.forEach((accent) => {
         graphics.circle(accent.x, accent.y, accent.r).fill(accent.color);
       });
