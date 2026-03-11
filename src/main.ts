@@ -65,7 +65,8 @@ import {
 } from './game/runtime/vehicleDerivedStats';
 import { advanceWheelRotation } from './game/runtime/vehiclePresentation';
 import { drawMapBoard } from './game/render/mapBoardRenderer';
-import { applyTextView, applyTextViews, clearTextLabel, measureTextView, resetSceneText } from './game/render/pixiText';
+import { applyTextView, applyTextViews, clearTextLabel, measureTextView } from './game/render/pixiText';
+import { beginSceneFrame } from './game/render/sceneFrame';
 import {
   applyTextCard,
   drawChip,
@@ -290,6 +291,18 @@ async function bootstrap(): Promise<void> {
     app.stage.addChild(label);
     return label;
   });
+
+  const sharedSceneTextGroups = {
+    runLeftRowLabels,
+    runLeftRowValues,
+    runRightRowLabels,
+    runRightRowValues,
+    mapLeftRowLabels,
+    mapLeftRowValues,
+    mapRightHeaderLines,
+    chipLabels,
+    beaconLabels
+  };
 
   let state = createInitialRuntimeState(app.screen.height, initialSeedFromLocation() ?? createRunSeed());
 
@@ -593,22 +606,7 @@ async function bootstrap(): Promise<void> {
     const colors = biomeByNodeType(nodeType);
     const objectiveVisuals = buildRunObjectiveVisualState(state);
 
-    graphics.clear();
-    playerGraphics.clear();
-    resetSceneText({
-      singleLabels: [panelSeed, celebrationOverlay, fieldNotesText],
-      groups: [
-        { labels: runLeftRowLabels },
-        { labels: runLeftRowValues },
-        { labels: runRightRowLabels },
-        { labels: runRightRowValues },
-        { labels: mapLeftRowLabels },
-        { labels: mapLeftRowValues },
-        { labels: mapRightHeaderLines },
-        { labels: chipLabels },
-        { labels: beaconLabels }
-      ]
-    });
+    beginSceneFrame(graphics, playerGraphics, [panelSeed, celebrationOverlay, fieldNotesText], sharedSceneTextGroups);
     graphics.rect(0, 0, w, h).fill(colors.sky);
     graphics.rect(0, h * 0.5, w, h * 0.5).fill(colors.back);
     drawRunBackdropAccents(graphics, state, nodeType, w, h);
@@ -722,22 +720,7 @@ async function bootstrap(): Promise<void> {
     const h = screenHeight();
     const margin = 110;
 
-    graphics.clear();
-    playerGraphics.clear();
-    resetSceneText({
-      singleLabels: [panelSeed, fieldNotesText],
-      groups: [
-        { labels: runLeftRowLabels },
-        { labels: runLeftRowValues },
-        { labels: runRightRowLabels },
-        { labels: runRightRowValues },
-        { labels: mapLeftRowLabels },
-        { labels: mapLeftRowValues },
-        { labels: mapRightHeaderLines },
-        { labels: chipLabels },
-        { labels: beaconLabels }
-      ]
-    });
+    beginSceneFrame(graphics, playerGraphics, [panelSeed, fieldNotesText], sharedSceneTextGroups);
     drawMapBackdrop(graphics, w, h);
 
     const options = connectedNeighbors(state.sim);

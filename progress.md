@@ -674,3 +674,8 @@ TODO next:
 
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially other repeated frame/setup work that can move behind render helpers once text-reset duplication is gone.
 - Decide whether a later notebook slice should branch the actual expedition-goal ending or post-goal encounter text, now that the source approach itself varies by clue order.
+
+- Shared scene-frame reset extraction pass:
+  - Added `src/game/render/sceneFrame.ts` so run/map scene entry can clear the shared graphics layers plus the common HUD/chip/beacon text groups through one helper instead of rebuilding the same reset plan in `src/main.ts`.
+  - Updated `src/main.ts` to keep a single shared scene-text group bank and call `beginSceneFrame(...)` for both draw paths, leaving only scene-specific single-label differences inline.
+  - Added `tests/sceneFrame.test.ts` and updated `IMPLEMENTATION_NOTES.md`.
