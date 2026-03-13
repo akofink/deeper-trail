@@ -26,6 +26,7 @@ import {
   renderMapSceneHud,
   renderRunSceneHud
 } from './game/render/sceneHudRenderer';
+import { createSceneTextNodes } from './game/render/sceneTextBootstrap';
 import './styles.css';
 
 declare global {
@@ -65,145 +66,25 @@ async function bootstrap(): Promise<void> {
   const playerGraphics = new Graphics();
   app.stage.addChild(playerGraphics);
 
-  const hud = new Text({
-    text: '',
-    style: { fill: '#12263a', fontSize: 20, fontFamily: 'monospace', fontWeight: '700' }
-  });
-  hud.x = 16;
-  hud.y = 12;
-  app.stage.addChild(hud);
-
-  const overlay = new Text({
-    text: '',
-    style: { fill: '#102a43', fontSize: 25, fontFamily: 'monospace', fontWeight: '700', align: 'center' }
-  });
-  app.stage.addChild(overlay);
-
-  const celebrationOverlay = new Text({
-    text: '',
-    style: { fill: '#f8fafc', fontSize: 18, fontFamily: 'monospace', fontWeight: '700', align: 'center' }
-  });
-  app.stage.addChild(celebrationOverlay);
-
-  const chipLabels = Array.from({ length: 6 }, () => {
-    const label = new Text({
-      text: '',
-      style: { fill: '#dbeafe', fontSize: 14, fontFamily: 'monospace', fontWeight: '600' }
-    });
-    app.stage.addChild(label);
-    return label;
-  });
-
-  const panelMeta = new Text({
-    text: '',
-    style: { fill: '#cbd5e1', fontSize: 14, fontFamily: 'monospace', fontWeight: '700' }
-  });
-  app.stage.addChild(panelMeta);
-
-  const panelSeed = new Text({
-    text: '',
-    style: { fill: '#94a3b8', fontSize: 11, fontFamily: 'monospace', fontWeight: '700', align: 'right' }
-  });
-  app.stage.addChild(panelSeed);
-
-  const fieldNotesText = new Text({
-    text: '',
-    style: { fill: '#0f172a', fontSize: 13, fontFamily: 'monospace', fontWeight: '700' }
-  });
-  app.stage.addChild(fieldNotesText);
-
-  const runLeftRowLabels = Array.from({ length: 3 }, () => {
-    const label = new Text({
-      text: '',
-      style: { fill: '#94a3b8', fontSize: 12, fontFamily: 'monospace', fontWeight: '700' }
-    });
-    app.stage.addChild(label);
-    return label;
-  });
-
-  const runLeftRowValues = Array.from({ length: 3 }, () => {
-    const label = new Text({
-      text: '',
-      style: { fill: '#e2e8f0', fontSize: 12, fontFamily: 'monospace', fontWeight: '700', align: 'right' }
-    });
-    app.stage.addChild(label);
-    return label;
-  });
-
-  const runRightRowLabels = Array.from({ length: 3 }, () => {
-    const label = new Text({
-      text: '',
-      style: { fill: '#94a3b8', fontSize: 12, fontFamily: 'monospace', fontWeight: '700' }
-    });
-    app.stage.addChild(label);
-    return label;
-  });
-
-  const runRightRowValues = Array.from({ length: 2 }, () => {
-    const label = new Text({
-      text: '',
-      style: { fill: '#e2e8f0', fontSize: 12, fontFamily: 'monospace', fontWeight: '700', align: 'right' }
-    });
-    app.stage.addChild(label);
-    return label;
-  });
-
-  const mapLeftRowLabels = Array.from({ length: 2 }, () => {
-    const label = new Text({
-      text: '',
-      style: { fill: '#94a3b8', fontSize: 12, fontFamily: 'monospace', fontWeight: '700' }
-    });
-    app.stage.addChild(label);
-    return label;
-  });
-
-  const mapLeftRowValues = Array.from({ length: 2 }, () => {
-    const label = new Text({
-      text: '',
-      style: { fill: '#e2e8f0', fontSize: 12, fontFamily: 'monospace', fontWeight: '700', align: 'right' }
-    });
-    app.stage.addChild(label);
-    return label;
-  });
-
-  const mapRightHeaderLines = Array.from({ length: 2 }, () => {
-    const label = new Text({
-      text: '',
-      style: { fill: '#94a3b8', fontSize: 12, fontFamily: 'monospace', fontWeight: '700' }
-    });
-    app.stage.addChild(label);
-    return label;
-  });
-
-  const moduleLabels = Array.from({ length: 6 }, () => {
-    const label = new Text({
-      text: '',
-      style: { fill: '#cbd5e1', fontSize: 10, fontFamily: 'monospace', fontWeight: '700' }
-    });
-    app.stage.addChild(label);
-    return label;
-  });
-
-  const beaconLabels = Array.from({ length: 3 }, () => {
-    const label = new Text({
-      text: '',
-      style: { fill: '#111827', fontSize: 11, fontFamily: 'monospace', fontWeight: '700', align: 'center' }
-    });
-    app.stage.addChild(label);
-    return label;
-  });
-
-  const sharedSceneTextGroups = {
+  const {
+    beaconLabels,
+    celebrationOverlay,
+    chipLabels,
+    fieldNotesText,
+    hud,
+    mapLeftRowLabels,
+    mapLeftRowValues,
+    mapRightHeaderLines,
+    moduleLabels,
+    overlay,
+    panelMeta,
+    panelSeed,
     runLeftRowLabels,
     runLeftRowValues,
     runRightRowLabels,
     runRightRowValues,
-    mapLeftRowLabels,
-    mapLeftRowValues,
-    mapRightHeaderLines,
-    chipLabels,
-    beaconLabels
-  };
+    sharedSceneTextGroups
+  } = createSceneTextNodes(app.stage, (options) => new Text(options));
 
   let state = createInitialRuntimeState(app.screen.height, initialSeedFromLocation() ?? createRunSeed());
   const shellEventBridge = createShellEventBridge({
