@@ -180,7 +180,7 @@ export function buildRunLayout(groundY: number, nodeType: string): {
             {
               id: 'cl0',
               x: 660,
-              y: groundY - 130 - Math.round(encounterRiseAt(nodeType, 1) * 0.7),
+              y: groundY - 114 - Math.round(encounterRiseAt(nodeType, 1) * 0.7),
               w: 120,
               h: 108,
               progress: 0,
@@ -189,7 +189,7 @@ export function buildRunLayout(groundY: number, nodeType: string): {
             {
               id: 'cl1',
               x: 1680,
-              y: groundY - 144 - Math.round(encounterRiseAt(nodeType, 5) * 0.7),
+              y: groundY - 122 - Math.round(encounterRiseAt(nodeType, 5) * 0.7),
               w: 126,
               h: 116,
               progress: 0,
