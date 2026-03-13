@@ -12,6 +12,7 @@ import {
 import { buildMapSceneHudViewModel } from './game/runtime/mapSceneHudView';
 import { buildMapSceneTextAssembly } from './game/runtime/mapSceneTextAssembly';
 import { buildDebugStateSnapshot } from './game/runtime/debugState';
+import { createFrameLoopController } from './game/runtime/frameLoop';
 import { goalSignalEndingSummary } from './game/runtime/goalSignal';
 import { runObjectiveProgress } from './game/runtime/runObjectiveUi';
 import { buildRunObjectiveVisualState } from './game/runtime/runObjectiveVisuals';
@@ -58,7 +59,6 @@ const keys = new Set<string>();
 let previousSpaceDown = false;
 let previousDashDown = false;
 let previousMapNavigate = false;
-let externalStepping = false;
 
 function mapRotateInput(keysPressed: Set<string>): -1 | 0 | 1 {
   const rotateInput = (keysPressed.has('KeyE') ? 1 : 0) - (keysPressed.has('KeyQ') ? 1 : 0);
@@ -69,10 +69,6 @@ function mapRotateInput(keysPressed: Set<string>): -1 | 0 | 1 {
     return -1;
   }
   return 0;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
 }
 
 function createRunSeed(): string {
@@ -426,20 +422,21 @@ async function bootstrap(): Promise<void> {
     resizeRuntimeState(state, screenHeight());
   });
 
-  const gameLoop = (now: number): void => {
-    const prev = (gameLoop as unknown as { previousTime?: number }).previousTime ?? now;
-    (gameLoop as unknown as { previousTime?: number }).previousTime = now;
-
-    if (!externalStepping) {
-      const dt = clamp((now - prev) / 1000, 0, 0.05);
-      if (state.scene === 'run') stepRun(dt);
-      else stepMapScene(state, dt, mapRotateInput(keys));
-
-      if (state.scene === 'run') drawRunScene();
-      else drawMapScene();
+  const frameLoop = createFrameLoopController(FIXED_DT, {
+    currentScene: () => state.scene,
+    drawMap: drawMapScene,
+    drawRun: drawRunScene,
+    renderFrame: () => {
       app.renderer.render(app.stage);
-    }
+    },
+    stepMap: (dt) => {
+      stepMapScene(state, dt, mapRotateInput(keys));
+    },
+    stepRun
+  });
 
+  const gameLoop = (now: number): void => {
+    frameLoop.onAnimationFrame(now);
     window.requestAnimationFrame(gameLoop);
   };
 
@@ -450,18 +447,7 @@ async function bootstrap(): Promise<void> {
   }
 
   window.render_game_to_text = renderGameToText;
-  window.advanceTime = (ms: number): void => {
-    externalStepping = true;
-    const steps = Math.max(1, Math.round(ms / (1000 / 60)));
-    for (let i = 0; i < steps; i += 1) {
-      if (state.scene === 'run') stepRun(FIXED_DT);
-      else stepMapScene(state, FIXED_DT, mapRotateInput(keys));
-    }
-    if (state.scene === 'run') drawRunScene();
-    else drawMapScene();
-    app.renderer.render(app.stage);
-    externalStepping = false;
-  };
+  window.advanceTime = frameLoop.advanceTime;
 
   drawRunScene();
   app.renderer.render(app.stage);
