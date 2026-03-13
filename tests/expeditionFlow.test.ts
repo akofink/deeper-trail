@@ -324,6 +324,65 @@ describe('expedition flow runtime helpers', () => {
     expect(state.mapMessage).toBe('Route board unlocked. Pick a connected route and press Enter to travel.');
   });
 
+  it('consumes the completion free-travel charge after finishing all nature objectives and traveling', () => {
+    const state = buildRuntimeState('nature-objective-travel-refund');
+    const currentNode = findNode(state.sim, state.sim.currentNodeId);
+    const neighbor = connectedNeighbors(state.sim)[0];
+    expect(currentNode).toBeDefined();
+    expect(neighbor).toBeDefined();
+    if (!currentNode || !neighbor) {
+      throw new Error('Expected deterministic start node and connected neighbor');
+    }
+
+    currentNode.type = 'nature';
+    const destination = findNode(state.sim, neighbor.nodeId);
+    expect(destination).toBeDefined();
+    if (!destination) {
+      throw new Error('Expected destination node');
+    }
+    destination.type = 'nature';
+
+    state.sim.fuel = 18;
+    state.groundY = 500;
+    const layout = buildRunLayout(state.groundY, 'nature');
+    state.beacons = layout.beacons;
+    state.canopyLifts = layout.canopyLifts;
+    state.goalX = layout.goalX;
+
+    for (const beacon of state.beacons) {
+      state.player.x = beacon.x - state.player.w * 0.5;
+      state.player.y = beacon.y - state.player.h * 0.5;
+      state.player.onGround = false;
+      expect(attemptBeaconActivation(state, 'manual')).toBe(true);
+    }
+
+    for (const lift of state.canopyLifts) {
+      state.player.x = lift.x - state.player.w * 0.5;
+      state.player.y = lift.y - state.player.h * 0.5;
+      state.player.onGround = false;
+      updateRunObjectives(state, {
+        dt: 0.6,
+        landedThisFrame: false,
+        landingSpeed: 0
+      });
+    }
+
+    const completion = completeCurrentNodeRun(state);
+    expect(completion.expeditionCompleted).toBe(false);
+    expect(state.freeTravelCharges).toBe(1);
+    const fuelAfterCompletion = state.sim.fuel;
+
+    const travel = travelToNodeWithRuntimeEffects(state, neighbor.nodeId);
+
+    expect(travel.didTravel).toBe(true);
+    expect(travel.usedFreeTravel).toBe(true);
+    expect(state.freeTravelCharges).toBe(0);
+    expect(state.sim.currentNodeId).toBe(neighbor.nodeId);
+    expect(state.sim.fuel).toBe(fuelAfterCompletion);
+    expect(state.health).toBe(3);
+    expect(state.mapMessage).toContain('Arrived in nature: stabilized +1 health.');
+  });
+
   it('branches expedition-goal arrival rewards from the ordered notebook clue sequence', () => {
     const healthState = buildRuntimeState('goal-arrival-health');
     healthState.sim.currentNodeId = healthState.expeditionGoalNodeId;
