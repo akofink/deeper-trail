@@ -22,6 +22,7 @@ import { buildRunActionChips, buildRunSceneOverlayCard } from './game/runtime/ru
 import { stepRunState } from './game/runtime/runStep';
 import { buildRunSceneTextAssembly } from './game/runtime/runSceneTextAssembly';
 import { handleShellKeyDown, handleShellKeyUp, resizeRuntimeState } from './game/runtime/shellControl';
+import { bindShellRuntimeLoop } from './game/runtime/shellRuntimeLoop';
 import {
   canUseMedPatch,
   createInitialRuntimeState,
@@ -395,33 +396,6 @@ async function bootstrap(): Promise<void> {
     await document.exitFullscreen();
   }
 
-  window.addEventListener('keydown', (event) => {
-    keys.add(event.code);
-    const result = handleShellKeyDown(state, event.code, {
-      canvasHeight: app.screen.height,
-      createSeed: createRunSeed,
-      previousMapNavigate
-    });
-    state = result.nextState;
-    previousMapNavigate = result.previousMapNavigate;
-
-    if (result.toggleFullscreen) {
-      void toggleFullscreen();
-    }
-    if (result.preventDefault) {
-      event.preventDefault();
-    }
-  });
-
-  window.addEventListener('keyup', (event) => {
-    keys.delete(event.code);
-    previousMapNavigate = handleShellKeyUp(event.code, previousMapNavigate).previousMapNavigate;
-  });
-
-  window.addEventListener('resize', () => {
-    resizeRuntimeState(state, screenHeight());
-  });
-
   const frameLoop = createFrameLoopController(FIXED_DT, {
     currentScene: () => state.scene,
     drawMap: drawMapScene,
@@ -435,12 +409,31 @@ async function bootstrap(): Promise<void> {
     stepRun
   });
 
-  const gameLoop = (now: number): void => {
-    frameLoop.onAnimationFrame(now);
-    window.requestAnimationFrame(gameLoop);
-  };
-
-  window.requestAnimationFrame(gameLoop);
+  bindShellRuntimeLoop(window, {
+    onAnimationFrame: frameLoop.onAnimationFrame,
+    onKeyDown: (code) => {
+      keys.add(code);
+      const result = handleShellKeyDown(state, code, {
+        canvasHeight: app.screen.height,
+        createSeed: createRunSeed,
+        previousMapNavigate
+      });
+      state = result.nextState;
+      previousMapNavigate = result.previousMapNavigate;
+      return {
+        preventDefault: result.preventDefault,
+        toggleFullscreen: result.toggleFullscreen
+      };
+    },
+    onKeyUp: (code) => {
+      keys.delete(code);
+      previousMapNavigate = handleShellKeyUp(code, previousMapNavigate).previousMapNavigate;
+    },
+    onResize: () => {
+      resizeRuntimeState(state, screenHeight());
+    },
+    onToggleFullscreen: toggleFullscreen
+  });
 
   function renderGameToText(): string {
     return JSON.stringify(buildDebugStateSnapshot(state, screenWidth(), getMaxHealth(state.sim.vehicle)));
