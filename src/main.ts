@@ -13,7 +13,7 @@ import { buildBeaconLabelViews } from './game/runtime/runSceneObjectiveView';
 import { buildRunActionChips, buildRunSceneOverlayCard } from './game/runtime/runSceneView';
 import { stepRunState } from './game/runtime/runStep';
 import { buildRunSceneTextAssembly } from './game/runtime/runSceneTextAssembly';
-import { handleShellKeyDown, handleShellKeyUp, resizeRuntimeState } from './game/runtime/shellControl';
+import { createShellEventBridge } from './game/runtime/shellEventBridge';
 import { bindShellRuntimeLoop } from './game/runtime/shellRuntimeLoop';
 import { createInitialRuntimeState } from './game/runtime/runtimeState';
 import { drawMapBoard } from './game/render/mapBoardRenderer';
@@ -42,22 +42,6 @@ declare global {
 }
 
 const FIXED_DT = 1 / 60;
-
-const keys = new Set<string>();
-let previousSpaceDown = false;
-let previousDashDown = false;
-let previousMapNavigate = false;
-
-function mapRotateInput(keysPressed: Set<string>): -1 | 0 | 1 {
-  const rotateInput = (keysPressed.has('KeyE') ? 1 : 0) - (keysPressed.has('KeyQ') ? 1 : 0);
-  if (rotateInput > 0) {
-    return 1;
-  }
-  if (rotateInput < 0) {
-    return -1;
-  }
-  return 0;
-}
 
 function createRunSeed(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -228,6 +212,14 @@ async function bootstrap(): Promise<void> {
   };
 
   let state = createInitialRuntimeState(app.screen.height, initialSeedFromLocation() ?? createRunSeed());
+  const shellEventBridge = createShellEventBridge({
+    createSeed: createRunSeed,
+    getCanvasHeight: () => app.screen.height,
+    getState: () => state,
+    setState: (nextState) => {
+      state = nextState;
+    }
+  });
 
   function screenWidth(): number {
     return Math.max(1, app.screen.width);
@@ -238,19 +230,9 @@ async function bootstrap(): Promise<void> {
   }
 
   function stepRun(dt: number): void {
-    const result = stepRunState(state, {
-      dt,
-      screenWidth: screenWidth(),
-      leftPressed: keys.has('ArrowLeft'),
-      rightPressed: keys.has('ArrowRight'),
-      jumpPressed: keys.has('Space'),
-      dashLeftPressed: keys.has('ShiftLeft'),
-      dashRightPressed: keys.has('ShiftRight'),
-      previousJumpPressed: previousSpaceDown,
-      previousDashPressed: previousDashDown
-    });
-    previousSpaceDown = result.previousJumpPressed;
-    previousDashDown = result.previousDashPressed;
+    const input = shellEventBridge.buildRunStepInputSnapshot();
+    const result = stepRunState(state, { dt, screenWidth: screenWidth(), ...input });
+    shellEventBridge.updateRunStepInputResult(result);
   }
 
   function drawRunScene(): void {
@@ -357,34 +339,16 @@ async function bootstrap(): Promise<void> {
       app.renderer.render(app.stage);
     },
     stepMap: (dt) => {
-      stepMapScene(state, dt, mapRotateInput(keys));
+      stepMapScene(state, dt, shellEventBridge.mapRotateInput());
     },
     stepRun
   });
 
   bindShellRuntimeLoop(window, {
     onAnimationFrame: frameLoop.onAnimationFrame,
-    onKeyDown: (code) => {
-      keys.add(code);
-      const result = handleShellKeyDown(state, code, {
-        canvasHeight: app.screen.height,
-        createSeed: createRunSeed,
-        previousMapNavigate
-      });
-      state = result.nextState;
-      previousMapNavigate = result.previousMapNavigate;
-      return {
-        preventDefault: result.preventDefault,
-        toggleFullscreen: result.toggleFullscreen
-      };
-    },
-    onKeyUp: (code) => {
-      keys.delete(code);
-      previousMapNavigate = handleShellKeyUp(code, previousMapNavigate).previousMapNavigate;
-    },
-    onResize: () => {
-      resizeRuntimeState(state, screenHeight());
-    },
+    onKeyDown: shellEventBridge.onKeyDown,
+    onKeyUp: shellEventBridge.onKeyUp,
+    onResize: shellEventBridge.onResize,
     onToggleFullscreen: toggleFullscreen
   });
 
