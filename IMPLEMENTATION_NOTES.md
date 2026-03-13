@@ -51,7 +51,7 @@
   - `nature` uses airborne links plus canopy lifts that reward sustained jump control timed to deterministic gust windows in vertical draft zones,
   - `anomaly` uses boost-linked relays gated by deterministic sync windows plus fly-through sync gates,
   - scanner lv.2+ should make anomaly timing more legible by exposing deterministic phase-lock progress, while lv.3+ can cash that lock out via auto-link instead of just wider range.
-  - synthesized expedition endings should carry at least one signature-specific epilogue line through the win banner and celebration copy; otherwise clue-order variation only reads during the approach instead of at the actual payoff.
+  - synthesized expedition endings should carry at least one signature-specific discovery beat and epilogue line through the win banner, completion copy, and celebration card; otherwise clue-order variation only reads during the approach instead of at the actual payoff.
 
 ## Current modularity guidance
 

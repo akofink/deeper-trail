@@ -114,6 +114,9 @@ describe('goal signal primer helpers', () => {
     const state = synthesizeGoalState(['nature', 'ruin', 'anomaly']);
 
     expect(goalSignalProfile(state)?.endingTitle).toBe('Echo Salvage Orchard');
+    expect(goalSignalProfile(state)?.endingDiscoveryNote).toBe(
+      'At the source, recovered route fragments hang like tagged fruit around a live salvage trunk still carrying the signal.'
+    );
     expect(goalSignalProfile(state)?.endingCompletionNote).toBe(
       'The source paid back the route in salvage echoes all the way to its heart.'
     );
@@ -121,6 +124,9 @@ describe('goal signal primer helpers', () => {
       'Each recovered fragment repeats the outward trail, turning salvage into a readable memory map.'
     );
     expect(goalSignalEndingSummary(state)).toContain('Echo Salvage Orchard: source cache: +2 scrap on arrival;');
+    expect(goalSignalEndingSummary(state)).toContain(
+      'At the source, recovered route fragments hang like tagged fruit around a live salvage trunk still carrying the signal.'
+    );
     expect(goalSignalEndingSummary(state)).toContain(
       'Each recovered fragment repeats the outward trail, turning salvage into a readable memory map.'
     );

@@ -696,3 +696,13 @@ TODO next:
   - Added `tests/sceneHudRenderer.test.ts` with recorder-based coverage for run HUD rendering, map HUD rendering, shared chip rows, optional card clearing/application, and celebration accent drawing.
   - Updated `IMPLEMENTATION_NOTES.md`.
   - Validation: `npm run check` passes in this environment; browser smoke scripts still report the existing Chromium-launch skips but exit successfully.
+
+- Goal-ending encounter payoff pass:
+  - Extended `src/game/runtime/goalSignal.ts` so each synthesized source-signature variant now carries a distinct discovery beat describing what is actually found at the signal source, not just approach modifiers plus an epilogue line.
+  - Updated `src/game/runtime/runCompletion.ts`, `src/game/runtime/runSceneView.ts`, and `src/main.ts` so expedition-ending run overlays, completion copy, and the post-run celebration path all surface that discovery beat alongside the existing title/completion/epilogue copy.
+  - Updated `tests/goalSignal.test.ts`, `tests/runCompletion.test.ts`, and `tests/runSceneView.test.ts`; `npm run typecheck` and `npm run test -- --run tests/goalSignal.test.ts tests/runCompletion.test.ts tests/runSceneView.test.ts` pass.
+
+TODO next:
+
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially any leftover scene-specific card/backdrop sequencing that can move behind shared render helpers without dragging gameplay rules into Pixi code.
+- Decide whether the next notebook payoff step should move from variant-specific source text into a true branching post-goal consequence, such as unlocking different follow-on route hooks or persistent world-state mutations after the ending.

@@ -119,6 +119,8 @@ describe('run completion copy helpers', () => {
       buildRunCompletionMessage({
         expeditionCompleted: true,
         expeditionEndingTitle: 'Grounded Relay Vault',
+        expeditionEndingDiscoveryNote:
+          'At the source, a grounded relay vault opens around a hand-built spindle that answers your road-language notes.',
         expeditionEndingCompletionNote:
           'The source shelves its relay line low and opens a grounded vault at the end of the route.',
         expeditionEndingEpilogueNote:
@@ -127,7 +129,7 @@ describe('run completion copy helpers', () => {
         latestNotebookEntryTitle: 'Ignored'
       })
     ).toBe(
-      'Signal source reached. Grounded Relay Vault decoded. The source shelves its relay line low and opens a grounded vault at the end of the route. Its grounded lattice answers the bike-scale relay language instead of abandoning it. Press N for a new expedition.'
+      'Signal source reached. Grounded Relay Vault decoded. At the source, a grounded relay vault opens around a hand-built spindle that answers your road-language notes. The source shelves its relay line low and opens a grounded vault at the end of the route. Its grounded lattice answers the bike-scale relay language instead of abandoning it. Press N for a new expedition.'
     );
   });
 
