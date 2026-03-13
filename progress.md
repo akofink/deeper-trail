@@ -797,3 +797,16 @@ TODO next:
 
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially repeated Pixi `Text` object construction/style setup that can move behind shared scene-label bootstrap helpers.
 - Decide whether the next notebook payoff step should move from variant-specific source text into a true branching post-goal consequence, such as unlocking different follow-on route hooks or persistent world-state mutations after the ending.
+
+- Post-goal branching consequence pass:
+  - Extended `src/game/runtime/goalSignal.ts` so each decoded source signature now also defines a deterministic post-goal route hook type + note.
+  - Extended `src/game/runtime/expeditionFlow.ts` so completing the expedition goal seeds two hook charges in runtime state.
+  - Updated `src/game/runtime/mapSceneFlow.ts` so post-goal travel can continue while hook charges remain, consuming one charge and applying the signature-specific follow-on effect per travel.
+  - Updated `src/game/runtime/mapSceneContent.ts` so active aftermath hooks show in route detail and field notes once the expedition is complete.
+  - Added/updated coverage in `tests/goalSignal.test.ts`, `tests/expeditionFlow.test.ts`, `tests/mapSceneFlow.test.ts`, and `tests/mapSceneContent.test.ts`.
+  - Updated `docs/06-puzzles-and-meta-mystery.md` and `IMPLEMENTATION_NOTES.md`.
+
+TODO next:
+
+- Continue breaking remaining orchestration concerns out of `src/main.ts` where they are still scene-specific setup glue rather than engine/runtime rules.
+- Decide whether post-goal hooks should persist into seeded new expeditions as optional legacy carry-over, or intentionally remain scoped to the completed expedition only.
