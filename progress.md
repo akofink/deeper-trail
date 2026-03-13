@@ -779,3 +779,13 @@ TODO next:
 
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially any leftover scene-specific setup or draw ordering that can move behind shared helpers without mixing gameplay decisions into Pixi code.
 - Decide whether the next notebook payoff step should move from variant-specific source text into a true branching post-goal consequence, such as unlocking different follow-on route hooks or persistent world-state mutations after the ending.
+
+- Run-scene render-plan extraction pass:
+  - Added `src/game/runtime/runSceneRenderPlan.ts` so run-scene objective visual assembly, exit-ready gating, beacon-label projection, HUD/chip text assembly, and overlay-card selection now run through one deterministic runtime helper instead of staying inline in `src/main.ts`.
+  - Updated `src/main.ts` to consume `buildRunSceneRenderPlan(...)`, leaving `drawRunScene()` focused on frame setup plus render helper ordering.
+  - Added `tests/runSceneRenderPlan.test.ts` for active-run assembly and objective-complete/paused-overlay behavior.
+
+TODO next:
+
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially repeated Pixi `Text` object construction/style setup that can move behind shared scene-label bootstrap helpers.
+- Decide whether the next notebook payoff step should move from variant-specific source text into a true branching post-goal consequence, such as unlocking different follow-on route hooks or persistent world-state mutations after the ending.
