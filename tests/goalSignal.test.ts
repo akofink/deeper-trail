@@ -117,7 +117,13 @@ describe('goal signal primer helpers', () => {
     expect(goalSignalProfile(state)?.endingCompletionNote).toBe(
       'The source paid back the route in salvage echoes all the way to its heart.'
     );
+    expect(goalSignalProfile(state)?.endingEpilogueNote).toBe(
+      'Each recovered fragment repeats the outward trail, turning salvage into a readable memory map.'
+    );
     expect(goalSignalEndingSummary(state)).toContain('Echo Salvage Orchard: source cache: +2 scrap on arrival;');
+    expect(goalSignalEndingSummary(state)).toContain(
+      'Each recovered fragment repeats the outward trail, turning salvage into a readable memory map.'
+    );
     expect(goalSignalPrimerNote(state.expeditionGoalNodeId, state)).toContain('B1 pre-linked');
     expect(goalSignalPrimerNote(state.expeditionGoalNodeId, state)).toContain('source cache: +2 scrap on arrival');
     expect(goalSignalPrimerNote(state.expeditionGoalNodeId, state)).toContain('grove/quarry braid');

@@ -495,6 +495,7 @@ async function bootstrap(): Promise<void> {
         expeditionCompleted: completion.expeditionCompleted,
         expeditionEndingTitle: completion.expeditionCompleted ? goalSignalProfile(state)?.endingTitle : null,
         expeditionEndingCompletionNote: completion.expeditionCompleted ? goalSignalProfile(state)?.endingCompletionNote : null,
+        expeditionEndingEpilogueNote: completion.expeditionCompleted ? goalSignalProfile(state)?.endingEpilogueNote : null,
         flawlessRecovery: completion.flawlessRecovery,
         latestNotebookEntryTitle:
           completion.notebookUpdate.newEntries[completion.notebookUpdate.newEntries.length - 1]?.title
