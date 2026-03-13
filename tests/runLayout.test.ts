@@ -7,8 +7,22 @@ describe('runLayout', () => {
 
     expect(layout.collectibles.map((item) => item.y)).toEqual([412, 374, 394, 348, 376, 346]);
     expect(layout.beacons.map((beacon) => beacon.y)).toEqual([432, 421, 416]);
-    expect(layout.canopyLifts.map((lift) => lift.y)).toEqual([343, 315]);
+    expect(layout.canopyLifts.map((lift) => lift.y)).toEqual([359, 337]);
     expect(layout.hazards.map((hazard) => hazard.kind)).toEqual(['sweeper', 'static', 'stomper', 'sweeper', 'static', 'stomper']);
+  });
+
+  it('keeps nature canopy lifts inside a reliable jump-entry envelope', () => {
+    const groundY = 500;
+    const layout = buildRunLayout(groundY, 'nature');
+    const groundedPlayerRoofY = groundY - 44;
+    const maxReliableJumpEntry = 70;
+
+    expect(
+      layout.canopyLifts.every((lift) => {
+        const liftBottom = lift.y + lift.h * 0.5;
+        return groundedPlayerRoofY - liftBottom <= maxReliableJumpEntry;
+      })
+    ).toBe(true);
   });
 
   it('keeps anomaly gates on different elevation beats across the run', () => {
