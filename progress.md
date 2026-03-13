@@ -1,3 +1,8 @@
+- Shell-runtime loop extraction pass:
+  - Added `src/game/runtime/shellRuntimeLoop.ts` so browser keydown/keyup/resize event wiring plus recurring animation-frame scheduling now live in a dedicated runtime helper instead of inline in `src/main.ts`.
+  - Updated `src/main.ts` to bind shell input + RAF orchestration through `bindShellRuntimeLoop(...)`, keeping shell state mutations in existing runtime handlers while reducing event-loop plumbing in the Pixi shell.
+  - Added `tests/shellRuntimeLoop.test.ts` to lock down key event routing/effects (`preventDefault` + fullscreen signal), resize callback routing, and RAF self-scheduling behavior.
+
 - Frame-loop extraction pass:
   - Added `src/game/runtime/frameLoop.ts` so fixed-step stepping, frame-delta clamping, scene-targeted step/draw routing, and external `advanceTime(ms)` control now live in a testable runtime helper instead of inline in `src/main.ts`.
   - Updated `src/main.ts` to delegate animation-frame and external stepping orchestration through the new helper while preserving existing run/map stepping and render behavior.
