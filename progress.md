@@ -1,3 +1,8 @@
+- Anomaly phase-alignment pass:
+  - Extended anomaly relay rules so sync locks now require deterministic left/right facing alignment in addition to speed and phase timing, turning the scanner-assisted relay into a small embodied puzzle instead of a pure velocity check.
+  - Updated prompt, visual, and debug-state helpers so anomaly relays expose their required facing with explicit `LEFT`/`RIGHT` copy, arrow labels, and automation-visible facing/alignment fields.
+  - Added targeted regressions across `tests/runObjectives.test.ts`, `tests/runObjectiveUpdates.test.ts`, `tests/beaconActivation.test.ts`, `tests/runObjectiveUi.test.ts`, `tests/runObjectiveVisuals.test.ts`, and `tests/debugState.test.ts`.
+
 - Coverage pass:
   - Added a pure-runtime regression in `tests/expeditionFlow.test.ts` that walks a full `nature` node objective loop: airborne relay linking, canopy lift charting, exit-lock messaging while secondary objectives remain, and final map unlock/completion state once all five objectives are done.
   - This closes a gap between the isolated airborne-relay / canopy-lift unit tests and the actual node-completion flow, without needing browser automation for the full nature route.

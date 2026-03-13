@@ -44,6 +44,7 @@ export function attemptBeaconActivation(
       dashBoost: state.dashBoost,
       isAirborne: !state.player.onGround,
       elapsedSeconds: state.elapsedSeconds,
+      playerFacing: state.player.facing,
       scanLocked: beacon.scanLocked
     });
 

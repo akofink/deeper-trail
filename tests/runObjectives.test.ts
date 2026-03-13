@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  anomalyFacingLabel,
+  anomalyRequiredFacing,
   anomalyLockProgressRatio,
   canActivateBeacon,
   canChargeAnomalyLock,
@@ -99,6 +101,10 @@ describe('run objective rules', () => {
   it('requires anomaly beacons to be linked with boost or momentum', () => {
     const beacons = makeBeacons();
 
+    expect(anomalyRequiredFacing(0)).toBe(1);
+    expect(anomalyRequiredFacing(1)).toBe(-1);
+    expect(anomalyFacingLabel(anomalyRequiredFacing(1))).toBe('LEFT');
+
     const slow = canActivateBeacon({
       nodeType: 'anomaly',
       beaconIndex: 0,
@@ -118,10 +124,24 @@ describe('run objective rules', () => {
       currentSpeed: 280,
       dashBoost: 0.35,
       isAirborne: false,
+      playerFacing: -1,
       elapsedSeconds: 0.9
     });
     expect(closedWindow.canActivate).toBe(false);
     expect(closedWindow.reason).toContain('sync window');
+
+    const misaligned = canActivateBeacon({
+      nodeType: 'anomaly',
+      beaconIndex: 1,
+      beacons,
+      currentSpeed: 280,
+      dashBoost: 0.35,
+      isAirborne: false,
+      playerFacing: 1,
+      elapsedSeconds: 0.1
+    });
+    expect(misaligned.canActivate).toBe(false);
+    expect(misaligned.reason).toContain('Face LEFT');
 
     const fast = canActivateBeacon({
       nodeType: 'anomaly',
@@ -130,6 +150,7 @@ describe('run objective rules', () => {
       currentSpeed: 280,
       dashBoost: 0,
       isAirborne: false,
+      playerFacing: 1,
       elapsedSeconds: 0.1
     });
     expect(fast.canActivate).toBe(true);

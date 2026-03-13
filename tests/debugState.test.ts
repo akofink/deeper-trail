@@ -63,6 +63,11 @@ describe('buildDebugStateSnapshot', () => {
     const snapshot = buildDebugStateSnapshot(state, 800, getMaxHealth(state.sim.vehicle));
 
     expect(snapshot.run.objectiveRule).toBe('boosted');
+    expect(snapshot.run.beacons[0]).toMatchObject({
+      activated: true,
+      requiredFacing: 'RIGHT',
+      facingAligned: true
+    });
     expect(snapshot.run.objectiveProgress).toEqual({
       primaryCompleted: 1,
       primaryTotal: state.beacons.length,
