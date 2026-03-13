@@ -1,3 +1,9 @@
+- Seed/build share-code pass:
+  - Added `src/engine/sim/shareCode.ts` with a deterministic `DT1-<seed>-<levels>-<condition>` encoder so build sharing uses a stable simulation-derived code.
+  - Map route/celebration copy now includes the share code via `src/game/runtime/mapSceneContent.ts` + `src/game/runtime/mapSceneCards.ts` and wiring in `src/main.ts`.
+  - `render_game_to_text` snapshots now expose `sim.shareCode` through `src/game/runtime/debugState.ts` for automation and external tooling.
+  - Added `tests/shareCode.test.ts` and expanded `tests/mapSceneCards.test.ts`, `tests/mapSceneContent.test.ts`, and `tests/debugState.test.ts`.
+
 - Shell-control extraction pass:
   - Added `src/game/runtime/shellControl.ts` so fullscreen/pause/scene-toggle/restart/new-world handling, held map-navigation latching, and resize-driven runtime normalization now live in a testable runtime helper instead of inline in `src/main.ts`.
   - Updated `src/main.ts` to delegate window keydown/keyup/resize events through the extracted shell-control helpers while keeping Pixi-specific fullscreen toggling local to the shell.
