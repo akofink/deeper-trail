@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { connectedNeighbors, expeditionGoalNodeId, findNode } from '../src/engine/sim/world';
+import { attemptBeaconActivation } from '../src/game/runtime/beaconActivation';
+import { buildExitLockedMessage } from '../src/game/runtime/runCompletion';
+import { buildRunLayout } from '../src/game/runtime/runLayout';
 import {
   applyArrivalRewards,
   completeCurrentNodeRun,
   hasCompletedCurrentNode,
   travelToNodeWithRuntimeEffects
 } from '../src/game/runtime/expeditionFlow';
+import { updateRunObjectives } from '../src/game/runtime/runObjectiveUpdates';
+import { runObjectiveProgress } from '../src/game/runtime/runObjectiveUi';
 import type { RuntimeState } from '../src/game/runtime/runtimeState';
 import { createInitialGameState } from '../src/game/state/gameState';
 
@@ -254,6 +259,69 @@ describe('expedition flow runtime helpers', () => {
     expect(completion.expeditionCompleted).toBe(true);
     expect(state.expeditionComplete).toBe(true);
     expect(state.mode).toBe('won');
+  });
+
+  it('covers the full nature objective path before unlocking map travel', () => {
+    const state = buildRuntimeState('nature-objective-path');
+    const currentNode = findNode(state.sim, state.sim.currentNodeId);
+    expect(currentNode).toBeDefined();
+    if (!currentNode) {
+      throw new Error('Expected current node');
+    }
+
+    currentNode.type = 'nature';
+    state.groundY = 500;
+    const layout = buildRunLayout(state.groundY, 'nature');
+    state.beacons = layout.beacons;
+    state.canopyLifts = layout.canopyLifts;
+    state.goalX = layout.goalX;
+
+    for (const beacon of state.beacons) {
+      state.player.x = beacon.x - state.player.w * 0.5;
+      state.player.y = beacon.y - state.player.h * 0.5;
+      state.player.onGround = false;
+      expect(attemptBeaconActivation(state, 'manual')).toBe(true);
+    }
+
+    const partialProgress = runObjectiveProgress(state);
+    expect(partialProgress).toEqual({
+      completed: 3,
+      total: 5,
+      beaconsRemaining: 0,
+      serviceStopsRemaining: 0,
+      syncGatesRemaining: 0,
+      canopyLiftsRemaining: 2,
+      impactPlatesRemaining: 0
+    });
+    expect(buildExitLockedMessage(partialProgress)).toBe('Exit locked: 2 canopy lifts left.');
+
+    state.elapsedSeconds = 0.1;
+    for (const lift of state.canopyLifts) {
+      state.player.x = lift.x - state.player.w * 0.5;
+      state.player.y = lift.y - state.player.h * 0.5;
+      state.player.onGround = false;
+
+      updateRunObjectives(state, {
+        dt: 0.6,
+        landedThisFrame: false,
+        landingSpeed: 0
+      });
+    }
+
+    const completionReady = runObjectiveProgress(state);
+    expect(completionReady.completed).toBe(5);
+    expect(completionReady.total).toBe(5);
+    expect(state.canopyLifts.every((lift) => lift.charted)).toBe(true);
+    expect(state.score).toBe(85);
+
+    const completion = completeCurrentNodeRun(state);
+
+    expect(completion.notebookUpdate.newEntries[0]?.clueKey).toBe('nature');
+    expect(hasCompletedCurrentNode(state)).toBe(true);
+    expect(state.scene).toBe('map');
+    expect(state.mode).toBe('playing');
+    expect(state.freeTravelCharges).toBe(1);
+    expect(state.mapMessage).toBe('Route board unlocked. Pick a connected route and press Enter to travel.');
   });
 
   it('branches expedition-goal arrival rewards from the ordered notebook clue sequence', () => {

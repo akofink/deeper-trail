@@ -1,3 +1,7 @@
+- Coverage pass:
+  - Added a pure-runtime regression in `tests/expeditionFlow.test.ts` that walks a full `nature` node objective loop: airborne relay linking, canopy lift charting, exit-lock messaging while secondary objectives remain, and final map unlock/completion state once all five objectives are done.
+  - This closes a gap between the isolated airborne-relay / canopy-lift unit tests and the actual node-completion flow, without needing browser automation for the full nature route.
+
 Original prompt: Build and iterate the playable web game in the games/202601-2d-journey--deeper-trail workspace, validating changes with a Playwright loop. [$develop-web-game](/mnt/c/Users/ajkof/.codex/skills/develop-web-game/SKILL.md)
 
 - Expedition-ending variant pass:
