@@ -142,10 +142,29 @@ describe('run objective ui helpers', () => {
     state.dashBoost = 0.3;
     state.beacons = [{ id: 'b0', x: 17, y: 22, r: 15, activated: false, scanProgress: 0.2, scanLocked: false }];
 
-    expect(runObjectivePrompt(state)).toBe('Phase open: lock relay 50%');
+    expect(runObjectivePrompt(state)).toBe('Phase open: face RIGHT and lock relay 50%');
 
     state.beacons[0]!.scanLocked = true;
     expect(runObjectivePrompt(state)).toBe('Relay locked: press Enter to confirm');
+  });
+
+  it('prompts anomaly riders to face the relay phase direction before charging the lock', () => {
+    const state = buildRuntimeState();
+    const node = state.sim.world.nodes.find((item) => item.id === state.sim.currentNodeId);
+    if (!node) throw new Error('Expected node');
+    node.type = 'anomaly';
+    state.sim.vehicle.scanner = 2;
+    state.player.x = 0;
+    state.player.y = 0;
+    state.player.vx = 280;
+    state.player.facing = 1;
+    state.dashBoost = 0.3;
+    state.beacons = [
+      { id: 'b0', x: 400, y: 22, r: 15, activated: false },
+      { id: 'b1', x: 17, y: 22, r: 15, activated: false, scanProgress: 0.2, scanLocked: false }
+    ];
+
+    expect(runObjectivePrompt(state)).toBe('Face LEFT and hold boost for the relay');
   });
 
   it('keeps the previous run prompt alive briefly after a prompt disappears', () => {

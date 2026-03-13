@@ -122,7 +122,7 @@ export function drawRunObjectiveVisuals(
         width: beacon.anomalyWindowOpen ? 3 : 2
       });
       graphics.circle(beacon.x - cameraX, beacon.y, beacon.radius + 12).stroke({
-        color: '#22d3ee',
+        color: beacon.anomalyFacingAligned ? '#34d399' : '#22d3ee',
         alpha: beacon.anomalyScanLocked ? 0.9 : 0.18 + beacon.anomalyScanProgressRatio * 0.55,
         width: beacon.anomalyScanLocked ? 3.2 : 1 + beacon.anomalyScanProgressRatio * 2.4
       });

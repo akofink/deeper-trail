@@ -98,8 +98,19 @@ describe('run objective visuals helper', () => {
     let visuals = buildRunObjectiveVisualState(state);
     expect(visuals.syncGates[0]?.phaseOpen).toBe(true);
     expect(visuals.beacons[0]?.anomalyWindowOpen).toBe(true);
+    expect(visuals.beacons[0]?.anomalyFacingAligned).toBe(true);
     expect(visuals.beacons[0]?.anomalyScanProgressRatio).toBeCloseTo(0.5);
     expect(visuals.beacons[0]?.anomalyScanLocked).toBe(false);
+    expect(visuals.beacons[0]?.labelText).toBe('>');
+    expect(visuals.beacons[0]?.labelFill).toBe('#0f766e');
+
+    state.beacons = [
+      { id: 'b0', x: 200, y: 0, r: 15, activated: false },
+      { id: 'b1', x: 0, y: 0, r: 15, activated: false }
+    ];
+    visuals = buildRunObjectiveVisualState(state);
+    expect(visuals.beacons[1]?.anomalyFacingAligned).toBe(false);
+    expect(visuals.beacons[1]?.labelText).toBe('<');
 
     node.type = 'nature';
     state.canopyLifts = [{ id: 'cl0', x: 180, y: 160, w: 80, h: 100, progress: 0.3, charted: false }];

@@ -1,5 +1,5 @@
 import { notebookSignalRouteIntel } from '../../engine/sim/notebook';
-import { getObjectiveSummary, getBeaconRuleForNodeType } from '../../engine/sim/runObjectives';
+import { anomalyFacingLabel, anomalyRequiredFacing, getObjectiveSummary, getBeaconRuleForNodeType } from '../../engine/sim/runObjectives';
 import { connectedNeighbors, currentNodeType, findNode } from '../../engine/sim/world';
 import { getInstallOffer, FIELD_REPAIR_SCRAP_COST } from '../../engine/sim/vehicle';
 import { visibleBiomeKnowledge } from '../../engine/sim/exploration';
@@ -249,11 +249,15 @@ export function buildDebugStateSnapshot(state: RuntimeState, viewportWidth: numb
         visibleRangeX: [Math.round(visibleMinX), Math.round(visibleMaxX)]
       },
       collectiblesRemaining: state.collectibles.filter((collectible) => !collectible.collected).length,
-      beacons: state.beacons.map((beacon) => ({
+      beacons: state.beacons.map((beacon, index) => ({
         id: beacon.id,
         x: Math.round(beacon.x),
         y: Math.round(beacon.y),
-        activated: beacon.activated
+        activated: beacon.activated,
+        scanLocked: Boolean(beacon.scanLocked),
+        scanProgress: Number((beacon.scanProgress ?? 0).toFixed(2)),
+        requiredFacing: activeNodeType === 'anomaly' ? anomalyFacingLabel(anomalyRequiredFacing(index)) : null,
+        facingAligned: activeNodeType === 'anomaly' ? state.player.facing === anomalyRequiredFacing(index) : null
       })),
       serviceStops: state.serviceStops.map((stop) => ({
         id: stop.id,

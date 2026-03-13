@@ -11,6 +11,7 @@ export interface BeaconActivationContext {
   readonly dashBoost: number;
   readonly isAirborne: boolean;
   readonly elapsedSeconds: number;
+  readonly playerFacing?: -1 | 1;
   readonly scanLocked?: boolean;
 }
 
@@ -49,6 +50,22 @@ export function canChargeAnomalyLock(currentSpeed: number, dashBoost: number, el
   );
 }
 
+export function anomalyRequiredFacing(beaconIndex: number): -1 | 1 {
+  return beaconIndex % 2 === 0 ? 1 : -1;
+}
+
+export function anomalyFacingLabel(facing: -1 | 1): 'RIGHT' | 'LEFT' {
+  return facing > 0 ? 'RIGHT' : 'LEFT';
+}
+
+export function anomalyFacingArrow(facing: -1 | 1): '>' | '<' {
+  return facing > 0 ? '>' : '<';
+}
+
+export function isAnomalyFacingAligned(playerFacing: -1 | 1 | undefined, beaconIndex: number): boolean {
+  return playerFacing === anomalyRequiredFacing(beaconIndex);
+}
+
 export function isCanopyLiftWindowOpen(elapsedSeconds: number, liftIndex: number): boolean {
   const phaseTime = (elapsedSeconds + liftIndex * CANOPY_GUST_OFFSET_SECONDS) % CANOPY_GUST_PERIOD_SECONDS;
   return phaseTime >= 0 && phaseTime < CANOPY_GUST_OPEN_SECONDS;
@@ -70,7 +87,7 @@ export function getBeaconRuleLabel(nodeType: string): string {
   if (rule === 'steady') return 'Rule: settle beside relays and link while steady.';
   if (rule === 'ordered') return 'Rule: link relays in order.';
   if (rule === 'airborne') return 'Rule: link relays while airborne.';
-  if (rule === 'boosted') return 'Rule: link relays during sync windows while boosting.';
+  if (rule === 'boosted') return 'Rule: link relays during sync windows while boosting and phase-aligned.';
   return 'Rule: link any relay in range.';
 }
 
@@ -118,6 +135,13 @@ export function canActivateBeacon(context: BeaconActivationContext): BeaconActiv
       return {
         canActivate: false,
         reason: 'Signal drift too strong. Boost through the relay to lock it.'
+      };
+    }
+    const requiredFacing = anomalyRequiredFacing(context.beaconIndex);
+    if (!isAnomalyFacingAligned(context.playerFacing, context.beaconIndex)) {
+      return {
+        canActivate: false,
+        reason: `Relay vector slipping. Face ${anomalyFacingLabel(requiredFacing)} to lock it.`
       };
     }
     if (!isPhaseWindowOpen(context.elapsedSeconds, context.beaconIndex)) {

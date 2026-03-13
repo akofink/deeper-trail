@@ -1,8 +1,11 @@
 import {
+  anomalyRequiredFacing,
+  anomalyFacingLabel,
   anomalyLockProgressRatio,
   canActivateBeacon,
   canChargeAnomalyLock,
   getBeaconRuleForNodeType,
+  isAnomalyFacingAligned,
   isCanopyLiftWindowOpen,
   isSteadyLinkReady,
   nextRequiredBeaconIndex
@@ -166,18 +169,24 @@ function beaconPromptText(state: RuntimeState): string | null {
       dashBoost: state.dashBoost,
       isAirborne: !state.player.onGround,
       elapsedSeconds: state.elapsedSeconds,
+      playerFacing: state.player.facing,
       scanLocked: beacon.scanLocked
     });
 
     if (beaconRule === 'boosted' && state.sim.vehicle.scanner >= 2) {
+      const requiredFacing = anomalyFacingLabel(anomalyRequiredFacing(index));
       if (beacon.scanLocked) {
         return state.sim.vehicle.scanner >= 3
           ? 'Relay locked: scanner confirms the link'
           : 'Relay locked: press Enter to confirm';
       }
 
+      if (!isAnomalyFacingAligned(state.player.facing, index)) {
+        return `Face ${requiredFacing} and hold boost for the relay`;
+      }
+
       if (canChargeAnomalyLock(Math.abs(state.player.vx), state.dashBoost, state.elapsedSeconds, index)) {
-        return `Phase open: lock relay ${quantizedPercent(
+        return `Phase open: face ${requiredFacing} and lock relay ${quantizedPercent(
           anomalyLockProgressRatio(beacon.scanProgress ?? 0),
           1
         )}%`;
@@ -209,8 +218,11 @@ function beaconPromptText(state: RuntimeState): string | null {
     }
 
     if (beaconRule === 'boosted') {
+      const requiredFacing = anomalyFacingLabel(anomalyRequiredFacing(index));
       const enoughSpeed = Math.abs(state.player.vx) >= 260 || state.dashBoost >= 0.2;
-      return enoughSpeed ? 'Hold boost and wait for the phase' : 'Need more speed or boost for this relay';
+      return enoughSpeed
+        ? `Hold boost facing ${requiredFacing} and wait for the phase`
+        : `Need more speed or boost, then face ${requiredFacing}`;
     }
 
     if (beaconRule === 'airborne') {

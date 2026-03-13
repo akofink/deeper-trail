@@ -1,5 +1,8 @@
 import {
+  anomalyRequiredFacing,
+  anomalyFacingArrow,
   anomalyLockProgressRatio,
+  isAnomalyFacingAligned,
   getBeaconRuleForNodeType,
   isCanopyLiftWindowOpen,
   isPhaseWindowOpen,
@@ -57,6 +60,7 @@ export interface RunObjectiveVisualState {
     isNextRequired: boolean;
     steadyReady: boolean;
     anomalyWindowOpen: boolean;
+    anomalyFacingAligned: boolean;
     anomalyScanLocked: boolean;
     anomalyScanProgressRatio: number;
     labelText: string;
@@ -126,10 +130,19 @@ export function buildRunObjectiveVisualState(state: RuntimeState): RunObjectiveV
         isNextRequired,
         steadyReady,
         anomalyWindowOpen: nodeType === 'anomaly' && isPhaseWindowOpen(state.elapsedSeconds, index),
+        anomalyFacingAligned: nodeType === 'anomaly' && isAnomalyFacingAligned(state.player.facing, index),
         anomalyScanLocked: Boolean(beacon.scanLocked),
         anomalyScanProgressRatio: anomalyLockProgressRatio(beacon.scanProgress ?? 0),
-        labelText: beaconRule === 'steady' ? 'S' : `${index + 1}`,
-        labelFill: beaconLabelFill(beaconRule, steadyReady, isNextRequired)
+        labelText:
+          beaconRule === 'steady'
+            ? 'S'
+            : beaconRule === 'boosted'
+              ? anomalyFacingArrow(anomalyRequiredFacing(index))
+              : `${index + 1}`,
+        labelFill:
+          beaconRule === 'boosted' && isAnomalyFacingAligned(state.player.facing, index)
+            ? '#0f766e'
+            : beaconLabelFill(beaconRule, steadyReady, isNextRequired)
       };
     })
   };

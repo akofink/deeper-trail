@@ -3,6 +3,7 @@ import { canopyLiftChargeWindowOpen, isInsideCanopyLift, updateCanopyLiftProgres
 import { canShatterImpactPlate } from './impactPlates';
 import {
   ANOMALY_SCAN_LOCK_SECONDS,
+  isAnomalyFacingAligned,
   canChargeAnomalyLock,
   isSteadyLinkReady,
   type BeaconRule
@@ -54,7 +55,10 @@ export function updateRunObjectives(state: RuntimeState, input: RunObjectiveUpda
       if (beacon.activated || beacon.scanLocked) continue;
       const rr = (beacon.r + interactRadius) * (beacon.r + interactRadius);
       const inRange = (beacon.x - px) * (beacon.x - px) + (beacon.y - py) * (beacon.y - py) <= rr;
-      const canCharge = inRange && canChargeAnomalyLock(Math.abs(state.player.vx), state.dashBoost, state.elapsedSeconds, index);
+      const canCharge =
+        inRange &&
+        isAnomalyFacingAligned(state.player.facing, index) &&
+        canChargeAnomalyLock(Math.abs(state.player.vx), state.dashBoost, state.elapsedSeconds, index);
 
       if (canCharge) {
         beacon.scanProgress = Math.min((beacon.scanProgress ?? 0) + input.dt, ANOMALY_SCAN_LOCK_SECONDS);
