@@ -1,3 +1,8 @@
+- Shell event-bridge extraction pass:
+  - Added `src/game/runtime/shellEventBridge.ts` so pressed-key tracking, run-step input latch bookkeeping, map rotation input derivation, and shell keydown/keyup/resize dispatch now live in one runtime helper instead of being managed inline in `src/main.ts`.
+  - Updated `src/main.ts` to delegate shell event callbacks and run/map input snapshots through `createShellEventBridge(...)`, reducing remaining shell-control orchestration in the Pixi app shell.
+  - Added `tests/shellEventBridge.test.ts` to lock down run-input snapshots, map-rotation key combinations, map navigation latching through keyup, and resize routing.
+
 - Shell-runtime loop extraction pass:
   - Added `src/game/runtime/shellRuntimeLoop.ts` so browser keydown/keyup/resize event wiring plus recurring animation-frame scheduling now live in a dedicated runtime helper instead of inline in `src/main.ts`.
   - Updated `src/main.ts` to bind shell input + RAF orchestration through `bindShellRuntimeLoop(...)`, keeping shell state mutations in existing runtime handlers while reducing event-loop plumbing in the Pixi shell.
