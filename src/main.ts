@@ -1,19 +1,11 @@
 import { Application, Graphics, Text } from 'pixi.js';
-import { connectedNeighbors, findNode } from './engine/sim/world';
+import { findNode } from './engine/sim/world';
 import { getMaxHealth } from './engine/sim/vehicle';
 import { biomeByNodeType } from './game/runtime/runLayout';
-import { buildMapActionChips, buildMapBoardView } from './game/runtime/mapBoardView';
-import { buildMapSceneCardPlan, buildMapSceneCopy } from './game/runtime/mapSceneCards';
-import { buildMapSceneContent } from './game/runtime/mapSceneContent';
-import {
-  buildMapScannerFlags,
-  stepMapScene
-} from './game/runtime/mapSceneFlow';
-import { buildMapSceneHudViewModel } from './game/runtime/mapSceneHudView';
-import { buildMapSceneTextAssembly } from './game/runtime/mapSceneTextAssembly';
+import { stepMapScene } from './game/runtime/mapSceneFlow';
+import { buildMapSceneRenderPlan } from './game/runtime/mapSceneRenderPlan';
 import { buildDebugStateSnapshot } from './game/runtime/debugState';
 import { createFrameLoopController } from './game/runtime/frameLoop';
-import { goalSignalEndingSummary } from './game/runtime/goalSignal';
 import { runObjectiveProgress } from './game/runtime/runObjectiveUi';
 import { buildRunObjectiveVisualState } from './game/runtime/runObjectiveVisuals';
 import { buildRunSceneHudViewModel } from './game/runtime/runSceneHudView';
@@ -23,12 +15,7 @@ import { stepRunState } from './game/runtime/runStep';
 import { buildRunSceneTextAssembly } from './game/runtime/runSceneTextAssembly';
 import { handleShellKeyDown, handleShellKeyUp, resizeRuntimeState } from './game/runtime/shellControl';
 import { bindShellRuntimeLoop } from './game/runtime/shellRuntimeLoop';
-import {
-  canUseMedPatch,
-  createInitialRuntimeState,
-  MEDPATCH_HEAL_AMOUNT,
-  MEDPATCH_SCRAP_COST
-} from './game/runtime/runtimeState';
+import { createInitialRuntimeState } from './game/runtime/runtimeState';
 import { drawMapBoard } from './game/render/mapBoardRenderer';
 import { measureTextView } from './game/render/pixiText';
 import { beginSceneFrame } from './game/render/sceneFrame';
@@ -319,50 +306,16 @@ async function bootstrap(): Promise<void> {
 
     beginSceneFrame(graphics, playerGraphics, [panelSeed, fieldNotesText], sharedSceneTextGroups);
     drawMapBackdrop(graphics, w, h);
-
-    const options = connectedNeighbors(state.sim);
-    const selectedOption = options[state.mapSelectionIndex] ?? null;
-    const mapBoardView = buildMapBoardView(state, w, h, margin);
-    drawMapBoard(graphics, mapBoardView);
-
-    const selectedDistance = selectedOption?.distance ?? 0;
-    const mapScannerFlags = buildMapScannerFlags(state);
-    const mapSceneContent = buildMapSceneContent(state, selectedOption?.nodeId ?? null, selectedDistance, {
-      canUseMedPatch: canUseMedPatch(state),
-      medPatchHealAmount: MEDPATCH_HEAL_AMOUNT,
-      medPatchScrapCost: MEDPATCH_SCRAP_COST,
-      ...mapScannerFlags
-    });
-    const mapSceneCopy = buildMapSceneCopy({
-      celebrationDetail: state.expeditionComplete ? goalSignalEndingSummary(state) : null,
-      expeditionComplete: state.expeditionComplete,
-      installHint: mapSceneContent.installHint,
-      mapMessage: state.mapMessage,
-      mapMessageTimer: state.mapMessageTimer,
-      repairHint: mapSceneContent.repairHint,
-      routeDetail: mapSceneContent.routeDetail,
-      scannerHint: mapSceneContent.scannerHint,
-      score: state.score,
-      seed: state.seed,
-      shareCode: mapSceneContent.shareCode
-    });
-    const mapSceneCards = buildMapSceneCardPlan({
-      celebrationText: mapSceneCopy.celebrationText,
-      fieldNotesText: mapSceneContent.fieldNotes.join('\n'),
-      measureCard: (card) => measureTextCard(card.fill === '#0f172a' ? fieldNotesText : overlay, card),
-      routeText: mapSceneCopy.routeText,
-      screenHeight: h,
+    const plan = buildMapSceneRenderPlan({
+      state,
       screenWidth: w,
-      showRouteCard: mapSceneCopy.showRouteCard
-    });
-    const mapSceneLayout = mapSceneCards.layout;
-    const mapHudView = buildMapSceneHudViewModel(state, w, mapSceneContent.completionState, moduleLabels.length);
-    const mapChips = buildMapActionChips(w, mapSceneLayout.chipY, mapSceneLayout.chipHeight, state.expeditionComplete);
-    const mapTextAssembly = buildMapSceneTextAssembly({
-      chips: mapChips,
-      hud: mapHudView,
+      screenHeight: h,
+      boardMargin: margin,
+      moduleLabelCount: moduleLabels.length,
+      measureCard: (card) => measureTextCard(card.fill === '#0f172a' ? fieldNotesText : overlay, card),
       measureText: (view) => measureTextView(mapLeftRowLabels[0] ?? hud, view)
     });
+    drawMapBoard(graphics, plan.boardView);
     renderMapSceneHud(
       graphics,
       {
@@ -374,18 +327,18 @@ async function bootstrap(): Promise<void> {
         panelSeed,
         rightHeaderLines: mapRightHeaderLines
       },
-      mapHudView,
-      mapTextAssembly
+      plan.hudView,
+      plan.textAssembly
     );
 
     renderMapSceneCards(
       graphics,
       { celebrationOverlay, fieldNotesText, overlay },
-      mapSceneCards.views,
-      mapSceneLayout.celebrationAccents
+      plan.cards.views,
+      plan.cards.layout.celebrationAccents
     );
 
-    renderSceneActionChips(graphics, chipLabels, mapChips, mapTextAssembly.chipLabels);
+    renderSceneActionChips(graphics, chipLabels, plan.chips, plan.textAssembly.chipLabels);
   }
 
   async function toggleFullscreen(): Promise<void> {

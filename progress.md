@@ -763,3 +763,14 @@ TODO next:
 
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially any leftover scene-specific setup or draw ordering that can move behind shared helpers without mixing gameplay decisions into Pixi code.
 - Decide whether the next notebook payoff step should move from variant-specific source text into a true branching post-goal consequence, such as unlocking different follow-on route hooks or persistent world-state mutations after the ending.
+
+- Map-scene render-plan extraction pass:
+  - Added `src/game/runtime/mapSceneRenderPlan.ts` so map-scene selection, content/copy assembly, measured card planning, HUD view/text assembly, and footer chip setup now run through one runtime helper instead of staying inline in `src/main.ts`.
+  - Updated `src/main.ts` to call `buildMapSceneRenderPlan(...)` and keep map-scene drawing focused on frame setup plus render helper calls.
+  - Added `tests/mapSceneRenderPlan.test.ts` for selected-route route-card composition and expedition-complete celebration/chip behavior.
+  - Updated `IMPLEMENTATION_NOTES.md`.
+
+TODO next:
+
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially any leftover scene-specific setup or draw ordering that can move behind shared helpers without mixing gameplay decisions into Pixi code.
+- Decide whether the next notebook payoff step should move from variant-specific source text into a true branching post-goal consequence, such as unlocking different follow-on route hooks or persistent world-state mutations after the ending.
