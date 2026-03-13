@@ -684,3 +684,15 @@ TODO next:
   - Added `src/game/render/sceneFrame.ts` so run/map scene entry can clear the shared graphics layers plus the common HUD/chip/beacon text groups through one helper instead of rebuilding the same reset plan in `src/main.ts`.
   - Updated `src/main.ts` to keep a single shared scene-text group bank and call `beginSceneFrame(...)` for both draw paths, leaving only scene-specific single-label differences inline.
   - Added `tests/sceneFrame.test.ts` and updated `IMPLEMENTATION_NOTES.md`.
+
+TODO next:
+
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially any leftover scene-specific card/backdrop sequencing that can move behind shared render helpers without dragging gameplay rules into Pixi code.
+- Decide whether a later notebook slice should branch the actual expedition-goal ending or post-goal encounter text, now that the source approach itself varies by clue order.
+
+- Shared scene-HUD render extraction pass:
+  - Added `src/game/render/sceneHudRenderer.ts` so run/map HUD chrome, shared header text application, chip drawing, optional card application, and map celebration accents now live outside `src/main.ts`.
+  - Updated `src/main.ts` to call `renderRunSceneHud(...)`, `renderMapSceneHud(...)`, `drawSceneActionChips(...)`, `applyOptionalTextCard(...)`, and `drawCelebrationAccents(...)` instead of repeating those presentation steps inline.
+  - Added `tests/sceneHudRenderer.test.ts` with recorder-based coverage for run HUD rendering, map HUD rendering, shared chip rows, optional card clearing/application, and celebration accent drawing.
+  - Updated `IMPLEMENTATION_NOTES.md`.
+  - Validation: `npm run check` passes in this environment; browser smoke scripts still report the existing Chromium-launch skips but exit successfully.
