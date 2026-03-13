@@ -1,6 +1,8 @@
 import type { Graphics } from 'pixi.js';
 import { buildDamageFeedbackView } from '../runtime/damageFeedback';
 import { buildRunSceneDepthView } from '../runtime/runSceneDepthView';
+import { drawRunExitFlag, drawRunObjectiveVisuals } from '../runtime/runSceneObjectiveView';
+import type { RunObjectiveVisualState } from '../runtime/runObjectiveVisuals';
 import { encounterRiseAt } from '../runtime/runTerrainProfile';
 import type { RuntimeState } from '../runtime/runtimeState';
 import { runSpeedForState } from '../runtime/vehicleDerivedStats';
@@ -37,6 +39,47 @@ export function drawMapBackdrop(graphics: Graphics, w: number, h: number): void 
   graphics.roundRect(80, h * 0.28, w - 160, 1, 0).stroke({ color: '#cbd5e1', alpha: 0.4, width: 1 });
   graphics.roundRect(120, h * 0.52, w - 240, 1, 0).stroke({ color: '#cbd5e1', alpha: 0.28, width: 1 });
   graphics.roundRect(160, h * 0.76, w - 320, 1, 0).stroke({ color: '#cbd5e1', alpha: 0.22, width: 1 });
+}
+
+export interface RunBiomeColors {
+  back: string;
+  collectible: string;
+  ground: string;
+  hazard: string;
+  sky: string;
+}
+
+export function renderRunSceneWorld(
+  graphics: Graphics,
+  state: RuntimeState,
+  nodeType: string,
+  colors: RunBiomeColors,
+  objectiveVisuals: RunObjectiveVisualState,
+  cameraX: number,
+  screenWidth: number,
+  screenHeight: number,
+  exitReady: boolean
+): void {
+  graphics.rect(0, 0, screenWidth, screenHeight).fill(colors.sky);
+  graphics.rect(0, screenHeight * 0.5, screenWidth, screenHeight * 0.5).fill(colors.back);
+  drawRunBackdropAccents(graphics, state, nodeType, screenWidth, screenHeight);
+  drawRunTerrain(graphics, nodeType, state.groundY, state.goalX, cameraX, screenWidth, screenHeight);
+  graphics.rect(-cameraX, state.groundY, state.goalX + 300, screenHeight - state.groundY).fill(colors.ground);
+
+  for (const hazard of state.hazards) {
+    drawRunHazard(graphics, hazard, cameraX, colors.hazard);
+  }
+
+  drawRunObjectiveVisuals(graphics, objectiveVisuals, state.groundY, state.elapsedSeconds, cameraX);
+  drawRunDamageFeedback(graphics, screenWidth, screenHeight, state, cameraX);
+
+  for (const item of state.collectibles) {
+    if (item.collected) continue;
+    graphics.circle(item.x - cameraX, item.y, item.r).fill(colors.collectible);
+    graphics.circle(item.x - cameraX, item.y, item.r - 4).fill('#fff8d6');
+  }
+
+  drawRunExitFlag(graphics, state.goalX, state.groundY, cameraX, exitReady);
 }
 
 export function drawRunBackdropAccents(graphics: Graphics, state: RuntimeState, nodeType: string, w: number, h: number): void {

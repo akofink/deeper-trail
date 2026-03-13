@@ -706,3 +706,14 @@ TODO next:
 
 - Continue breaking remaining scene orchestration out of `src/main.ts`, especially any leftover scene-specific card/backdrop sequencing that can move behind shared render helpers without dragging gameplay rules into Pixi code.
 - Decide whether the next notebook payoff step should move from variant-specific source text into a true branching post-goal consequence, such as unlocking different follow-on route hooks or persistent world-state mutations after the ending.
+
+- Scene backdrop/card render extraction pass:
+  - Added `renderRunSceneWorld(...)` to `src/game/render/runSceneRenderer.ts` so the run scene's remaining base fills, hazard/objective/collectible pass, damage overlay, and exit flag render through one helper instead of staying inline in `src/main.ts`.
+  - Added `renderMapSceneCards(...)` to `src/game/render/sceneHudRenderer.ts` so route-card, field-notes, and celebration-card application/clearing now live behind one shared map-scene render helper.
+  - Updated `src/main.ts` to call those helpers, trimming the last scene-local backdrop/card sequencing block from each draw path.
+  - Expanded `tests/runSceneRenderer.test.ts` and `tests/sceneHudRenderer.test.ts` to cover the new helper entry points, and updated `IMPLEMENTATION_NOTES.md`.
+
+TODO next:
+
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially any leftover scene-specific setup or draw ordering that can move behind shared helpers without mixing gameplay decisions into Pixi code.
+- Decide whether the next notebook payoff step should move from variant-specific source text into a true branching post-goal consequence, such as unlocking different follow-on route hooks or persistent world-state mutations after the ending.

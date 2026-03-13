@@ -8,6 +8,7 @@ import {
   applyOptionalTextCard,
   drawCelebrationAccents,
   drawSceneActionChips,
+  renderMapSceneCards,
   renderMapSceneHud,
   renderRunSceneHud
 } from '../src/game/render/sceneHudRenderer';
@@ -247,6 +248,99 @@ describe('sceneHudRenderer', () => {
     drawCelebrationAccents(graphics as unknown as Graphics, [{ color: '#f59e0b', r: 6, x: 120, y: 90 }]);
 
     expect(overlay.text).toBe('Signal source reached.');
+    expect(graphics.ops).toContainEqual({ kind: 'circle', x: 120, y: 90, r: 6 });
+  });
+
+  it('renders map scene cards and clears stale celebration text when no card is present', () => {
+    const graphics = new GraphicsRecorder();
+    const overlay = createTextNode('stale route');
+    const fieldNotesText = createTextNode('stale notes');
+    const celebrationOverlay = createTextNode('stale celebration');
+
+    renderMapSceneCards(
+      graphics as unknown as Graphics,
+      { celebrationOverlay, fieldNotesText, overlay },
+      {
+        celebrationCard: null,
+        notesCard: {
+          align: 'left',
+          fill: '#0f172a',
+          fontSize: 13,
+          maxWidth: 240,
+          minWidth: 180,
+          paddingX: 18,
+          paddingY: 14,
+          text: 'Notebook clue summary',
+          tone: 'light',
+          x: 40,
+          y: 140
+        },
+        routeCard: {
+          align: 'left',
+          fill: '#e2e8f0',
+          fontSize: 15,
+          maxWidth: 260,
+          minWidth: 180,
+          paddingX: 18,
+          paddingY: 14,
+          text: 'Route preview',
+          tone: 'dark',
+          x: 40,
+          y: 40
+        }
+      },
+      [{ color: '#f59e0b', r: 6, x: 120, y: 90 }]
+    );
+
+    expect(overlay.text).toBe('Route preview');
+    expect(fieldNotesText.text).toBe('Notebook clue summary');
+    expect(celebrationOverlay.text).toBe('');
+    expect(graphics.ops).not.toContainEqual({ kind: 'circle', x: 120, y: 90, r: 6 });
+  });
+
+  it('renders celebration card accents when the expedition-complete card is present', () => {
+    const graphics = new GraphicsRecorder();
+    const overlay = createTextNode();
+    const fieldNotesText = createTextNode();
+    const celebrationOverlay = createTextNode();
+
+    renderMapSceneCards(
+      graphics as unknown as Graphics,
+      { celebrationOverlay, fieldNotesText, overlay },
+      {
+        celebrationCard: {
+          align: 'center',
+          fill: '#f8fafc',
+          fontSize: 18,
+          maxWidth: 280,
+          minWidth: 220,
+          paddingX: 22,
+          paddingY: 18,
+          text: 'SIGNAL SOURCE REACHED',
+          tone: 'dark',
+          x: 220,
+          y: 60
+        },
+        notesCard: {
+          align: 'left',
+          fill: '#0f172a',
+          fontSize: 13,
+          maxWidth: 240,
+          minWidth: 180,
+          paddingX: 18,
+          paddingY: 14,
+          text: 'Notebook clue summary',
+          tone: 'light',
+          x: 40,
+          y: 140
+        },
+        routeCard: null
+      },
+      [{ color: '#f59e0b', r: 6, x: 120, y: 90 }]
+    );
+
+    expect(overlay.text).toBe('');
+    expect(celebrationOverlay.text).toBe('SIGNAL SOURCE REACHED');
     expect(graphics.ops).toContainEqual({ kind: 'circle', x: 120, y: 90, r: 6 });
   });
 });

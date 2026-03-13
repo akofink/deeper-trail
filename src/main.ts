@@ -33,7 +33,7 @@ import { buildRunObjectiveVisualState } from './game/runtime/runObjectiveVisuals
 import { dashEntryEnergyCost, shouldContinueDash, shouldStartDash } from './game/runtime/runDash';
 import { updateMapRotation } from './game/runtime/mapRotation';
 import { buildRunSceneHudViewModel } from './game/runtime/runSceneHudView';
-import { buildBeaconLabelViews, drawRunExitFlag, drawRunObjectiveVisuals } from './game/runtime/runSceneObjectiveView';
+import { buildBeaconLabelViews } from './game/runtime/runSceneObjectiveView';
 import { buildExitLockedMessage, buildRunCompletionMessage } from './game/runtime/runCompletion';
 import { buildRunActionChips, buildRunSceneOverlayCard } from './game/runtime/runSceneView';
 import { buildRunSceneTextAssembly } from './game/runtime/runSceneTextAssembly';
@@ -66,23 +66,17 @@ import {
 } from './game/runtime/vehicleDerivedStats';
 import { advanceWheelRotation } from './game/runtime/vehiclePresentation';
 import { drawMapBoard } from './game/render/mapBoardRenderer';
-import { applyTextViews, clearTextLabel, measureTextView } from './game/render/pixiText';
+import { applyTextViews, measureTextView } from './game/render/pixiText';
 import { beginSceneFrame } from './game/render/sceneFrame';
-import {
-  applyTextCard,
-  measureTextCard
-} from './game/render/pixiPrimitives';
+import { measureTextCard } from './game/render/pixiPrimitives';
 import {
   drawMapBackdrop,
-  drawRunBackdropAccents,
-  drawRunDamageFeedback,
-  drawRunHazard,
-  drawRunTerrain,
+  renderRunSceneWorld,
   drawVehicleAvatar
 } from './game/render/runSceneRenderer';
 import {
   applyOptionalTextCard,
-  drawCelebrationAccents,
+  renderMapSceneCards,
   drawSceneActionChips,
   renderMapSceneHud,
   renderRunSceneHud
@@ -612,30 +606,12 @@ async function bootstrap(): Promise<void> {
     const nodeType = findNode(state.sim, state.sim.currentNodeId)?.type ?? 'town';
     const colors = biomeByNodeType(nodeType);
     const objectiveVisuals = buildRunObjectiveVisualState(state);
-
-    beginSceneFrame(graphics, playerGraphics, [panelSeed, celebrationOverlay, fieldNotesText], sharedSceneTextGroups);
-    graphics.rect(0, 0, w, h).fill(colors.sky);
-    graphics.rect(0, h * 0.5, w, h * 0.5).fill(colors.back);
-    drawRunBackdropAccents(graphics, state, nodeType, w, h);
-    drawRunTerrain(graphics, nodeType, state.groundY, state.goalX, cam, w, h);
-    graphics.rect(-cam, state.groundY, state.goalX + 300, h - state.groundY).fill(colors.ground);
-
-    for (const hazard of state.hazards) {
-      drawRunHazard(graphics, hazard, cam, colors.hazard);
-    }
-    drawRunObjectiveVisuals(graphics, objectiveVisuals, state.groundY, state.elapsedSeconds, cam);
-    drawRunDamageFeedback(graphics, w, h, state, cam);
-    const beaconLabelViews = buildBeaconLabelViews(objectiveVisuals, cam);
-
-    for (const item of state.collectibles) {
-      if (item.collected) continue;
-      graphics.circle(item.x - cam, item.y, item.r).fill(colors.collectible);
-      graphics.circle(item.x - cam, item.y, item.r - 4).fill('#fff8d6');
-    }
-
     const objectiveProgress = runObjectiveProgress(state);
     const exitReady = objectiveProgress.completed >= objectiveProgress.total;
-    drawRunExitFlag(graphics, state.goalX, state.groundY, cam, exitReady);
+
+    beginSceneFrame(graphics, playerGraphics, [panelSeed, celebrationOverlay, fieldNotesText], sharedSceneTextGroups);
+    renderRunSceneWorld(graphics, state, nodeType, colors, objectiveVisuals, cam, w, h, exitReady);
+    const beaconLabelViews = buildBeaconLabelViews(objectiveVisuals, cam);
 
     drawVehicleAvatar(playerGraphics, state, cam);
 
@@ -735,16 +711,12 @@ async function bootstrap(): Promise<void> {
       mapTextAssembly
     );
 
-    const mapCardViews = mapSceneCards.views;
-
-    applyOptionalTextCard(graphics, overlay, mapCardViews.routeCard);
-    applyTextCard(graphics, fieldNotesText, mapCardViews.notesCard);
-
-    clearTextLabel(celebrationOverlay);
-    if (mapCardViews.celebrationCard) {
-      applyTextCard(graphics, celebrationOverlay, mapCardViews.celebrationCard);
-      drawCelebrationAccents(graphics, mapSceneLayout.celebrationAccents);
-    }
+    renderMapSceneCards(
+      graphics,
+      { celebrationOverlay, fieldNotesText, overlay },
+      mapSceneCards.views,
+      mapSceneLayout.celebrationAccents
+    );
 
     drawSceneActionChips(graphics, mapChips);
     applyTextViews(chipLabels, mapTextAssembly.chipLabels);

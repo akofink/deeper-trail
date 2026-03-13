@@ -1,6 +1,8 @@
 import type { Graphics } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
 import { triggerDamageFeedback } from '../src/game/runtime/damageFeedback';
+import { biomeByNodeType } from '../src/game/runtime/runLayout';
+import { buildRunObjectiveVisualState } from '../src/game/runtime/runObjectiveVisuals';
 import type { RuntimeState } from '../src/game/runtime/runtimeState';
 import { createInitialGameState } from '../src/game/state/gameState';
 import {
@@ -9,6 +11,7 @@ import {
   drawRunDamageFeedback,
   drawRunHazard,
   drawRunTerrain,
+  renderRunSceneWorld,
   drawVehicleAvatar
 } from '../src/game/render/runSceneRenderer';
 
@@ -188,6 +191,60 @@ describe('runSceneRenderer', () => {
     expect(natureGraphics.ops.some((op) => op.kind === 'roundRect' && op.radius === 8)).toBe(true);
     expect(natureGraphics.ops.some((op) => op.kind === 'fill' && op.color === '#16a34a')).toBe(true);
     expect(natureGraphics.ops.some((op) => op.kind === 'fill' && op.color === '#22c55e')).toBe(true);
+  });
+
+  it('renders the remaining run-scene world pass through one helper', () => {
+    const state = buildRuntimeState();
+    state.collectibles = [
+      { collected: false, r: 10, x: 280, y: 360 },
+      { collected: true, r: 10, x: 340, y: 340 }
+    ];
+    state.hazards = [
+      {
+        kind: 'static',
+        x: 420,
+        baseX: 420,
+        y: 410,
+        baseY: 410,
+        w: 64,
+        baseW: 64,
+        h: 20,
+        baseH: 20,
+        amplitudeX: 0,
+        amplitudeY: 0,
+        pulse: 0,
+        speed: 0,
+        phase: 0
+      }
+    ];
+    const graphics = new GraphicsRecorder();
+    const colors = biomeByNodeType('nature');
+    const objectiveVisuals = buildRunObjectiveVisualState(state);
+
+    renderRunSceneWorld(
+      graphics as unknown as Graphics,
+      state,
+      'nature',
+      colors,
+      objectiveVisuals,
+      state.cameraX,
+      960,
+      640,
+      false
+    );
+
+    expect(graphics.ops.slice(0, 4)).toEqual([
+      { kind: 'rect', x: 0, y: 0, w: 960, h: 640 },
+      { kind: 'fill', color: colors.sky },
+      { kind: 'rect', x: 0, y: 320, w: 960, h: 320 },
+      { kind: 'fill', color: colors.back }
+    ]);
+    expect(graphics.ops).toContainEqual({ kind: 'circle', x: 200, y: 360, radius: 10 });
+    expect(graphics.ops).toContainEqual({ kind: 'fill', color: colors.collectible });
+    expect(graphics.ops).toContainEqual({ kind: 'rect', x: 340, y: 410, w: 64, h: 20 });
+    expect(graphics.ops).toContainEqual({ kind: 'fill', color: colors.hazard });
+    expect(graphics.ops).toContainEqual({ kind: 'rect', x: 1020, y: 390, w: 8, h: 130 });
+    expect(graphics.ops).toContainEqual({ kind: 'fill', color: '#f97316' });
   });
 
   it('draws each hazard variant with its distinctive accent geometry', () => {

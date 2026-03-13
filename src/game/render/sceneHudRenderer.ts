@@ -1,5 +1,5 @@
 import type { Graphics, Text } from 'pixi.js';
-import type { MapSceneTextCardView } from '../runtime/mapSceneCards';
+import type { MapSceneCardViews, MapSceneTextCardView } from '../runtime/mapSceneCards';
 import type { CelebrationAccent } from '../runtime/mapSceneLayout';
 import type { MapSceneHudViewModel } from '../runtime/mapSceneHudView';
 import type { MapSceneTextAssembly } from '../runtime/mapSceneTextAssembly';
@@ -30,6 +30,12 @@ export interface MapHudLabels extends SharedHudLabels {
   leftRowLabels: Text[];
   leftRowValues: Text[];
   rightHeaderLines: Text[];
+}
+
+export interface MapSceneCardLabels {
+  celebrationOverlay: Text;
+  fieldNotesText: Text;
+  overlay: Text;
 }
 
 function applySharedHeaderText(
@@ -66,6 +72,22 @@ export function drawCelebrationAccents(graphics: Graphics, accents: CelebrationA
   accents.forEach((accent) => {
     graphics.circle(accent.x, accent.y, accent.r).fill(accent.color);
   });
+}
+
+export function renderMapSceneCards(
+  graphics: Graphics,
+  labels: MapSceneCardLabels,
+  cards: MapSceneCardViews,
+  celebrationAccents: CelebrationAccent[]
+): void {
+  applyOptionalTextCard(graphics, labels.overlay, cards.routeCard);
+  applyTextCard(graphics, labels.fieldNotesText, cards.notesCard);
+
+  clearTextLabel(labels.celebrationOverlay);
+  if (!cards.celebrationCard) return;
+
+  applyTextCard(graphics, labels.celebrationOverlay, cards.celebrationCard);
+  drawCelebrationAccents(graphics, celebrationAccents);
 }
 
 export function renderRunSceneHud(
