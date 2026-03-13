@@ -58,6 +58,7 @@
 - `main.ts` is still the Pixi app shell, but runtime state types, deterministic run layout data, and derived vehicle stat formulas should continue moving into `src/game/runtime/*` or `src/engine/sim/*` instead of accreting inline.
 - Initial runtime-state construction, per-node run reset, med-patch rules, and resize-driven run-scene vertical shifts now belong in `game/runtime/runtimeState.ts` so they can be regression-tested without booting Pixi.
 - Node-completion and post-travel side effects now belong in dedicated runtime helpers (`game/runtime/expeditionFlow.ts`) so the full core loop can be regression-tested without driving the Pixi shell.
+- Synthesized goal-signal aftermath hooks now also route through runtime helpers (`goalSignal.ts`, `expeditionFlow.ts`, `mapSceneFlow.ts`) so post-goal branching consequences remain deterministic and testable without Pixi.
 - Prompt-priority, compact objective labels, and aggregate objective progress now belong in `game/runtime/runObjectiveUi.ts` so run-scene objective messaging stays testable outside Pixi.
 - Per-frame objective mutation now belongs in `game/runtime/runObjectiveUpdates.ts` so service-bay/sync-gate/canopy-lift/impact-plate advancement can be tested without the render loop.
 - Objective visual-emphasis state now belongs in `game/runtime/runObjectiveVisuals.ts` so draw-pass special cases can consume precomputed labels/highlights instead of rebuilding those decisions inline.

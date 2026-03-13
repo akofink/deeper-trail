@@ -1,4 +1,5 @@
 import { notebookCoreClueSequence } from '../../engine/sim/notebook';
+import { getMaxHealth } from '../../engine/sim/vehicle';
 import { CANOPY_LIFT_HOLD_SECONDS } from './canopyLifts';
 import type { RuntimeState } from './runtimeState';
 import { SERVICE_STOP_HOLD_SECONDS } from './serviceStops';
@@ -29,6 +30,8 @@ export interface GoalSignalProfile {
     | 'soften-movers'
     | 'shorter-run'
     | 'clear-tail-hazard';
+  postGoalRouteHookType: 'relay-credit' | 'breach-fuel' | 'salvage-echo' | 'quiet-heal' | 'folded-hop' | 'vented-shield';
+  postGoalRouteHookNote: string;
 }
 
 export function hasGoalSignalPrimer(state: RuntimeState): boolean {
@@ -56,7 +59,9 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
             'At the source, a grounded relay vault opens around a hand-built spindle that answers your road-language notes.',
           endingEpilogueNote: 'Its grounded lattice answers the bike-scale relay language instead of abandoning it.',
           encounterBonusType: 'lower-relays' as const,
-          encounterBonusNote: 'ruin/grove braid: the source shelves its relay line into grounded reach'
+          encounterBonusNote: 'ruin/grove braid: the source shelves its relay line into grounded reach',
+          postGoalRouteHookType: 'relay-credit' as const,
+          postGoalRouteHookNote: 'Afterglow hook: each post-goal route grants +1 free travel credit.'
         }
       : leadClue === 'ruin' && middleClue === 'anomaly'
         ? {
@@ -66,7 +71,9 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
             endingCompletionNote: 'The source met you through a split breach instead of a sealed barricade.',
             endingEpilogueNote: 'Inside the breach, the route reads like a quarry plan rewritten in phase seams.',
             encounterBonusType: 'clear-front-hazards' as const,
-            encounterBonusNote: 'ruin/phase braid: the source breaches its entry barricades'
+            encounterBonusNote: 'ruin/phase braid: the source breaches its entry barricades',
+            postGoalRouteHookType: 'breach-fuel' as const,
+            postGoalRouteHookNote: 'Afterglow hook: each post-goal route restores +4 fuel.'
           }
         : leadClue === 'nature' && middleClue === 'ruin'
           ? {
@@ -76,7 +83,9 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
               endingCompletionNote: 'The source paid back the route in salvage echoes all the way to its heart.',
               endingEpilogueNote: 'Each recovered fragment repeats the outward trail, turning salvage into a readable memory map.',
               encounterBonusType: 'extra-salvage' as const,
-              encounterBonusNote: 'grove/quarry braid: salvage echoes line the source path'
+              encounterBonusNote: 'grove/quarry braid: salvage echoes line the source path',
+              postGoalRouteHookType: 'salvage-echo' as const,
+              postGoalRouteHookNote: 'Afterglow hook: each post-goal route yields +2 salvage.'
             }
           : leadClue === 'nature' && middleClue === 'anomaly'
             ? {
@@ -86,7 +95,9 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
                 endingCompletionNote: 'The moving fields hushed long enough for a clean, steady crossing.',
                 endingEpilogueNote: 'The silence holds just long enough to show the source as a tended crossing instead of a storm.',
                 encounterBonusType: 'soften-movers' as const,
-                encounterBonusNote: 'grove/phase braid: the source quiets its moving fields'
+                encounterBonusNote: 'grove/phase braid: the source quiets its moving fields',
+                postGoalRouteHookType: 'quiet-heal' as const,
+                postGoalRouteHookNote: 'Afterglow hook: each post-goal route restores +1 hull.'
               }
             : leadClue === 'anomaly' && middleClue === 'ruin'
               ? {
@@ -96,7 +107,9 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
                   endingCompletionNote: 'The last stretch folded inward and let the source arrive early.',
                   endingEpilogueNote: 'Past the fold, the source confirms distance itself was the last lock on the trail.',
                   encounterBonusType: 'shorter-run' as const,
-                  encounterBonusNote: 'phase/quarry braid: the source folds the last approach closer'
+                  encounterBonusNote: 'phase/quarry braid: the source folds the last approach closer',
+                  postGoalRouteHookType: 'folded-hop' as const,
+                  postGoalRouteHookNote: 'Afterglow hook: each post-goal route refunds +1 free travel credit.'
                 }
               : {
                   endingTitle: 'Vented Bloom Channel',
@@ -105,7 +118,9 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
                   endingCompletionNote: 'The final channel stayed open and vented clear right to the source.',
                   endingEpilogueNote: 'The opened vent carries the grove pattern forward into whatever deeper route comes next.',
                   encounterBonusType: 'clear-tail-hazard' as const,
-                  encounterBonusNote: 'phase/grove braid: the source vents a clean final channel'
+                  encounterBonusNote: 'phase/grove braid: the source vents a clean final channel',
+                  postGoalRouteHookType: 'vented-shield' as const,
+                  postGoalRouteHookNote: 'Afterglow hook: each post-goal route re-primes one shield charge.'
                 };
   const arrivalBonus =
     middleClue === 'ruin'
@@ -153,7 +168,9 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
     encounterBonusNote: encounterBonus.encounterBonusNote,
     arrivalBonusType: arrivalBonus.arrivalBonusType,
     runBonusType: runBonus.runBonusType,
-    encounterBonusType: encounterBonus.encounterBonusType
+    encounterBonusType: encounterBonus.encounterBonusType,
+    postGoalRouteHookType: encounterBonus.postGoalRouteHookType,
+    postGoalRouteHookNote: encounterBonus.postGoalRouteHookNote
   };
 }
 
@@ -339,4 +356,50 @@ export function goalSignalPrimerNote(selectedNodeId: string | null, state: Runti
 
 export function goalSignalEndingSummary(state: RuntimeState): string | null {
   return goalSignalProfile(state)?.endingSummary ?? null;
+}
+
+export function applyGoalSignalPostGoalRouteHook(state: RuntimeState): string | null {
+  if (!state.expeditionComplete) {
+    return null;
+  }
+
+  const charges = state.postGoalRouteHookCharges ?? 0;
+  if (charges <= 0) {
+    return null;
+  }
+
+  const profile = decodedGoalSignalProfile(state);
+  const hookType = state.postGoalRouteHookType ?? profile?.postGoalRouteHookType ?? null;
+  if (!hookType) {
+    state.postGoalRouteHookCharges = 0;
+    return null;
+  }
+
+  state.postGoalRouteHookCharges = charges - 1;
+  if (!state.postGoalRouteHookNote && profile?.postGoalRouteHookNote) {
+    state.postGoalRouteHookNote = profile.postGoalRouteHookNote;
+  }
+
+  switch (hookType) {
+    case 'relay-credit':
+      state.freeTravelCharges += 1;
+      return `Afterglow: relay lattice grants +1 free travel credit (${state.postGoalRouteHookCharges} hooks left).`;
+    case 'breach-fuel':
+      state.sim.fuel = Math.min(state.sim.fuelCapacity, state.sim.fuel + 4);
+      return `Afterglow: breach reservoir restores +4 fuel (${state.postGoalRouteHookCharges} hooks left).`;
+    case 'salvage-echo':
+      state.sim.scrap += 2;
+      return `Afterglow: salvage echo recovered +2 scrap (${state.postGoalRouteHookCharges} hooks left).`;
+    case 'quiet-heal':
+      state.health = Math.min(getMaxHealth(state.sim.vehicle), state.health + 1);
+      return `Afterglow: quiet crossing restores +1 hull (${state.postGoalRouteHookCharges} hooks left).`;
+    case 'folded-hop':
+      state.freeTravelCharges += 1;
+      return `Afterglow: folded route refunds +1 free travel credit (${state.postGoalRouteHookCharges} hooks left).`;
+    case 'vented-shield':
+      state.shieldChargeAvailable = true;
+      return `Afterglow: vented channel re-primes shield charge (${state.postGoalRouteHookCharges} hooks left).`;
+    default:
+      return null;
+  }
 }

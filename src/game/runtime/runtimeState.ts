@@ -72,6 +72,16 @@ export interface RuntimeState {
   seed: string;
   expeditionGoalNodeId: string;
   expeditionComplete: boolean;
+  postGoalRouteHookType?:
+    | 'relay-credit'
+    | 'breach-fuel'
+    | 'salvage-echo'
+    | 'quiet-heal'
+    | 'folded-hop'
+    | 'vented-shield'
+    | null;
+  postGoalRouteHookCharges?: number;
+  postGoalRouteHookNote?: string;
   score: number;
   health: number;
   elapsedSeconds: number;
@@ -145,6 +155,9 @@ export function createInitialRuntimeState(canvasHeight: number, seed: string): R
     seed,
     expeditionGoalNodeId: expeditionGoalNodeId(sim),
     expeditionComplete: false,
+    postGoalRouteHookType: null,
+    postGoalRouteHookCharges: 0,
+    postGoalRouteHookNote: '',
     score: 0,
     health: maxHealth,
     elapsedSeconds: 0,

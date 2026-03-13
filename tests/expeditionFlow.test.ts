@@ -252,6 +252,39 @@ describe('expedition flow runtime helpers', () => {
 
   it('marks expedition-goal completions as complete before returning to the map', () => {
     const state = buildRuntimeState('expedition-goal-flow');
+    state.sim.notebook.discoveredClues.ruin = true;
+    state.sim.notebook.discoveredClues.nature = true;
+    state.sim.notebook.discoveredClues.anomaly = true;
+    state.sim.notebook.entries.push(
+      {
+        id: 'clue-ruin',
+        clueKey: 'ruin',
+        sourceNodeType: 'ruin',
+        sourceNodeId: 'n1',
+        dayDiscovered: 1,
+        title: 'Ruin',
+        body: 'Ruin'
+      },
+      {
+        id: 'clue-anomaly',
+        clueKey: 'anomaly',
+        sourceNodeType: 'anomaly',
+        sourceNodeId: 'n2',
+        dayDiscovered: 2,
+        title: 'Anomaly',
+        body: 'Anomaly'
+      },
+      {
+        id: 'clue-nature',
+        clueKey: 'nature',
+        sourceNodeType: 'nature',
+        sourceNodeId: 'n3',
+        dayDiscovered: 3,
+        title: 'Nature',
+        body: 'Nature'
+      }
+    );
+    state.sim.notebook.synthesisUnlocked = true;
     state.sim.currentNodeId = state.expeditionGoalNodeId;
 
     const completion = completeCurrentNodeRun(state);
@@ -259,6 +292,9 @@ describe('expedition flow runtime helpers', () => {
     expect(completion.expeditionCompleted).toBe(true);
     expect(state.expeditionComplete).toBe(true);
     expect(state.mode).toBe('won');
+    expect(state.postGoalRouteHookCharges).toBe(2);
+    expect(state.postGoalRouteHookType).toBe('breach-fuel');
+    expect(state.postGoalRouteHookNote).toContain('Afterglow hook');
   });
 
   it('covers the full nature objective path before unlocking map travel', () => {

@@ -63,6 +63,39 @@ describe('map scene flow helpers', () => {
     expect(state.mapMessageTimer).toBe(3);
   });
 
+  it('blocks post-goal travel when no aftermath hooks remain', () => {
+    const state = createInitialRuntimeState(720, 'map-scene-post-goal-block');
+    state.scene = 'map';
+    state.expeditionComplete = true;
+    state.postGoalRouteHookCharges = 0;
+
+    tryTravelSelectedNode(state);
+
+    expect(state.scene).toBe('map');
+    expect(state.mapMessage).toBe('Expedition complete. Press N for a new world.');
+    expect(state.mapMessageTimer).toBe(3);
+  });
+
+  it('allows post-goal travel with remaining aftermath hooks and consumes one charge', () => {
+    const state = createInitialRuntimeState(720, 'map-scene-post-goal-travel');
+    state.scene = 'map';
+    state.expeditionComplete = true;
+    state.postGoalRouteHookType = 'salvage-echo';
+    state.postGoalRouteHookCharges = 2;
+    state.postGoalRouteHookNote = 'Afterglow hook: each post-goal route yields +2 salvage.';
+    state.sim.scrap = 0;
+
+    const options = connectedNeighbors(state.sim);
+    expect(options.length).toBeGreaterThan(0);
+
+    tryTravelSelectedNode(state);
+
+    expect(state.scene).toBe('run');
+    expect(state.sim.currentNodeId).toBe(options[0]?.nodeId);
+    expect(state.postGoalRouteHookCharges).toBe(1);
+    expect(state.sim.scrap).toBeGreaterThanOrEqual(2);
+  });
+
   it('repairs damaged subsystems and falls back to a med patch when the vehicle is already repaired', () => {
     const state = createInitialRuntimeState(720, 'map-scene-repair');
     state.scene = 'map';

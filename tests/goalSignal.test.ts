@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyGoalSignalEncounterBonus,
+  applyGoalSignalPostGoalRouteHook,
   applyGoalSignalPrimer,
   applyGoalSignalRunBonus,
   goalSignalEndingSummary,
@@ -254,5 +255,22 @@ describe('goal signal primer helpers', () => {
     expect(goalSignalProfile(state)?.encounterBonusType).toBe('shorter-run');
     expect(applyGoalSignalEncounterBonus(state)).toBe(true);
     expect(state.goalX).toBe(2270);
+  });
+
+  it('applies a deterministic post-goal route hook and consumes one charge', () => {
+    const state = synthesizeGoalState(['nature', 'ruin', 'anomaly']);
+    state.expeditionComplete = true;
+    const profile = goalSignalProfile(state);
+    expect(profile?.postGoalRouteHookType).toBe('salvage-echo');
+    state.postGoalRouteHookType = profile?.postGoalRouteHookType ?? null;
+    state.postGoalRouteHookCharges = 2;
+    state.postGoalRouteHookNote = profile?.postGoalRouteHookNote ?? '';
+    state.sim.scrap = 1;
+
+    const message = applyGoalSignalPostGoalRouteHook(state);
+
+    expect(message).toContain('Afterglow');
+    expect(state.sim.scrap).toBe(3);
+    expect(state.postGoalRouteHookCharges).toBe(1);
   });
 });

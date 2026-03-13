@@ -139,6 +139,8 @@ describe('map scene content helper', () => {
   it('builds notebook field notes and completion state for explored progress', () => {
     const state = buildRuntimeState();
     state.expeditionComplete = true;
+    state.postGoalRouteHookCharges = 2;
+    state.postGoalRouteHookNote = 'Afterglow hook: each post-goal route yields +2 salvage.';
     state.sim.notebook.entries.push({
       id: 'clue-ruin',
       clueKey: 'ruin',
@@ -170,6 +172,8 @@ describe('map scene content helper', () => {
     expect(content.fieldNotes.join('\n')).toContain('SYNTH');
     expect(content.fieldNotes.join('\n')).toContain('RELAY MASONRY');
     expect(content.fieldNotes.join('\n')).toContain('Ordered relays + impact plates');
+    expect(content.fieldNotes.join('\n')).toContain('AFTERGLOW 2x');
+    expect(content.fieldNotes.join('\n')).toContain('post-goal route yields +2 salvage');
   });
 
   it('uses persisted biome objective intel even before scanner upgrades or a direct visit', () => {

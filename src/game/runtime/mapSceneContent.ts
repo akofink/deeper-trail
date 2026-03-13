@@ -54,7 +54,10 @@ export function buildMapSceneContent(
           }`,
           selectedRouteKnowledge.objectiveKnown ? getObjectiveSummary(selectedNode.type) : 'Objective pattern ?',
           signalIntel.routeHint ?? 'Signal triangulation offline.',
-          goalPrimerNote
+          goalPrimerNote,
+          state.expeditionComplete && (state.postGoalRouteHookCharges ?? 0) > 0
+            ? `Afterglow ${state.postGoalRouteHookCharges}x: ${state.postGoalRouteHookNote ?? 'follow-on route hook active'}`
+            : null
         ].filter((line): line is string => Boolean(line)).join('\n')
       : 'Select a connected route.';
 
@@ -96,6 +99,11 @@ export function buildMapSceneContent(
       fieldNotes.push(entry.title.toUpperCase());
       fieldNotes.push(entry.body);
     }
+  }
+  if (state.expeditionComplete && (state.postGoalRouteHookCharges ?? 0) > 0) {
+    fieldNotes.push('');
+    fieldNotes.push(`AFTERGLOW ${state.postGoalRouteHookCharges}x`);
+    fieldNotes.push(state.postGoalRouteHookNote ?? 'Decoded source aftermath remains active.');
   }
 
   return {
