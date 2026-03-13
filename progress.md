@@ -1,3 +1,11 @@
+- Scene text-bootstrap extraction pass:
+  - Added `src/game/render/sceneTextBootstrap.ts` so shared Pixi `Text` node creation/style defaults and scene text-group wiring are owned by one render helper instead of being repeated inline in `src/main.ts`.
+  - Updated `src/main.ts` to create all HUD/overlay/row/module/beacon labels through `createSceneTextNodes(...)`, reducing shell bootstrap noise while preserving existing render behavior.
+  - Added `tests/sceneTextBootstrap.test.ts` to lock down label counts, stage add-child coverage, shared group wiring, and key style/position defaults.
+
+- TODO next:
+- Continue breaking remaining scene orchestration out of `src/main.ts`, especially any repeated scene draw-measure callback plumbing that can move behind reusable render/runtime helpers.
+
 - Shell event-bridge extraction pass:
   - Added `src/game/runtime/shellEventBridge.ts` so pressed-key tracking, run-step input latch bookkeeping, map rotation input derivation, and shell keydown/keyup/resize dispatch now live in one runtime helper instead of being managed inline in `src/main.ts`.
   - Updated `src/main.ts` to delegate shell event callbacks and run/map input snapshots through `createShellEventBridge(...)`, reducing remaining shell-control orchestration in the Pixi app shell.
