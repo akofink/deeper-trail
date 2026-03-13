@@ -98,6 +98,16 @@ export function completeCurrentNodeRun(state: RuntimeState): NodeCompletionOutco
   const expeditionCompleted = state.sim.currentNodeId === state.expeditionGoalNodeId;
   if (expeditionCompleted) {
     state.expeditionComplete = true;
+    const goalSignal = goalSignalProfile(state);
+    if (goalSignal) {
+      state.postGoalRouteHookType = goalSignal.postGoalRouteHookType;
+      state.postGoalRouteHookCharges = 2;
+      state.postGoalRouteHookNote = goalSignal.postGoalRouteHookNote;
+    } else {
+      state.postGoalRouteHookType = null;
+      state.postGoalRouteHookCharges = 0;
+      state.postGoalRouteHookNote = '';
+    }
   }
 
   applyNodeCompletionState(state);

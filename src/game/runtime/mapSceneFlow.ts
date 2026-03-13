@@ -1,6 +1,7 @@
 import { currentNodeType, connectedNeighbors } from '../../engine/sim/world';
 import { installUpgradeForNodeType, repairMostDamagedSubsystem } from '../../engine/sim/vehicle';
 import { hasBeaconAutoLink } from './beaconActivation';
+import { applyGoalSignalPostGoalRouteHook } from './goalSignal';
 import { travelToNodeWithRuntimeEffects, hasCompletedCurrentNode } from './expeditionFlow';
 import { updateMapRotation } from './mapRotation';
 import { normalizeRuntimeStateAfterVehicleChange } from './vehicleDerivedStats';
@@ -21,13 +22,14 @@ export function advanceMapSelection(currentIndex: number, optionCount: number, s
 }
 
 export function tryTravelSelectedNode(state: RuntimeState): void {
-  if (state.expeditionComplete) {
+  const postGoalHookCharges = state.postGoalRouteHookCharges ?? 0;
+  if (state.expeditionComplete && postGoalHookCharges <= 0) {
     state.mapMessage = 'Expedition complete. Press N for a new world.';
     state.mapMessageTimer = 3;
     return;
   }
 
-  if (!hasCompletedCurrentNode(state)) {
+  if (!state.expeditionComplete && !hasCompletedCurrentNode(state)) {
     state.mapMessage = 'Complete this node run first to unlock outbound travel.';
     state.mapMessageTimer = 3;
     return;
@@ -50,6 +52,14 @@ export function tryTravelSelectedNode(state: RuntimeState): void {
     state.mapMessage = result.reason ?? 'Travel failed';
     state.mapMessageTimer = 3;
     return;
+  }
+
+  if (state.expeditionComplete) {
+    const hookMessage = applyGoalSignalPostGoalRouteHook(state);
+    if (hookMessage) {
+      state.mapMessage = `${state.mapMessage} ${hookMessage}`.trim();
+      state.mapMessageTimer = 4;
+    }
   }
 
   resetRunFromCurrentNode(state);
