@@ -66,15 +66,10 @@ import {
 } from './game/runtime/vehicleDerivedStats';
 import { advanceWheelRotation } from './game/runtime/vehiclePresentation';
 import { drawMapBoard } from './game/render/mapBoardRenderer';
-import { applyTextView, applyTextViews, clearTextLabel, measureTextView } from './game/render/pixiText';
+import { applyTextViews, clearTextLabel, measureTextView } from './game/render/pixiText';
 import { beginSceneFrame } from './game/render/sceneFrame';
 import {
   applyTextCard,
-  drawChip,
-  drawGauge,
-  drawModuleMeters,
-  drawPanel,
-  drawPips,
   measureTextCard
 } from './game/render/pixiPrimitives';
 import {
@@ -85,6 +80,13 @@ import {
   drawRunTerrain,
   drawVehicleAvatar
 } from './game/render/runSceneRenderer';
+import {
+  applyOptionalTextCard,
+  drawCelebrationAccents,
+  drawSceneActionChips,
+  renderMapSceneHud,
+  renderRunSceneHud
+} from './game/render/sceneHudRenderer';
 import './styles.css';
 
 declare global {
@@ -637,7 +639,6 @@ async function bootstrap(): Promise<void> {
     drawVehicleAvatar(playerGraphics, state, cam);
 
     const runHudView = buildRunSceneHudViewModel(state, w, moduleLabels.length);
-    const hudLayout = runHudView.layout;
     const runChips = buildRunActionChips(state, w, h);
     const runTextAssembly = buildRunSceneTextAssembly({
       beaconLabels: beaconLabelViews,
@@ -645,77 +646,26 @@ async function bootstrap(): Promise<void> {
       hud: runHudView,
       measureText: (view) => measureTextView(beaconLabels[0] ?? hud, view)
     });
-    drawPanel(graphics, hudLayout.leftPanelX, 10, hudLayout.leftPanelWidth, hudLayout.leftPanelHeight);
-    drawPanel(graphics, hudLayout.rightPanelX, 10, hudLayout.rightPanelWidth, hudLayout.rightPanelHeight);
-    applyTextViews(beaconLabels, runTextAssembly.beaconLabels);
-    applyTextViews(runLeftRowLabels, runTextAssembly.leftRowLabels);
-    applyTextViews(runLeftRowValues, runTextAssembly.leftRowValues);
-    applyTextViews(runRightRowLabels, runTextAssembly.rightRowLabels);
-    applyTextViews(runRightRowValues, runTextAssembly.rightRowValues);
-    drawPips(
+    renderRunSceneHud(
       graphics,
-      runHudView.healthPips.x,
-      runHudView.healthPips.y,
-      runHudView.healthPips.count,
-      runHudView.healthPips.filled,
-      runHudView.healthPips.fillColor,
-      runHudView.healthPips.emptyColor
+      {
+        beaconLabels,
+        hud,
+        leftRowLabels: runLeftRowLabels,
+        leftRowValues: runLeftRowValues,
+        moduleLabels,
+        panelMeta,
+        panelSeed,
+        rightRowLabels: runRightRowLabels,
+        rightRowValues: runRightRowValues
+      },
+      runHudView,
+      runTextAssembly
     );
-    drawGauge(
-      graphics,
-      runHudView.fuelGauge.x,
-      runHudView.fuelGauge.y,
-      runHudView.fuelGauge.w,
-      runHudView.fuelGauge.h,
-      runHudView.fuelGauge.ratio,
-      runHudView.fuelGauge.fill,
-      runHudView.fuelGauge.track
-    );
-    drawGauge(
-      graphics,
-      runHudView.paceGauge.x,
-      runHudView.paceGauge.y,
-      runHudView.paceGauge.w,
-      runHudView.paceGauge.h,
-      runHudView.paceGauge.ratio,
-      runHudView.paceGauge.fill,
-      runHudView.paceGauge.track
-    );
-    drawPips(
-      graphics,
-      runHudView.objectivePips.x,
-      runHudView.objectivePips.y,
-      runHudView.objectivePips.count,
-      runHudView.objectivePips.filled,
-      runHudView.objectivePips.fillColor,
-      runHudView.objectivePips.emptyColor
-    );
-    drawGauge(
-      graphics,
-      runHudView.boostGauge.x,
-      runHudView.boostGauge.y,
-      runHudView.boostGauge.w,
-      runHudView.boostGauge.h,
-      runHudView.boostGauge.ratio,
-      runHudView.boostGauge.fill,
-      runHudView.boostGauge.track
-    );
-    drawModuleMeters(graphics, runHudView.moduleMeters);
-
-    applyTextView(hud, runTextAssembly.header.title);
-    applyTextView(panelMeta, runTextAssembly.header.meta);
-    applyTextView(panelSeed, runTextAssembly.header.seed);
-    applyTextViews(moduleLabels, runTextAssembly.moduleLabels);
 
     const runOverlayCard = buildRunSceneOverlayCard(state, w);
-    if (runOverlayCard) {
-      applyTextCard(graphics, overlay, runOverlayCard);
-    } else {
-      clearTextLabel(overlay);
-    }
-    runChips.forEach((chip) => {
-      drawChip(graphics, chip.x, chip.y, chip.w, chip.color, chip.height);
-    });
+    applyOptionalTextCard(graphics, overlay, runOverlayCard);
+    drawSceneActionChips(graphics, runChips);
     applyTextViews(chipLabels, runTextAssembly.chipLabels);
   }
 
@@ -763,47 +713,39 @@ async function bootstrap(): Promise<void> {
     });
     const mapSceneLayout = mapSceneCards.layout;
     const mapHudView = buildMapSceneHudViewModel(state, w, mapSceneContent.completionState, moduleLabels.length);
-    const mapHudLayout = mapHudView.layout;
     const mapChips = buildMapActionChips(w, mapSceneLayout.chipY, mapSceneLayout.chipHeight, state.expeditionComplete);
     const mapTextAssembly = buildMapSceneTextAssembly({
       chips: mapChips,
       hud: mapHudView,
       measureText: (view) => measureTextView(mapLeftRowLabels[0] ?? hud, view)
     });
-    drawPanel(graphics, mapHudLayout.leftPanelX, mapHudLayout.leftPanelY, mapHudLayout.leftPanelWidth, mapHudLayout.leftPanelHeight);
-    drawPanel(graphics, mapHudLayout.rightPanelX, mapHudLayout.rightPanelY, mapHudLayout.rightPanelWidth, mapHudLayout.rightPanelHeight);
-    applyTextViews(mapLeftRowLabels, mapTextAssembly.leftRowLabels);
-    applyTextViews(mapLeftRowValues, mapTextAssembly.leftRowValues);
-    applyTextViews(mapRightHeaderLines, mapTextAssembly.rightHeaderLines);
-    drawGauge(graphics, mapHudLayout.gaugeX, mapHudView.leftRows[1].y - 6, mapHudLayout.gaugeWidth, 12, mapHudView.fuelRatio, '#38bdf8');
-    drawPips(graphics, mapHudLayout.pipsX, mapHudView.leftRows[0].y - 3, mapHudView.freeTripTotal, mapHudView.freeTripFilled, '#facc15');
-    drawModuleMeters(graphics, mapHudView.moduleMeters);
-
-    applyTextView(hud, mapTextAssembly.header.title);
-    applyTextView(panelMeta, mapTextAssembly.header.meta);
-    applyTextView(panelSeed, mapTextAssembly.header.seed);
-    applyTextViews(moduleLabels, mapTextAssembly.moduleLabels);
+    renderMapSceneHud(
+      graphics,
+      {
+        hud,
+        leftRowLabels: mapLeftRowLabels,
+        leftRowValues: mapLeftRowValues,
+        moduleLabels,
+        panelMeta,
+        panelSeed,
+        rightHeaderLines: mapRightHeaderLines
+      },
+      mapHudView,
+      mapTextAssembly
+    );
 
     const mapCardViews = mapSceneCards.views;
 
-    if (mapCardViews.routeCard) {
-      applyTextCard(graphics, overlay, mapCardViews.routeCard);
-    } else {
-      clearTextLabel(overlay);
-    }
+    applyOptionalTextCard(graphics, overlay, mapCardViews.routeCard);
     applyTextCard(graphics, fieldNotesText, mapCardViews.notesCard);
 
     clearTextLabel(celebrationOverlay);
     if (mapCardViews.celebrationCard) {
       applyTextCard(graphics, celebrationOverlay, mapCardViews.celebrationCard);
-      mapSceneLayout.celebrationAccents.forEach((accent) => {
-        graphics.circle(accent.x, accent.y, accent.r).fill(accent.color);
-      });
+      drawCelebrationAccents(graphics, mapSceneLayout.celebrationAccents);
     }
 
-    mapChips.forEach((chip) => {
-      drawChip(graphics, chip.x, chip.y, chip.w, chip.color, chip.height);
-    });
+    drawSceneActionChips(graphics, mapChips);
     applyTextViews(chipLabels, mapTextAssembly.chipLabels);
   }
 
