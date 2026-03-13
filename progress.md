@@ -1,3 +1,8 @@
+- Scene chip-render extraction pass:
+  - Added `renderSceneActionChips(...)` in `src/game/render/sceneHudRenderer.ts` so chip primitive drawing and label text application run through one shared helper.
+  - Updated `src/main.ts` run/map scene flows to use the shared helper, removing duplicate chip draw/apply wiring from the Pixi shell.
+  - Expanded `tests/sceneHudRenderer.test.ts` with a regression that verifies the helper both draws chip chrome and clears stale extra labels.
+
 - Seed/build share-code pass:
   - Added `src/engine/sim/shareCode.ts` with a deterministic `DT1-<seed>-<levels>-<condition>` encoder so build sharing uses a stable simulation-derived code.
   - Map route/celebration copy now includes the share code via `src/game/runtime/mapSceneContent.ts` + `src/game/runtime/mapSceneCards.ts` and wiring in `src/main.ts`.
