@@ -114,6 +114,7 @@ describe('map scene content helper', () => {
     expect(content.scannerHint).toContain('phase-lock online');
     expect(content.scannerHint).toContain('objective scan at lv.3');
     expect(content.repairHint).toContain('repair modules');
+    expect(content.shareCode).toMatch(/^DT1-[A-Z0-9]+-[0-9A-Z]{6}-[0-9A-Z]{6}$/);
     expect(content.fieldNotes.join('\n')).toContain('SIGNAL 0/3  bearing offline');
 
     state.sim.vehicle.scanner = 3;

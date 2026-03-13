@@ -1,5 +1,6 @@
 import { asNodeTypeKey, biomeBenefitLabel, biomeRiskLabel, visibleBiomeKnowledge } from '../../engine/sim/exploration';
 import { notebookClueProgress, notebookSignalRouteIntel } from '../../engine/sim/notebook';
+import { buildSeedBuildShareCode } from '../../engine/sim/shareCode';
 import { currentNodeType, findNode } from '../../engine/sim/world';
 import { getInstallOffer, hasAnyUpgradeableSubsystem } from '../../engine/sim/vehicle';
 import { goalSignalPrimerNote } from './goalSignal';
@@ -9,6 +10,7 @@ import { getObjectiveSummary } from '../../engine/sim/runObjectives';
 
 export interface MapSceneContent {
   completionState: 'COMPLETE' | 'READY' | 'LOCKED';
+  shareCode: string;
   routeDetail: string;
   installHint: string;
   scannerHint: string;
@@ -98,6 +100,7 @@ export function buildMapSceneContent(
 
   return {
     completionState: state.expeditionComplete ? 'COMPLETE' : options.hasCompletedCurrentNode ? 'READY' : 'LOCKED',
+    shareCode: buildSeedBuildShareCode(state.sim),
     routeDetail,
     installHint,
     scannerHint,

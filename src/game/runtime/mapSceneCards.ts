@@ -14,6 +14,7 @@ export interface MapSceneCopyInput {
   scannerHint: string;
   score: number;
   seed: string;
+  shareCode: string;
 }
 
 export interface MapSceneCopy {
@@ -113,10 +114,11 @@ export function buildMapSceneCopy(input: MapSceneCopyInput): MapSceneCopy {
           'SIGNAL SOURCE REACHED',
           input.celebrationDetail ?? 'Expedition complete.',
           `Seed ${input.seed} complete  •  Score ${input.score}`,
+          `Share ${input.shareCode}`,
           'Press N to launch a new expedition'
         ].join('\n')
       : null,
-    routeText: `${input.routeDetail}\n${input.installHint}\n${input.scannerHint}\n${input.repairHint}\n${statusLine}`,
+    routeText: `${input.routeDetail}\n${input.installHint}\n${input.scannerHint}\n${input.repairHint}\n${statusLine}\nShare ${input.shareCode}`,
     showRouteCard: !input.expeditionComplete
   };
 }

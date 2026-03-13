@@ -20,13 +20,15 @@ describe('map scene card copy', () => {
       routeDetail: 'Route board details',
       scannerHint: 'Scanner offline',
       score: 312,
-      seed: 'abc123'
+      seed: 'abc123',
+      shareCode: 'DT1-ABC123-111111-333333'
     });
 
     expect(copy.showRouteCard).toBe(true);
     expect(copy.celebrationText).toBeNull();
     expect(copy.routeText).toContain('Route board details');
     expect(copy.routeText).toContain('Complete this node to travel.');
+    expect(copy.routeText).toContain('Share DT1-ABC123-111111-333333');
   });
 
   it('replaces the route card with a celebration card once the expedition is complete', () => {
@@ -40,13 +42,15 @@ describe('map scene card copy', () => {
       routeDetail: 'Route board details',
       scannerHint: 'Scanner offline',
       score: 735,
-      seed: '6618abd4'
+      seed: '6618abd4',
+      shareCode: 'DT1-6618ABD4-123111-333333'
     });
 
     expect(copy.showRouteCard).toBe(false);
     expect(copy.celebrationText).toContain('SIGNAL SOURCE REACHED');
     expect(copy.celebrationText).toContain('Echo Salvage Orchard: source cache online.');
     expect(copy.celebrationText).toContain('Seed 6618abd4 complete');
+    expect(copy.celebrationText).toContain('Share DT1-6618ABD4-123111-333333');
     expect(copy.routeText).toContain('Route locked');
   });
 
@@ -73,7 +77,8 @@ describe('map scene card copy', () => {
       routeDetail: 'Route board details',
       scannerHint: 'Scanner offline',
       score: 735,
-      seed: '6618abd4'
+      seed: '6618abd4',
+      shareCode: 'DT1-6618ABD4-123111-333333'
     });
     const layout = buildMapSceneLayout(1280, 720, 180, 140);
 
@@ -159,7 +164,8 @@ describe('map scene card copy', () => {
       routeDetail: 'Route board details',
       scannerHint: 'Scanner offline',
       score: 312,
-      seed: 'abc123'
+      seed: 'abc123',
+      shareCode: 'DT1-ABC123-111111-333333'
     });
     const measuredWidths: number[] = [];
     const plan = buildMapSceneCardPlan({
