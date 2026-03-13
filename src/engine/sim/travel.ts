@@ -6,7 +6,11 @@ export interface TravelResult {
   readonly reason?: string;
 }
 
-export function travelToNode(state: GameState, destinationNodeId: string): TravelResult {
+export interface TravelOptions {
+  readonly ignoreFuelRequirement?: boolean;
+}
+
+export function travelToNode(state: GameState, destinationNodeId: string, options: TravelOptions = {}): TravelResult {
   if (!state.world.nodes.some((node) => node.id === destinationNodeId)) {
     return {
       didTravel: false,
@@ -34,7 +38,7 @@ export function travelToNode(state: GameState, destinationNodeId: string): Trave
   }
 
   const fuelCost = Math.max(1, validEdge.distance);
-  if (state.fuel < fuelCost) {
+  if (!options.ignoreFuelRequirement && state.fuel < fuelCost) {
     return {
       didTravel: false,
       reason: `Not enough fuel: need ${fuelCost}, have ${state.fuel}`

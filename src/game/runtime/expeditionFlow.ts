@@ -116,7 +116,10 @@ export function completeCurrentNodeRun(state: RuntimeState): NodeCompletionOutco
 }
 
 export function travelToNodeWithRuntimeEffects(state: RuntimeState, destinationNodeId: string): RuntimeTravelResult {
-  const result = travelToNode(state.sim, destinationNodeId);
+  const useFreeTravelCharge = state.freeTravelCharges > 0;
+  const result = travelToNode(state.sim, destinationNodeId, {
+    ignoreFuelRequirement: useFreeTravelCharge
+  });
   if (!result.didTravel) {
     return {
       ...result,

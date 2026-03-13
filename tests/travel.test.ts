@@ -57,4 +57,20 @@ describe('travelToNode', () => {
     expect(state.currentNodeId).toBe('n0');
     expect(state.day).toBe(0);
   });
+
+  it('allows connected travel when fuel is insufficient but the caller bypasses the fuel gate', () => {
+    const state = createInitialGameState('seed-travel');
+    const destination = state.world.nodes[1]?.id as string;
+    const edge = state.world.edges.find((item) => item.from === 'n0' && item.to === destination);
+    expect(edge).toBeDefined();
+    state.fuel = 0;
+
+    const result = travelToNode(state, destination, { ignoreFuelRequirement: true });
+
+    expect(result.didTravel).toBe(true);
+    expect(result.fuelCost).toBe(edge?.distance);
+    expect(state.currentNodeId).toBe(destination);
+    expect(state.day).toBe(1);
+    expect(state.fuel).toBe(-(edge?.distance ?? 0));
+  });
 });

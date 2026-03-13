@@ -383,6 +383,34 @@ describe('expedition flow runtime helpers', () => {
     expect(state.mapMessage).toContain('Arrived in nature: stabilized +1 health.');
   });
 
+  it('lets a banked free transfer move to a connected node even at zero fuel', () => {
+    const state = buildRuntimeState('free-transfer-zero-fuel');
+    const neighbor = connectedNeighbors(state.sim)[0];
+    expect(neighbor).toBeDefined();
+    if (!neighbor) {
+      throw new Error('Expected deterministic connected neighbor');
+    }
+
+    state.freeTravelCharges = 1;
+    state.sim.fuel = 0;
+    const destination = findNode(state.sim, neighbor.nodeId);
+    expect(destination).toBeDefined();
+    if (!destination) {
+      throw new Error('Expected connected destination node');
+    }
+    destination.type = 'town';
+
+    const travel = travelToNodeWithRuntimeEffects(state, neighbor.nodeId);
+
+    expect(travel.didTravel).toBe(true);
+    expect(travel.usedFreeTravel).toBe(true);
+    expect(state.freeTravelCharges).toBe(0);
+    expect(state.sim.currentNodeId).toBe(neighbor.nodeId);
+    expect(state.sim.day).toBe(1);
+    expect(state.sim.fuel).toBe(8);
+    expect(state.mapMessage).toContain('Arrived at town: fuel topped up +8.');
+  });
+
   it('branches expedition-goal arrival rewards from the ordered notebook clue sequence', () => {
     const healthState = buildRuntimeState('goal-arrival-health');
     healthState.sim.currentNodeId = healthState.expeditionGoalNodeId;
