@@ -4,8 +4,6 @@ import { connectedNeighbors, currentNodeType, findNode } from './engine/sim/worl
 import {
   damageSubsystemForNodeType,
   getMaxHealth,
-  installUpgradeForNodeType,
-  repairMostDamagedSubsystem
 } from './engine/sim/vehicle';
 import { attemptBeaconActivation, hasBeaconAutoLink } from './game/runtime/beaconActivation';
 import { decayDamageFeedback, triggerDamageFeedback } from './game/runtime/damageFeedback';
@@ -13,6 +11,15 @@ import { biomeByNodeType } from './game/runtime/runLayout';
 import { buildMapActionChips, buildMapBoardView } from './game/runtime/mapBoardView';
 import { buildMapSceneCardPlan, buildMapSceneCopy } from './game/runtime/mapSceneCards';
 import { buildMapSceneContent } from './game/runtime/mapSceneContent';
+import {
+  advanceMapSelection,
+  buildMapScannerFlags,
+  mapSceneStatusText,
+  stepMapScene,
+  tryFieldRepairOnMap,
+  tryInstallUpgradeOnMap,
+  tryTravelSelectedNode
+} from './game/runtime/mapSceneFlow';
 import { buildMapSceneHudViewModel } from './game/runtime/mapSceneHudView';
 import { buildMapSceneTextAssembly } from './game/runtime/mapSceneTextAssembly';
 import { buildDebugStateSnapshot } from './game/runtime/debugState';
@@ -23,15 +30,12 @@ import {
   isInsideCanopyLift,
 } from './game/runtime/canopyLifts';
 import {
-  completeCurrentNodeRun,
-  hasCompletedCurrentNode,
-  travelToNodeWithRuntimeEffects
+  completeCurrentNodeRun
 } from './game/runtime/expeditionFlow';
 import { runObjectiveProgress, runObjectivePrompt, updateStickyRunPrompt } from './game/runtime/runObjectiveUi';
 import { updateRunObjectives } from './game/runtime/runObjectiveUpdates';
 import { buildRunObjectiveVisualState } from './game/runtime/runObjectiveVisuals';
 import { dashEntryEnergyCost, shouldContinueDash, shouldStartDash } from './game/runtime/runDash';
-import { updateMapRotation } from './game/runtime/mapRotation';
 import { buildRunSceneHudViewModel } from './game/runtime/runSceneHudView';
 import { buildBeaconLabelViews } from './game/runtime/runSceneObjectiveView';
 import { buildExitLockedMessage, buildRunCompletionMessage } from './game/runtime/runCompletion';
@@ -51,7 +55,6 @@ import {
   resetRunFromCurrentNode,
   shiftRunSceneVertical,
   START_X,
-  tryUseMedPatch,
   type RuntimeState
 } from './game/runtime/runtimeState';
 import {
@@ -60,7 +63,6 @@ import {
   dashSpeedForState,
   hazardInvulnerabilitySeconds,
   jumpSpeedForState,
-  normalizeRuntimeStateAfterVehicleChange,
   runSpeedForState,
   scrapGainPerCollectible
 } from './game/runtime/vehicleDerivedStats';
@@ -108,6 +110,17 @@ let previousSpaceDown = false;
 let previousDashDown = false;
 let previousMapNavigate = false;
 let externalStepping = false;
+
+function mapRotateInput(keysPressed: Set<string>): -1 | 0 | 1 {
+  const rotateInput = (keysPressed.has('KeyE') ? 1 : 0) - (keysPressed.has('KeyQ') ? 1 : 0);
+  if (rotateInput > 0) {
+    return 1;
+  }
+  if (rotateInput < 0) {
+    return -1;
+  }
+  return 0;
+}
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -513,92 +526,6 @@ async function bootstrap(): Promise<void> {
     state.cameraX = clamp(p.x - screenWidth() * 0.35, 0, maxCamera);
   }
 
-  function mapSelection(step: number): void {
-    const options = connectedNeighbors(state.sim);
-    if (options.length === 0) {
-      state.mapSelectionIndex = 0;
-      return;
-    }
-    state.mapSelectionIndex = (state.mapSelectionIndex + step + options.length) % options.length;
-  }
-
-  function tryTravelSelected(): void {
-    if (state.expeditionComplete) {
-      state.mapMessage = 'Expedition complete. Press N for a new world.';
-      state.mapMessageTimer = 3;
-      return;
-    }
-
-    if (!hasCompletedCurrentNode(state)) {
-      state.mapMessage = 'Complete this node run first to unlock outbound travel.';
-      state.mapMessageTimer = 3;
-      return;
-    }
-
-    const options = connectedNeighbors(state.sim);
-    if (options.length === 0) {
-      state.mapMessage = 'No connected routes available.';
-      state.mapMessageTimer = 3;
-      return;
-    }
-
-    const selected = options[state.mapSelectionIndex] ?? options[0];
-    if (!selected) return;
-
-    const result = travelToNodeWithRuntimeEffects(state, selected.nodeId);
-    if (!result.didTravel) {
-      state.mapMessage = result.reason ?? 'Travel failed';
-      state.mapMessageTimer = 3;
-      return;
-    }
-
-    resetRunFromCurrentNode(state);
-    state.scene = 'run';
-  }
-
-  function tryFieldRepair(): void {
-    if (state.scene !== 'map') return;
-
-    const result = repairMostDamagedSubsystem(state.sim);
-    if (result.didRepair) {
-      normalizeRuntimeStateAfterVehicleChange(state);
-      state.mapMessage = `Fabricated repair kit: ${result.repairedSubsystem} restored to ${result.newCondition}/3 (-${result.scrapCost} scrap).`;
-    } else if (result.reason?.includes('full field condition')) {
-      const medPatch = tryUseMedPatch(state);
-      state.mapMessage = medPatch.didHeal
-        ? `Applied med patch: +${MEDPATCH_HEAL_AMOUNT} HP (-${MEDPATCH_SCRAP_COST} scrap).`
-        : medPatch.reason ?? result.reason;
-    } else {
-      state.mapMessage = result.reason ?? 'Repair failed';
-    }
-    state.mapMessageTimer = 3;
-  }
-
-  function tryInstallUpgrade(): void {
-    if (state.scene !== 'map') return;
-
-    const nodeType = currentNodeType(state.sim);
-    const result = installUpgradeForNodeType(state.sim, nodeType);
-    if (result.didInstall) {
-      normalizeRuntimeStateAfterVehicleChange(state);
-      state.mapMessage = `Installed ${result.subsystem} module Lv.${result.nextLevel} at ${nodeType} site (-${result.scrapCost} scrap).`;
-    } else {
-      state.mapMessage = result.reason ?? 'Install failed';
-    }
-    state.mapMessageTimer = 3;
-  }
-
-  function stepMap(dt: number): void {
-    if (state.mapMessageTimer > 0) {
-      state.mapMessageTimer = Math.max(0, state.mapMessageTimer - dt);
-    }
-
-    let rotateInput = 0;
-    if (keys.has('KeyQ')) rotateInput -= 1;
-    if (keys.has('KeyE')) rotateInput += 1;
-    updateMapRotation(state, rotateInput as -1 | 0 | 1, dt);
-  }
-
   function drawRunScene(): void {
     const w = screenWidth();
     const h = screenHeight();
@@ -660,12 +587,12 @@ async function bootstrap(): Promise<void> {
     drawMapBoard(graphics, mapBoardView);
 
     const selectedDistance = selectedOption?.distance ?? 0;
+    const mapScannerFlags = buildMapScannerFlags(state);
     const mapSceneContent = buildMapSceneContent(state, selectedOption?.nodeId ?? null, selectedDistance, {
       canUseMedPatch: canUseMedPatch(state),
       medPatchHealAmount: MEDPATCH_HEAL_AMOUNT,
       medPatchScrapCost: MEDPATCH_SCRAP_COST,
-      hasAutoLinkScanner: hasBeaconAutoLink(state),
-      hasCompletedCurrentNode: hasCompletedCurrentNode(state)
+      ...mapScannerFlags
     });
     const mapSceneCopy = buildMapSceneCopy({
       celebrationDetail: state.expeditionComplete ? goalSignalEndingSummary(state) : null,
@@ -748,7 +675,7 @@ async function bootstrap(): Promise<void> {
 
     if (event.code === 'KeyA') {
       state.scene = state.scene === 'run' ? 'map' : 'run';
-      state.mapMessage = state.scene === 'map' ? 'Choose a connected route and press Enter to travel.' : state.mapMessage;
+      state.mapMessage = mapSceneStatusText(state);
       state.mapMessageTimer = 3;
       event.preventDefault();
       return;
@@ -779,20 +706,24 @@ async function bootstrap(): Promise<void> {
 
     if (state.scene === 'map') {
       if (event.code === 'Enter') {
-        tryTravelSelected();
+        tryTravelSelectedNode(state);
         event.preventDefault();
       }
       if (event.code === 'KeyB') {
-        tryFieldRepair();
+        tryFieldRepairOnMap(state);
         event.preventDefault();
       }
       if (event.code === 'KeyC') {
-        tryInstallUpgrade();
+        tryInstallUpgradeOnMap(state);
         event.preventDefault();
       }
       if (event.code === 'ArrowUp' || event.code === 'ArrowDown') {
         if (!previousMapNavigate) {
-          mapSelection(event.code === 'ArrowUp' ? -1 : 1);
+          state.mapSelectionIndex = advanceMapSelection(
+            state.mapSelectionIndex,
+            connectedNeighbors(state.sim).length,
+            event.code === 'ArrowUp' ? -1 : 1
+          );
           previousMapNavigate = true;
         }
         event.preventDefault();
@@ -835,7 +766,7 @@ async function bootstrap(): Promise<void> {
     if (!externalStepping) {
       const dt = clamp((now - prev) / 1000, 0, 0.05);
       if (state.scene === 'run') stepRun(dt);
-      else stepMap(dt);
+      else stepMapScene(state, dt, mapRotateInput(keys));
 
       if (state.scene === 'run') drawRunScene();
       else drawMapScene();
@@ -857,7 +788,7 @@ async function bootstrap(): Promise<void> {
     const steps = Math.max(1, Math.round(ms / (1000 / 60)));
     for (let i = 0; i < steps; i += 1) {
       if (state.scene === 'run') stepRun(FIXED_DT);
-      else stepMap(FIXED_DT);
+      else stepMapScene(state, FIXED_DT, mapRotateInput(keys));
     }
     if (state.scene === 'run') drawRunScene();
     else drawMapScene();
