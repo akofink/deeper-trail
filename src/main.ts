@@ -12,13 +12,8 @@ import { buildMapActionChips, buildMapBoardView } from './game/runtime/mapBoardV
 import { buildMapSceneCardPlan, buildMapSceneCopy } from './game/runtime/mapSceneCards';
 import { buildMapSceneContent } from './game/runtime/mapSceneContent';
 import {
-  advanceMapSelection,
   buildMapScannerFlags,
-  mapSceneStatusText,
-  stepMapScene,
-  tryFieldRepairOnMap,
-  tryInstallUpgradeOnMap,
-  tryTravelSelectedNode
+  stepMapScene
 } from './game/runtime/mapSceneFlow';
 import { buildMapSceneHudViewModel } from './game/runtime/mapSceneHudView';
 import { buildMapSceneTextAssembly } from './game/runtime/mapSceneTextAssembly';
@@ -44,16 +39,14 @@ import { buildRunSceneTextAssembly } from './game/runtime/runSceneTextAssembly';
 import { dashInputState, isDashHeld } from './game/runtime/runInput';
 import { advanceHorizontalVelocity } from './game/runtime/runMotion';
 import { tryConsumeShieldCharge } from './game/runtime/shieldCharge';
+import { handleShellKeyDown, handleShellKeyUp, resizeRuntimeState } from './game/runtime/shellControl';
 import {
   canUseMedPatch,
   COYOTE_TIME,
   createInitialRuntimeState,
-  groundYForCanvasHeight,
   JUMP_BUFFER_TIME,
   MEDPATCH_HEAL_AMOUNT,
   MEDPATCH_SCRAP_COST,
-  resetRunFromCurrentNode,
-  shiftRunSceneVertical,
   START_X,
   type RuntimeState
 } from './game/runtime/runtimeState';
@@ -659,104 +652,29 @@ async function bootstrap(): Promise<void> {
 
   window.addEventListener('keydown', (event) => {
     keys.add(event.code);
+    const result = handleShellKeyDown(state, event.code, {
+      canvasHeight: app.screen.height,
+      createSeed: createRunSeed,
+      previousMapNavigate
+    });
+    state = result.nextState;
+    previousMapNavigate = result.previousMapNavigate;
 
-    if (event.code === 'KeyF') {
+    if (result.toggleFullscreen) {
       void toggleFullscreen();
-      event.preventDefault();
-      return;
     }
-
-    if (event.code === 'KeyP' && state.scene === 'run') {
-      if (state.mode === 'playing') state.mode = 'paused';
-      else if (state.mode === 'paused') state.mode = 'playing';
+    if (result.preventDefault) {
       event.preventDefault();
-      return;
-    }
-
-    if (event.code === 'KeyA') {
-      state.scene = state.scene === 'run' ? 'map' : 'run';
-      state.mapMessage = mapSceneStatusText(state);
-      state.mapMessageTimer = 3;
-      event.preventDefault();
-      return;
-    }
-
-    if (event.code === 'KeyN' && state.scene === 'map') {
-      state = createInitialRuntimeState(app.screen.height, createRunSeed());
-      event.preventDefault();
-      return;
-    }
-
-    if ((event.code === 'Enter' || event.code === 'KeyR') && (state.mode === 'won' || state.mode === 'lost')) {
-      if (state.mode === 'lost') {
-        state = createInitialRuntimeState(app.screen.height, createRunSeed());
-      } else {
-        resetRunFromCurrentNode(state);
-        state.mode = 'playing';
-      }
-      event.preventDefault();
-      return;
-    }
-
-    if (event.code === 'Enter' && state.scene === 'run' && state.mode === 'playing') {
-      attemptBeaconActivation(state);
-      event.preventDefault();
-      return;
-    }
-
-    if (state.scene === 'map') {
-      if (event.code === 'Enter') {
-        tryTravelSelectedNode(state);
-        event.preventDefault();
-      }
-      if (event.code === 'KeyB') {
-        tryFieldRepairOnMap(state);
-        event.preventDefault();
-      }
-      if (event.code === 'KeyC') {
-        tryInstallUpgradeOnMap(state);
-        event.preventDefault();
-      }
-      if (event.code === 'ArrowUp' || event.code === 'ArrowDown') {
-        if (!previousMapNavigate) {
-          state.mapSelectionIndex = advanceMapSelection(
-            state.mapSelectionIndex,
-            connectedNeighbors(state.sim).length,
-            event.code === 'ArrowUp' ? -1 : 1
-          );
-          previousMapNavigate = true;
-        }
-        event.preventDefault();
-      }
     }
   });
 
   window.addEventListener('keyup', (event) => {
     keys.delete(event.code);
-    if (event.code === 'ArrowUp' || event.code === 'ArrowDown') {
-      previousMapNavigate = false;
-    }
+    previousMapNavigate = handleShellKeyUp(event.code, previousMapNavigate).previousMapNavigate;
   });
 
   window.addEventListener('resize', () => {
-    const nextGroundY = groundYForCanvasHeight(screenHeight());
-    const deltaY = nextGroundY - state.groundY;
-    state.groundY = nextGroundY;
-
-    if (state.scene === 'run') {
-      shiftRunSceneVertical(state, deltaY);
-      if (state.player.y + state.player.h > state.groundY) {
-        state.player.y = state.groundY - state.player.h;
-      }
-      if (state.player.y + state.player.h >= state.groundY) {
-        state.player.vy = 0;
-        state.player.onGround = true;
-      }
-    } else if (state.player.y + state.player.h > state.groundY) {
-      state.player.y = state.groundY - state.player.h;
-      state.player.vy = 0;
-      state.player.onGround = true;
-    }
+    resizeRuntimeState(state, screenHeight());
   });
 
   const gameLoop = (now: number): void => {

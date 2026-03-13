@@ -1,3 +1,11 @@
+- Shell-control extraction pass:
+  - Added `src/game/runtime/shellControl.ts` so fullscreen/pause/scene-toggle/restart/new-world handling, held map-navigation latching, and resize-driven runtime normalization now live in a testable runtime helper instead of inline in `src/main.ts`.
+  - Updated `src/main.ts` to delegate window keydown/keyup/resize events through the extracted shell-control helpers while keeping Pixi-specific fullscreen toggling local to the shell.
+  - Added `tests/shellControl.test.ts` to lock down fullscreen effect signaling, fresh-world / restart flows, one-step map navigation latch behavior, and run/map resize handling.
+
+- TODO next:
+- Continue breaking remaining shell control flow out of `src/main.ts`, especially fixed-step loop ownership and other event-to-runtime coordination that still mutates shell state inline.
+
 - Runtime-control extraction pass:
   - Added `src/game/runtime/mapSceneFlow.ts` so map-scene selection, travel, repair/install messaging, scanner-flag assembly, and per-frame map ticking now live in a pure runtime helper instead of inline in `src/main.ts`.
   - Updated `src/main.ts` to consume the extracted map flow helpers, trimming the remaining map-control mutations out of the Pixi shell and keeping the shell focused on input wiring plus scene orchestration.
