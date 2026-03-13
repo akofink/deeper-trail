@@ -14,6 +14,7 @@ export interface GoalSignalProfile {
   primerBeaconIndex: number;
   endingTitle: string;
   endingSummary: string;
+  endingDiscoveryNote: string;
   endingCompletionNote: string;
   endingEpilogueNote: string;
   arrivalBonusNote: string;
@@ -51,6 +52,8 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
     leadClue === 'ruin' && middleClue === 'nature'
       ? {
           endingTitle: 'Grounded Relay Vault',
+          endingDiscoveryNote:
+            'At the source, a grounded relay vault opens around a hand-built spindle that answers your road-language notes.',
           endingEpilogueNote: 'Its grounded lattice answers the bike-scale relay language instead of abandoning it.',
           encounterBonusType: 'lower-relays' as const,
           encounterBonusNote: 'ruin/grove braid: the source shelves its relay line into grounded reach'
@@ -58,6 +61,8 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
       : leadClue === 'ruin' && middleClue === 'anomaly'
         ? {
             endingTitle: 'Breached Entry Core',
+            endingDiscoveryNote:
+              'Inside the breach, the source exposes a cracked transit core stitched together with quarry braces and phase seams.',
             endingCompletionNote: 'The source met you through a split breach instead of a sealed barricade.',
             endingEpilogueNote: 'Inside the breach, the route reads like a quarry plan rewritten in phase seams.',
             encounterBonusType: 'clear-front-hazards' as const,
@@ -66,6 +71,8 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
         : leadClue === 'nature' && middleClue === 'ruin'
           ? {
               endingTitle: 'Echo Salvage Orchard',
+              endingDiscoveryNote:
+                'At the source, recovered route fragments hang like tagged fruit around a live salvage trunk still carrying the signal.',
               endingCompletionNote: 'The source paid back the route in salvage echoes all the way to its heart.',
               endingEpilogueNote: 'Each recovered fragment repeats the outward trail, turning salvage into a readable memory map.',
               encounterBonusType: 'extra-salvage' as const,
@@ -74,6 +81,8 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
           : leadClue === 'nature' && middleClue === 'anomaly'
             ? {
                 endingTitle: 'Quiet Phase Garden',
+                endingDiscoveryNote:
+                  'At the center, the source resolves into a tended crossing where the moving fields grow in measured rows instead of storming loose.',
                 endingCompletionNote: 'The moving fields hushed long enough for a clean, steady crossing.',
                 endingEpilogueNote: 'The silence holds just long enough to show the source as a tended crossing instead of a storm.',
                 encounterBonusType: 'soften-movers' as const,
@@ -82,6 +91,8 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
             : leadClue === 'anomaly' && middleClue === 'ruin'
               ? {
                   endingTitle: 'Folded Quarry Threshold',
+                  endingDiscoveryNote:
+                    'Past the fold, the source is packed into impossible short distance: quarry ramps, relay teeth, and sudden adjacency.',
                   endingCompletionNote: 'The last stretch folded inward and let the source arrive early.',
                   endingEpilogueNote: 'Past the fold, the source confirms distance itself was the last lock on the trail.',
                   encounterBonusType: 'shorter-run' as const,
@@ -89,6 +100,8 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
                 }
               : {
                   endingTitle: 'Vented Bloom Channel',
+                  endingDiscoveryNote:
+                    'At the source, an opened vent channels the route into a bloom-lined conduit that stays clear just long enough to read.',
                   endingCompletionNote: 'The final channel stayed open and vented clear right to the source.',
                   endingEpilogueNote: 'The opened vent carries the grove pattern forward into whatever deeper route comes next.',
                   encounterBonusType: 'clear-tail-hazard' as const,
@@ -129,7 +142,8 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
     primerBeaconId,
     primerBeaconIndex,
     endingTitle: encounterBonus.endingTitle,
-    endingSummary: `${encounterBonus.endingTitle}: ${arrivalBonus.arrivalBonusNote}; ${encounterBonus.encounterBonusNote}; ${runBonus.runBonusNote}; ${encounterBonus.endingEpilogueNote}.`,
+    endingSummary: `${encounterBonus.endingTitle}: ${arrivalBonus.arrivalBonusNote}; ${encounterBonus.encounterBonusNote}; ${runBonus.runBonusNote}; ${encounterBonus.endingDiscoveryNote}; ${encounterBonus.endingEpilogueNote}.`,
+    endingDiscoveryNote: encounterBonus.endingDiscoveryNote,
     endingCompletionNote:
       encounterBonus.endingCompletionNote ??
       'The source shelves its relay line low and opens a grounded vault at the end of the route.',

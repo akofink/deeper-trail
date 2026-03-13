@@ -76,6 +76,7 @@ Use a “mystery graph”:
   - the third discovered core clue decides a run-layout assist such as a collapsed barrier, easier relay reach, or a primed shield charge,
   - that same third clue now also pre-solves the first local secondary objective on the goal run so synthesis changes more than one verb target,
   - clearing the goal now surfaces that decoded source-signature variant directly in the win banner, completion banner, and post-run celebration card instead of collapsing every successful run into the same generic ending text,
+  - each source-signature ending now also carries a distinct discovery beat about what the player actually finds at the signal source, so the clue-order payoff changes the resolved encounter and not only the approach modifiers,
   - the ending now also carries a short signature-specific epilogue line so the expedition resolves as a distinct outcome, not just a distinct approach mutation,
   - the goal encounter is still deterministic and replayable: the same clue order produces the same source signature every run.
 - The current notebook is still intentionally lightweight: it is a discovery layer and route-intel aid, not yet a full branching puzzle graph.

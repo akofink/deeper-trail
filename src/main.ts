@@ -496,6 +496,7 @@ async function bootstrap(): Promise<void> {
       state.mapMessage = buildRunCompletionMessage({
         expeditionCompleted: completion.expeditionCompleted,
         expeditionEndingTitle: completion.expeditionCompleted ? goalSignalProfile(state)?.endingTitle : null,
+        expeditionEndingDiscoveryNote: completion.expeditionCompleted ? goalSignalProfile(state)?.endingDiscoveryNote : null,
         expeditionEndingCompletionNote: completion.expeditionCompleted ? goalSignalProfile(state)?.endingCompletionNote : null,
         expeditionEndingEpilogueNote: completion.expeditionCompleted ? goalSignalProfile(state)?.endingEpilogueNote : null,
         flawlessRecovery: completion.flawlessRecovery,
