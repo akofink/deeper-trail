@@ -1,3 +1,8 @@
+- Frame-loop extraction pass:
+  - Added `src/game/runtime/frameLoop.ts` so fixed-step stepping, frame-delta clamping, scene-targeted step/draw routing, and external `advanceTime(ms)` control now live in a testable runtime helper instead of inline in `src/main.ts`.
+  - Updated `src/main.ts` to delegate animation-frame and external stepping orchestration through the new helper while preserving existing run/map stepping and render behavior.
+  - Added `tests/frameLoop.test.ts` to lock down clamped RAF deltas, scene-routing between run/map callbacks, and fixed-step external stepping semantics.
+
 - Scene chip-render extraction pass:
   - Added `renderSceneActionChips(...)` in `src/game/render/sceneHudRenderer.ts` so chip primitive drawing and label text application run through one shared helper.
   - Updated `src/main.ts` run/map scene flows to use the shared helper, removing duplicate chip draw/apply wiring from the Pixi shell.
