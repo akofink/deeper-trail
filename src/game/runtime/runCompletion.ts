@@ -4,6 +4,7 @@ import type { RuntimeState } from './runtimeState';
 export interface RunCompletionMessageInput {
   expeditionCompleted: boolean;
   expeditionEndingTitle?: string | null;
+  expeditionEndingCompletionNote?: string | null;
   flawlessRecovery: number;
   latestNotebookEntryTitle?: string;
 }
@@ -38,7 +39,9 @@ export function buildExitLockedMessage(progress: RunObjectiveProgress): string {
 export function buildRunCompletionMessage(input: RunCompletionMessageInput): string {
   if (input.expeditionCompleted) {
     return input.expeditionEndingTitle
-      ? `Signal source reached. ${input.expeditionEndingTitle} decoded. Press N for a new expedition.`
+      ? `Signal source reached. ${input.expeditionEndingTitle} decoded. ${input.expeditionEndingCompletionNote ?? ''} Press N for a new expedition.`
+          .replace(/\s+/g, ' ')
+          .trim()
       : 'Signal source reached. Expedition complete. Press N for a new expedition.';
   }
 

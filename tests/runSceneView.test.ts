@@ -113,7 +113,9 @@ describe('runSceneView', () => {
     state.sim.notebook.synthesisUnlocked = true;
     state.sim.currentNodeId = state.expeditionGoalNodeId;
 
-    expect(buildRunSceneOverlayCard(state, 900)?.text).toBe('Signal source reached.\nFolded Quarry Threshold');
+    expect(buildRunSceneOverlayCard(state, 900)?.text).toBe(
+      'Signal source reached.\nFolded Quarry Threshold\nThe last stretch folded inward and let the source arrive early.'
+    );
   });
 
   it('suppresses the overlay when there is no active prompt or banner', () => {

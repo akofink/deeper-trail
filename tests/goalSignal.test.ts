@@ -114,6 +114,9 @@ describe('goal signal primer helpers', () => {
     const state = synthesizeGoalState(['nature', 'ruin', 'anomaly']);
 
     expect(goalSignalProfile(state)?.endingTitle).toBe('Echo Salvage Orchard');
+    expect(goalSignalProfile(state)?.endingCompletionNote).toBe(
+      'The source paid back the route in salvage echoes all the way to its heart.'
+    );
     expect(goalSignalEndingSummary(state)).toContain('Echo Salvage Orchard: source cache: +2 scrap on arrival;');
     expect(goalSignalPrimerNote(state.expeditionGoalNodeId, state)).toContain('B1 pre-linked');
     expect(goalSignalPrimerNote(state.expeditionGoalNodeId, state)).toContain('source cache: +2 scrap on arrival');
