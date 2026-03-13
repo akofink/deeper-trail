@@ -3,6 +3,7 @@ import {
   applyGoalSignalEncounterBonus,
   applyGoalSignalPrimer,
   applyGoalSignalRunBonus,
+  goalSignalEndingSummary,
   goalSignalProfile,
   goalSignalPrimerNote,
   hasGoalSignalPrimer
@@ -112,6 +113,8 @@ describe('goal signal primer helpers', () => {
   it('surfaces the primer note only on synthesized goal routes', () => {
     const state = synthesizeGoalState(['nature', 'ruin', 'anomaly']);
 
+    expect(goalSignalProfile(state)?.endingTitle).toBe('Echo Salvage Orchard');
+    expect(goalSignalEndingSummary(state)).toContain('Echo Salvage Orchard: source cache: +2 scrap on arrival;');
     expect(goalSignalPrimerNote(state.expeditionGoalNodeId, state)).toContain('B1 pre-linked');
     expect(goalSignalPrimerNote(state.expeditionGoalNodeId, state)).toContain('source cache: +2 scrap on arrival');
     expect(goalSignalPrimerNote(state.expeditionGoalNodeId, state)).toContain('grove/quarry braid');

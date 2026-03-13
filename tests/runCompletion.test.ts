@@ -118,6 +118,17 @@ describe('run completion copy helpers', () => {
     expect(
       buildRunCompletionMessage({
         expeditionCompleted: true,
+        expeditionEndingTitle: 'Grounded Relay Vault',
+        flawlessRecovery: 1,
+        latestNotebookEntryTitle: 'Ignored'
+      })
+    ).toBe('Signal source reached. Grounded Relay Vault decoded. Press N for a new expedition.');
+  });
+
+  it('falls back to generic expedition-ending copy when no goal variant is available', () => {
+    expect(
+      buildRunCompletionMessage({
+        expeditionCompleted: true,
         flawlessRecovery: 1,
         latestNotebookEntryTitle: 'Ignored'
       })

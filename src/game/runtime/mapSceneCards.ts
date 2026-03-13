@@ -4,6 +4,7 @@ import type { SceneTextCardSpec } from './sceneTextCards';
 import type { MeasuredTextSize } from './sceneTextView';
 
 export interface MapSceneCopyInput {
+  celebrationDetail?: string | null;
   expeditionComplete: boolean;
   installHint: string;
   mapMessage: string;
@@ -108,7 +109,12 @@ export function buildMapSceneCopy(input: MapSceneCopyInput): MapSceneCopy {
 
   return {
     celebrationText: input.expeditionComplete
-      ? `SIGNAL SOURCE REACHED\nSeed ${input.seed} complete  •  Score ${input.score}\nPress N to launch a new expedition`
+      ? [
+          'SIGNAL SOURCE REACHED',
+          input.celebrationDetail ?? 'Expedition complete.',
+          `Seed ${input.seed} complete  •  Score ${input.score}`,
+          'Press N to launch a new expedition'
+        ].join('\n')
       : null,
     routeText: `${input.routeDetail}\n${input.installHint}\n${input.scannerHint}\n${input.repairHint}\n${statusLine}`,
     showRouteCard: !input.expeditionComplete

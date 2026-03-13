@@ -1,5 +1,6 @@
 import { hasAutoLinkScanner } from '../../engine/sim/vehicle';
 import { currentNodeType } from '../../engine/sim/world';
+import { goalSignalProfile } from './goalSignal';
 import { objectiveShortLabel, runObjectiveProgress } from './runObjectiveUi';
 import type { RuntimeState } from './runtimeState';
 import { buildSceneActionChipRow, type SceneActionChip } from './sceneActionChips';
@@ -35,9 +36,12 @@ export function buildRunSceneOverlayCard(state: RuntimeState, screenWidth: numbe
   if (state.mode === 'paused') {
     text = 'Paused\nPress P to resume';
   } else if (state.mode === 'won') {
-    text = state.expeditionComplete
-      ? 'Signal source reached.\nExpedition complete.'
-      : 'Trail complete.\nMap travel unlocked and +1 free trip earned.';
+    if (state.expeditionComplete) {
+      const goalSignal = goalSignalProfile(state);
+      text = goalSignal ? `Signal source reached.\n${goalSignal.endingTitle}` : 'Signal source reached.\nExpedition complete.';
+    } else {
+      text = 'Trail complete.\nMap travel unlocked and +1 free trip earned.';
+    }
   } else if (state.mode === 'lost') {
     text = 'Trail lost.\nPress Enter or R to restart';
   } else if (state.mapMessageTimer > 0 && state.mapMessage) {
