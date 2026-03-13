@@ -38,6 +38,7 @@ describe('buildDebugStateSnapshot', () => {
         riskKnown: false
       }
     });
+    expect(snapshot.sim.shareCode).toMatch(/^DT1-[A-Z0-9]+-[0-9A-Z]{6}-[0-9A-Z]{6}$/);
   });
 
   it('reports run objective progress for biome-specific support goals', () => {

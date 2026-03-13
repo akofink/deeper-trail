@@ -1,5 +1,6 @@
 import { notebookSignalRouteIntel } from '../../engine/sim/notebook';
 import { anomalyFacingLabel, anomalyRequiredFacing, getObjectiveSummary, getBeaconRuleForNodeType } from '../../engine/sim/runObjectives';
+import { buildSeedBuildShareCode } from '../../engine/sim/shareCode';
 import { connectedNeighbors, currentNodeType, findNode } from '../../engine/sim/world';
 import { getInstallOffer, FIELD_REPAIR_SCRAP_COST } from '../../engine/sim/vehicle';
 import { visibleBiomeKnowledge } from '../../engine/sim/exploration';
@@ -27,6 +28,7 @@ export interface DebugStateSnapshot {
     vehicleCondition: RuntimeState['sim']['vehicleCondition'];
     exploration: RuntimeState['sim']['exploration'];
     notebook: RuntimeState['sim']['notebook'];
+    shareCode: string;
   };
   map: {
     rotation: number;
@@ -202,7 +204,8 @@ export function buildDebugStateSnapshot(state: RuntimeState, viewportWidth: numb
       vehicle: state.sim.vehicle,
       vehicleCondition: state.sim.vehicleCondition,
       exploration: state.sim.exploration,
-      notebook: state.sim.notebook
+      notebook: state.sim.notebook,
+      shareCode: buildSeedBuildShareCode(state.sim)
     },
     map: {
       rotation: Number(state.mapRotation.toFixed(2)),

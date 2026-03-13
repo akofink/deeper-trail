@@ -347,7 +347,8 @@ async function bootstrap(): Promise<void> {
       routeDetail: mapSceneContent.routeDetail,
       scannerHint: mapSceneContent.scannerHint,
       score: state.score,
-      seed: state.seed
+      seed: state.seed,
+      shareCode: mapSceneContent.shareCode
     });
     const mapSceneCards = buildMapSceneCardPlan({
       celebrationText: mapSceneCopy.celebrationText,
