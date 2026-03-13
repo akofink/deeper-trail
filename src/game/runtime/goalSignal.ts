@@ -15,6 +15,7 @@ export interface GoalSignalProfile {
   endingTitle: string;
   endingSummary: string;
   endingCompletionNote: string;
+  endingEpilogueNote: string;
   arrivalBonusNote: string;
   runBonusNote: string;
   encounterBonusNote: string;
@@ -50,6 +51,7 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
     leadClue === 'ruin' && middleClue === 'nature'
       ? {
           endingTitle: 'Grounded Relay Vault',
+          endingEpilogueNote: 'Its grounded lattice answers the bike-scale relay language instead of abandoning it.',
           encounterBonusType: 'lower-relays' as const,
           encounterBonusNote: 'ruin/grove braid: the source shelves its relay line into grounded reach'
         }
@@ -57,6 +59,7 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
         ? {
             endingTitle: 'Breached Entry Core',
             endingCompletionNote: 'The source met you through a split breach instead of a sealed barricade.',
+            endingEpilogueNote: 'Inside the breach, the route reads like a quarry plan rewritten in phase seams.',
             encounterBonusType: 'clear-front-hazards' as const,
             encounterBonusNote: 'ruin/phase braid: the source breaches its entry barricades'
           }
@@ -64,6 +67,7 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
           ? {
               endingTitle: 'Echo Salvage Orchard',
               endingCompletionNote: 'The source paid back the route in salvage echoes all the way to its heart.',
+              endingEpilogueNote: 'Each recovered fragment repeats the outward trail, turning salvage into a readable memory map.',
               encounterBonusType: 'extra-salvage' as const,
               encounterBonusNote: 'grove/quarry braid: salvage echoes line the source path'
             }
@@ -71,6 +75,7 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
             ? {
                 endingTitle: 'Quiet Phase Garden',
                 endingCompletionNote: 'The moving fields hushed long enough for a clean, steady crossing.',
+                endingEpilogueNote: 'The silence holds just long enough to show the source as a tended crossing instead of a storm.',
                 encounterBonusType: 'soften-movers' as const,
                 encounterBonusNote: 'grove/phase braid: the source quiets its moving fields'
               }
@@ -78,12 +83,14 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
               ? {
                   endingTitle: 'Folded Quarry Threshold',
                   endingCompletionNote: 'The last stretch folded inward and let the source arrive early.',
+                  endingEpilogueNote: 'Past the fold, the source confirms distance itself was the last lock on the trail.',
                   encounterBonusType: 'shorter-run' as const,
                   encounterBonusNote: 'phase/quarry braid: the source folds the last approach closer'
                 }
               : {
                   endingTitle: 'Vented Bloom Channel',
                   endingCompletionNote: 'The final channel stayed open and vented clear right to the source.',
+                  endingEpilogueNote: 'The opened vent carries the grove pattern forward into whatever deeper route comes next.',
                   encounterBonusType: 'clear-tail-hazard' as const,
                   encounterBonusNote: 'phase/grove braid: the source vents a clean final channel'
                 };
@@ -122,10 +129,11 @@ function decodedGoalSignalProfile(state: RuntimeState): GoalSignalProfile | null
     primerBeaconId,
     primerBeaconIndex,
     endingTitle: encounterBonus.endingTitle,
-    endingSummary: `${encounterBonus.endingTitle}: ${arrivalBonus.arrivalBonusNote}; ${encounterBonus.encounterBonusNote}; ${runBonus.runBonusNote}.`,
+    endingSummary: `${encounterBonus.endingTitle}: ${arrivalBonus.arrivalBonusNote}; ${encounterBonus.encounterBonusNote}; ${runBonus.runBonusNote}; ${encounterBonus.endingEpilogueNote}.`,
     endingCompletionNote:
       encounterBonus.endingCompletionNote ??
       'The source shelves its relay line low and opens a grounded vault at the end of the route.',
+    endingEpilogueNote: encounterBonus.endingEpilogueNote,
     arrivalBonusNote: arrivalBonus.arrivalBonusNote,
     runBonusNote: runBonus.runBonusNote,
     encounterBonusNote: encounterBonus.encounterBonusNote,

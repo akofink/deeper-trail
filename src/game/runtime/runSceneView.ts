@@ -39,7 +39,7 @@ export function buildRunSceneOverlayCard(state: RuntimeState, screenWidth: numbe
     if (state.expeditionComplete) {
       const goalSignal = goalSignalProfile(state);
       text = goalSignal
-        ? `Signal source reached.\n${goalSignal.endingTitle}\n${goalSignal.endingCompletionNote}`
+        ? `Signal source reached.\n${goalSignal.endingTitle}\n${goalSignal.endingEpilogueNote}`
         : 'Signal source reached.\nExpedition complete.';
     } else {
       text = 'Trail complete.\nMap travel unlocked and +1 free trip earned.';

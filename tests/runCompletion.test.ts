@@ -121,11 +121,13 @@ describe('run completion copy helpers', () => {
         expeditionEndingTitle: 'Grounded Relay Vault',
         expeditionEndingCompletionNote:
           'The source shelves its relay line low and opens a grounded vault at the end of the route.',
+        expeditionEndingEpilogueNote:
+          'Its grounded lattice answers the bike-scale relay language instead of abandoning it.',
         flawlessRecovery: 1,
         latestNotebookEntryTitle: 'Ignored'
       })
     ).toBe(
-      'Signal source reached. Grounded Relay Vault decoded. The source shelves its relay line low and opens a grounded vault at the end of the route. Press N for a new expedition.'
+      'Signal source reached. Grounded Relay Vault decoded. The source shelves its relay line low and opens a grounded vault at the end of the route. Its grounded lattice answers the bike-scale relay language instead of abandoning it. Press N for a new expedition.'
     );
   });
 
