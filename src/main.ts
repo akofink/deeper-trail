@@ -1,12 +1,6 @@
 import { Application, Graphics, Text } from 'pixi.js';
-import { noteBiomeHazard } from './engine/sim/exploration';
-import { connectedNeighbors, currentNodeType, findNode } from './engine/sim/world';
-import {
-  damageSubsystemForNodeType,
-  getMaxHealth,
-} from './engine/sim/vehicle';
-import { attemptBeaconActivation, hasBeaconAutoLink } from './game/runtime/beaconActivation';
-import { decayDamageFeedback, triggerDamageFeedback } from './game/runtime/damageFeedback';
+import { connectedNeighbors, findNode } from './engine/sim/world';
+import { getMaxHealth } from './engine/sim/vehicle';
 import { biomeByNodeType } from './game/runtime/runLayout';
 import { buildMapActionChips, buildMapBoardView } from './game/runtime/mapBoardView';
 import { buildMapSceneCardPlan, buildMapSceneCopy } from './game/runtime/mapSceneCards';
@@ -18,48 +12,21 @@ import {
 import { buildMapSceneHudViewModel } from './game/runtime/mapSceneHudView';
 import { buildMapSceneTextAssembly } from './game/runtime/mapSceneTextAssembly';
 import { buildDebugStateSnapshot } from './game/runtime/debugState';
-import { goalSignalEndingSummary, goalSignalProfile } from './game/runtime/goalSignal';
-import { pullCollectibleTowardTarget } from './game/runtime/collectibleMagnetism';
-import {
-  applyCanopyLiftAssist,
-  isInsideCanopyLift,
-} from './game/runtime/canopyLifts';
-import {
-  completeCurrentNodeRun
-} from './game/runtime/expeditionFlow';
-import { runObjectiveProgress, runObjectivePrompt, updateStickyRunPrompt } from './game/runtime/runObjectiveUi';
-import { updateRunObjectives } from './game/runtime/runObjectiveUpdates';
+import { goalSignalEndingSummary } from './game/runtime/goalSignal';
+import { runObjectiveProgress } from './game/runtime/runObjectiveUi';
 import { buildRunObjectiveVisualState } from './game/runtime/runObjectiveVisuals';
-import { dashEntryEnergyCost, shouldContinueDash, shouldStartDash } from './game/runtime/runDash';
 import { buildRunSceneHudViewModel } from './game/runtime/runSceneHudView';
 import { buildBeaconLabelViews } from './game/runtime/runSceneObjectiveView';
-import { buildExitLockedMessage, buildRunCompletionMessage } from './game/runtime/runCompletion';
 import { buildRunActionChips, buildRunSceneOverlayCard } from './game/runtime/runSceneView';
+import { stepRunState } from './game/runtime/runStep';
 import { buildRunSceneTextAssembly } from './game/runtime/runSceneTextAssembly';
-import { dashInputState, isDashHeld } from './game/runtime/runInput';
-import { advanceHorizontalVelocity } from './game/runtime/runMotion';
-import { tryConsumeShieldCharge } from './game/runtime/shieldCharge';
 import { handleShellKeyDown, handleShellKeyUp, resizeRuntimeState } from './game/runtime/shellControl';
 import {
   canUseMedPatch,
-  COYOTE_TIME,
   createInitialRuntimeState,
-  JUMP_BUFFER_TIME,
   MEDPATCH_HEAL_AMOUNT,
-  MEDPATCH_SCRAP_COST,
-  START_X,
-  type RuntimeState
+  MEDPATCH_SCRAP_COST
 } from './game/runtime/runtimeState';
-import {
-  collectibleMagnetRadius,
-  collectibleMagnetSpeed,
-  dashSpeedForState,
-  hazardInvulnerabilitySeconds,
-  jumpSpeedForState,
-  runSpeedForState,
-  scrapGainPerCollectible
-} from './game/runtime/vehicleDerivedStats';
-import { advanceWheelRotation } from './game/runtime/vehiclePresentation';
 import { drawMapBoard } from './game/render/mapBoardRenderer';
 import { applyTextViews, measureTextView } from './game/render/pixiText';
 import { beginSceneFrame } from './game/render/sceneFrame';
@@ -86,17 +53,6 @@ declare global {
 }
 
 const FIXED_DT = 1 / 60;
-const GRAVITY = 1050;
-const DASH_ENERGY_DRAIN_PER_SECOND = 2.6;
-const DASH_ENERGY_RECOVER_PER_SECOND = 0.48;
-const DASH_BOOST_RAMP_PER_SECOND = 8;
-const DASH_BOOST_DECAY_PER_SECOND = 9;
-const DASH_START_BOOST = 0.3;
-const DASH_MIN_SPEED_RATIO = 0.62;
-const JUMP_CUT_SPEED = 140;
-const JUMP_CUT_MULTIPLIER = 0.52;
-const FALL_GRAVITY_MULTIPLIER = 1.18;
-const HANG_GRAVITY_MULTIPLIER = 0.88;
 
 const keys = new Set<string>();
 let previousSpaceDown = false;
@@ -117,26 +73,6 @@ function mapRotateInput(keysPressed: Set<string>): -1 | 0 | 1 {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
-}
-
-function intersects(a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }): boolean {
-  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
-}
-
-function distanceSq(ax: number, ay: number, bx: number, by: number): number {
-  const dx = ax - bx;
-  const dy = ay - by;
-  return dx * dx + dy * dy;
-}
-
-function updateHazardState(state: RuntimeState): void {
-  for (const hazard of state.hazards) {
-    const wave = Math.sin(state.elapsedSeconds * hazard.speed + hazard.phase);
-    hazard.x = hazard.baseX + wave * hazard.amplitudeX;
-    hazard.y = hazard.baseY - Math.max(0, wave) * hazard.amplitudeY;
-    hazard.w = hazard.baseW + (hazard.kind === 'pulsing' ? Math.max(0, wave) * hazard.pulse : 0);
-    hazard.h = hazard.baseH + (hazard.kind === 'pulsing' ? Math.max(0, -wave) * hazard.pulse * 0.55 : 0);
-  }
 }
 
 function createRunSeed(): string {
@@ -318,205 +254,19 @@ async function bootstrap(): Promise<void> {
   }
 
   function stepRun(dt: number): void {
-    if (state.mode !== 'playing') {
-      previousSpaceDown = keys.has('Space');
-      return;
-    }
-
-    state.elapsedSeconds += dt;
-    if (state.mapMessageTimer > 0) {
-      state.mapMessageTimer = Math.max(0, state.mapMessageTimer - dt);
-    }
-    decayDamageFeedback(state, dt);
-
-    const p = state.player;
-    const wasOnGround = p.onGround;
-    const dashState = dashInputState(keys.has('ShiftLeft'), keys.has('ShiftRight'));
-    const dashDown = isDashHeld(dashState);
-    const dashStart = shouldStartDash(dashDown, previousDashDown, state.dashEnergy);
-    if (dashStart) {
-      const facing = p.vx === 0 ? p.facing : Math.sign(p.vx);
-      const entryCost = dashEntryEnergyCost(p.vx, runSpeedForState(state));
-      state.dashDirection = facing < 0 ? -1 : 1;
-      state.dashBoost = Math.max(state.dashBoost, DASH_START_BOOST);
-      state.dashEnergy = Math.max(0, state.dashEnergy - entryCost);
-    }
-
-    let move = 0;
-    if (keys.has('ArrowLeft')) move -= 1;
-    if (keys.has('ArrowRight')) move += 1;
-    if (move !== 0) {
-      p.facing = move < 0 ? -1 : 1;
-    }
-
-    const spaceDown = keys.has('Space');
-    if (spaceDown && !previousSpaceDown) {
-      p.jumpBufferTime = JUMP_BUFFER_TIME;
-    }
-    if (!spaceDown && previousSpaceDown && p.vy < -JUMP_CUT_SPEED) {
-      p.vy *= JUMP_CUT_MULTIPLIER;
-    }
-    previousSpaceDown = spaceDown;
-
-    p.jumpBufferTime = Math.max(0, p.jumpBufferTime - dt);
-    p.coyoteTime = p.onGround ? COYOTE_TIME : Math.max(0, p.coyoteTime - dt);
-
-    const targetSpeed = move * runSpeedForState(state);
-    p.vx = advanceHorizontalVelocity(p.vx, targetSpeed, dt, p.onGround);
-
-    const dashActive = dashStart || shouldContinueDash(dashDown, state.dashBoost, state.dashEnergy);
-    if (dashActive) {
-      state.dashBoost = Math.min(1, state.dashBoost + DASH_BOOST_RAMP_PER_SECOND * dt);
-      state.dashEnergy = Math.max(0, state.dashEnergy - DASH_ENERGY_DRAIN_PER_SECOND * dt);
-      p.invuln = Math.max(p.invuln, 0.08);
-      p.vx = state.dashDirection * dashSpeedForState(state) * (DASH_MIN_SPEED_RATIO + state.dashBoost * (1 - DASH_MIN_SPEED_RATIO));
-    } else {
-      state.dashBoost = Math.max(0, state.dashBoost - DASH_BOOST_DECAY_PER_SECOND * dt);
-      state.dashEnergy = Math.min(1, state.dashEnergy + DASH_ENERGY_RECOVER_PER_SECOND * dt);
-    }
-    previousDashDown = dashDown;
-
-    const wheelRadius = 8 + Math.max(0, state.sim.vehicle.suspension - 1);
-    state.wheelRotation = advanceWheelRotation(state.wheelRotation, p.vx, dt, wheelRadius);
-
-    if (p.jumpBufferTime > 0 && (p.onGround || p.coyoteTime > 0)) {
-      p.vy = -jumpSpeedForState(state);
-      p.onGround = false;
-      p.coyoteTime = 0;
-      p.jumpBufferTime = 0;
-    }
-
-    const preMoveBounds = {
-      x: p.x,
-      y: p.y,
-      w: p.w,
-      h: p.h
-    };
-    for (const lift of state.canopyLifts) {
-      if (lift.charted || p.onGround || !isInsideCanopyLift(lift, preMoveBounds)) continue;
-      p.vy = applyCanopyLiftAssist(p.vy, dt);
-      break;
-    }
-
-    const gravityMultiplier = p.vy > 0 ? FALL_GRAVITY_MULTIPLIER : Math.abs(p.vy) < 90 && spaceDown ? HANG_GRAVITY_MULTIPLIER : 1;
-    const downwardSpeedBeforeGravity = p.vy;
-    p.vy += GRAVITY * gravityMultiplier * dt;
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-
-    if (p.y + p.h >= state.groundY) {
-      p.y = state.groundY - p.h;
-      p.vy = 0;
-      p.onGround = true;
-      p.coyoteTime = COYOTE_TIME;
-    } else {
-      p.onGround = false;
-    }
-
-    p.x = clamp(p.x, 0, state.goalX + 120);
-
-    if (p.invuln > 0) {
-      p.invuln = Math.max(0, p.invuln - dt);
-    }
-
-    updateHazardState(state);
-
-    const playerHitbox = { x: p.x + 2, y: p.y + 2, w: p.w - 4, h: p.h - 4 };
-    const landedThisFrame = !wasOnGround && p.onGround;
-    const landingSpeed = Math.max(downwardSpeedBeforeGravity, p.vy);
-
-    for (const hazard of state.hazards) {
-      if (!intersects(playerHitbox, hazard) || p.invuln > 0) continue;
-      const nodeType = currentNodeType(state.sim);
-      const damagedSubsystem = damageSubsystemForNodeType(state.sim, nodeType);
-      noteBiomeHazard(state.sim, nodeType);
-      p.invuln = hazardInvulnerabilitySeconds(state);
-      p.x = Math.max(START_X, hazard.x - 80);
-      p.y = state.groundY - p.h;
-      p.vx = 0;
-      p.vy = 0;
-      p.onGround = true;
-      p.coyoteTime = COYOTE_TIME;
-      const shieldAbsorbed = tryConsumeShieldCharge(state);
-      if (!shieldAbsorbed) {
-        state.health -= 1;
-        state.tookDamageThisRun = true;
-      }
-      triggerDamageFeedback(
-        state,
-        shieldAbsorbed ? 'shield' : 'health',
-        hazard.x + hazard.w * 0.5,
-        hazard.y + hazard.h * 0.4,
-        p.x < hazard.x ? -1 : 1
-      );
-      state.mapMessage = shieldAbsorbed
-        ? `Shield charge burned. ${damagedSubsystem} subsystem took field damage.`
-        : `${damagedSubsystem} subsystem took field damage.`;
-      state.mapMessageTimer = 2;
-      if (state.health <= 0) state.mode = 'lost';
-      break;
-    }
-
-    const px = p.x + p.w * 0.5;
-    const py = p.y + p.h * 0.5;
-    if (hasBeaconAutoLink(state)) {
-      attemptBeaconActivation(state, 'auto');
-    }
-    const magnetRadius = collectibleMagnetRadius(state);
-    const magnetSpeed = collectibleMagnetSpeed(state);
-    for (const item of state.collectibles) {
-      if (item.collected) continue;
-      pullCollectibleTowardTarget(item, px, py, dt, magnetRadius, magnetSpeed);
-      const rr = (item.r + 16) * (item.r + 16);
-      if (distanceSq(px, py, item.x, item.y) <= rr) {
-        item.collected = true;
-        state.score += 10;
-        state.sim.scrap += scrapGainPerCollectible(state);
-      }
-    }
-
-    const objectiveUpdate = updateRunObjectives(state, {
+    const result = stepRunState(state, {
       dt,
-      landedThisFrame,
-      landingSpeed
+      screenWidth: screenWidth(),
+      leftPressed: keys.has('ArrowLeft'),
+      rightPressed: keys.has('ArrowRight'),
+      jumpPressed: keys.has('Space'),
+      dashLeftPressed: keys.has('ShiftLeft'),
+      dashRightPressed: keys.has('ShiftRight'),
+      previousJumpPressed: previousSpaceDown,
+      previousDashPressed: previousDashDown
     });
-    if (objectiveUpdate.message) {
-      state.mapMessage = objectiveUpdate.message;
-      state.mapMessageTimer = objectiveUpdate.durationSeconds;
-    }
-
-    const objectiveProgress = runObjectiveProgress(state);
-    const exitReady = objectiveProgress.completed >= objectiveProgress.total;
-    if (p.x + p.w >= state.goalX && !exitReady) {
-      p.x = state.goalX - 64;
-      state.mapMessage = buildExitLockedMessage(objectiveProgress);
-      state.mapMessageTimer = 2.5;
-    } else if (p.x + p.w >= state.goalX) {
-      const completion = completeCurrentNodeRun(state);
-      state.mapMessage = buildRunCompletionMessage({
-        expeditionCompleted: completion.expeditionCompleted,
-        expeditionEndingTitle: completion.expeditionCompleted ? goalSignalProfile(state)?.endingTitle : null,
-        expeditionEndingDiscoveryNote: completion.expeditionCompleted ? goalSignalProfile(state)?.endingDiscoveryNote : null,
-        expeditionEndingCompletionNote: completion.expeditionCompleted ? goalSignalProfile(state)?.endingCompletionNote : null,
-        expeditionEndingEpilogueNote: completion.expeditionCompleted ? goalSignalProfile(state)?.endingEpilogueNote : null,
-        flawlessRecovery: completion.flawlessRecovery,
-        latestNotebookEntryTitle:
-          completion.notebookUpdate.newEntries[completion.notebookUpdate.newEntries.length - 1]?.title
-      });
-      state.mapMessageTimer = 4;
-    }
-
-    const stickyPrompt = updateStickyRunPrompt(
-      runObjectivePrompt(state),
-      state.runPromptText,
-      state.runPromptTimer,
-      dt
-    );
-    state.runPromptText = stickyPrompt.text;
-    state.runPromptTimer = stickyPrompt.timer;
-
-    const maxCamera = Math.max(0, state.goalX - screenWidth() * 0.5);
-    state.cameraX = clamp(p.x - screenWidth() * 0.35, 0, maxCamera);
+    previousSpaceDown = result.previousJumpPressed;
+    previousDashDown = result.previousDashPressed;
   }
 
   function drawRunScene(): void {
