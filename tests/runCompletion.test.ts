@@ -119,10 +119,14 @@ describe('run completion copy helpers', () => {
       buildRunCompletionMessage({
         expeditionCompleted: true,
         expeditionEndingTitle: 'Grounded Relay Vault',
+        expeditionEndingCompletionNote:
+          'The source shelves its relay line low and opens a grounded vault at the end of the route.',
         flawlessRecovery: 1,
         latestNotebookEntryTitle: 'Ignored'
       })
-    ).toBe('Signal source reached. Grounded Relay Vault decoded. Press N for a new expedition.');
+    ).toBe(
+      'Signal source reached. Grounded Relay Vault decoded. The source shelves its relay line low and opens a grounded vault at the end of the route. Press N for a new expedition.'
+    );
   });
 
   it('falls back to generic expedition-ending copy when no goal variant is available', () => {
