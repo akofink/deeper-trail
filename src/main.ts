@@ -28,7 +28,7 @@ import {
   MEDPATCH_SCRAP_COST
 } from './game/runtime/runtimeState';
 import { drawMapBoard } from './game/render/mapBoardRenderer';
-import { applyTextViews, measureTextView } from './game/render/pixiText';
+import { measureTextView } from './game/render/pixiText';
 import { beginSceneFrame } from './game/render/sceneFrame';
 import { measureTextCard } from './game/render/pixiPrimitives';
 import {
@@ -39,7 +39,7 @@ import {
 import {
   applyOptionalTextCard,
   renderMapSceneCards,
-  drawSceneActionChips,
+  renderSceneActionChips,
   renderMapSceneHud,
   renderRunSceneHud
 } from './game/render/sceneHudRenderer';
@@ -312,8 +312,7 @@ async function bootstrap(): Promise<void> {
 
     const runOverlayCard = buildRunSceneOverlayCard(state, w);
     applyOptionalTextCard(graphics, overlay, runOverlayCard);
-    drawSceneActionChips(graphics, runChips);
-    applyTextViews(chipLabels, runTextAssembly.chipLabels);
+    renderSceneActionChips(graphics, chipLabels, runChips, runTextAssembly.chipLabels);
   }
 
   function drawMapScene(): void {
@@ -389,8 +388,7 @@ async function bootstrap(): Promise<void> {
       mapSceneLayout.celebrationAccents
     );
 
-    drawSceneActionChips(graphics, mapChips);
-    applyTextViews(chipLabels, mapTextAssembly.chipLabels);
+    renderSceneActionChips(graphics, chipLabels, mapChips, mapTextAssembly.chipLabels);
   }
 
   async function toggleFullscreen(): Promise<void> {

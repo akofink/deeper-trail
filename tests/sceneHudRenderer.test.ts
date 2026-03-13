@@ -8,6 +8,7 @@ import {
   applyOptionalTextCard,
   drawCelebrationAccents,
   drawSceneActionChips,
+  renderSceneActionChips,
   renderMapSceneCards,
   renderMapSceneHud,
   renderRunSceneHud
@@ -249,6 +250,22 @@ describe('sceneHudRenderer', () => {
 
     expect(overlay.text).toBe('Signal source reached.');
     expect(graphics.ops).toContainEqual({ kind: 'circle', x: 120, y: 90, r: 6 });
+  });
+
+  it('renders scene action chips and applies their label views together', () => {
+    const graphics = new GraphicsRecorder();
+    const labels = [createTextNode('stale one'), createTextNode('stale two')];
+
+    renderSceneActionChips(
+      graphics as unknown as Graphics,
+      labels,
+      [{ color: '#38bdf8', height: 24, label: 'Enter', labelFill: '#0f172a', w: 72, x: 20, y: 200 }],
+      [{ fill: '#0f172a', text: 'Enter', x: 28, y: 206 }]
+    );
+
+    expect(labels[0]?.text).toBe('Enter');
+    expect(labels[1]?.text).toBe('');
+    expect(graphics.ops).toContainEqual({ kind: 'roundRect', x: 20, y: 200, w: 72, h: 24, radius: 12 });
   });
 
   it('renders map scene cards and clears stale celebration text when no card is present', () => {

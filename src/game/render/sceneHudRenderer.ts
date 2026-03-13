@@ -55,6 +55,16 @@ export function drawSceneActionChips(graphics: Graphics, chips: SceneActionChip[
   });
 }
 
+export function renderSceneActionChips(
+  graphics: Graphics,
+  labels: Text[],
+  chips: SceneActionChip[],
+  chipLabelViews: SceneTextView[]
+): void {
+  drawSceneActionChips(graphics, chips);
+  applyTextViews(labels, chipLabelViews);
+}
+
 export function applyOptionalTextCard(
   graphics: Graphics,
   label: Text,
