@@ -1,3 +1,11 @@
+- Runtime-control extraction pass:
+  - Added `src/game/runtime/mapSceneFlow.ts` so map-scene selection, travel, repair/install messaging, scanner-flag assembly, and per-frame map ticking now live in a pure runtime helper instead of inline in `src/main.ts`.
+  - Updated `src/main.ts` to consume the extracted map flow helpers, trimming the remaining map-control mutations out of the Pixi shell and keeping the shell focused on input wiring plus scene orchestration.
+  - Added `tests/mapSceneFlow.test.ts` to lock down selection wrapping, travel gating/success, repair-to-med-patch fallback, install messaging, scanner flags, and map tick/status behavior.
+
+- TODO next:
+- Continue breaking remaining shell control flow out of `src/main.ts`, especially key-event routing and resize handling that still mutate runtime state inline.
+
 - Anomaly phase-alignment pass:
   - Extended anomaly relay rules so sync locks now require deterministic left/right facing alignment in addition to speed and phase timing, turning the scanner-assisted relay into a small embodied puzzle instead of a pure velocity check.
   - Updated prompt, visual, and debug-state helpers so anomaly relays expose their required facing with explicit `LEFT`/`RIGHT` copy, arrow labels, and automation-visible facing/alignment fields.
