@@ -1,18 +1,12 @@
 import { Application, Graphics, Text } from 'pixi.js';
-import { findNode } from './engine/sim/world';
 import { getMaxHealth } from './engine/sim/vehicle';
 import { biomeByNodeType } from './game/runtime/runLayout';
 import { stepMapScene } from './game/runtime/mapSceneFlow';
 import { buildMapSceneRenderPlan } from './game/runtime/mapSceneRenderPlan';
+import { buildRunSceneRenderPlan } from './game/runtime/runSceneRenderPlan';
 import { buildDebugStateSnapshot } from './game/runtime/debugState';
 import { createFrameLoopController } from './game/runtime/frameLoop';
-import { runObjectiveProgress } from './game/runtime/runObjectiveUi';
-import { buildRunObjectiveVisualState } from './game/runtime/runObjectiveVisuals';
-import { buildRunSceneHudViewModel } from './game/runtime/runSceneHudView';
-import { buildBeaconLabelViews } from './game/runtime/runSceneObjectiveView';
-import { buildRunActionChips, buildRunSceneOverlayCard } from './game/runtime/runSceneView';
 import { stepRunState } from './game/runtime/runStep';
-import { buildRunSceneTextAssembly } from './game/runtime/runSceneTextAssembly';
 import { createShellEventBridge } from './game/runtime/shellEventBridge';
 import { bindShellRuntimeLoop } from './game/runtime/shellRuntimeLoop';
 import { createInitialRuntimeState } from './game/runtime/runtimeState';
@@ -239,26 +233,21 @@ async function bootstrap(): Promise<void> {
     const w = screenWidth();
     const h = screenHeight();
     const cam = state.cameraX;
-    const nodeType = findNode(state.sim, state.sim.currentNodeId)?.type ?? 'town';
-    const colors = biomeByNodeType(nodeType);
-    const objectiveVisuals = buildRunObjectiveVisualState(state);
-    const objectiveProgress = runObjectiveProgress(state);
-    const exitReady = objectiveProgress.completed >= objectiveProgress.total;
+    const plan = buildRunSceneRenderPlan({
+      cameraX: cam,
+      measureText: (view) => measureTextView(beaconLabels[0] ?? hud, view),
+      moduleLabelCount: moduleLabels.length,
+      screenHeight: h,
+      screenWidth: w,
+      state
+    });
+    const colors = biomeByNodeType(plan.nodeType);
 
     beginSceneFrame(graphics, playerGraphics, [panelSeed, celebrationOverlay, fieldNotesText], sharedSceneTextGroups);
-    renderRunSceneWorld(graphics, state, nodeType, colors, objectiveVisuals, cam, w, h, exitReady);
-    const beaconLabelViews = buildBeaconLabelViews(objectiveVisuals, cam);
+    renderRunSceneWorld(graphics, state, plan.nodeType, colors, plan.objectiveVisuals, cam, w, h, plan.exitReady);
 
     drawVehicleAvatar(playerGraphics, state, cam);
 
-    const runHudView = buildRunSceneHudViewModel(state, w, moduleLabels.length);
-    const runChips = buildRunActionChips(state, w, h);
-    const runTextAssembly = buildRunSceneTextAssembly({
-      beaconLabels: beaconLabelViews,
-      chips: runChips,
-      hud: runHudView,
-      measureText: (view) => measureTextView(beaconLabels[0] ?? hud, view)
-    });
     renderRunSceneHud(
       graphics,
       {
@@ -272,13 +261,12 @@ async function bootstrap(): Promise<void> {
         rightRowLabels: runRightRowLabels,
         rightRowValues: runRightRowValues
       },
-      runHudView,
-      runTextAssembly
+      plan.hudView,
+      plan.textAssembly
     );
 
-    const runOverlayCard = buildRunSceneOverlayCard(state, w);
-    applyOptionalTextCard(graphics, overlay, runOverlayCard);
-    renderSceneActionChips(graphics, chipLabels, runChips, runTextAssembly.chipLabels);
+    applyOptionalTextCard(graphics, overlay, plan.overlayCard);
+    renderSceneActionChips(graphics, chipLabels, plan.chips, plan.textAssembly.chipLabels);
   }
 
   function drawMapScene(): void {
