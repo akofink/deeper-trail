@@ -14,6 +14,9 @@ export function drawMapBoard(graphics: Graphics, mapBoardView: MapBoardView): vo
     if (node.goal) {
       graphics.circle(node.x, node.y, node.radius + 12).stroke({ color: '#f59e0b', width: 2.5, alpha: 0.55 });
     }
+    if (node.bestLeadRadius) {
+      graphics.circle(node.x, node.y, node.bestLeadRadius).stroke({ color: '#22d3ee', width: 2.2, alpha: 0.75 });
+    }
     if (node.glowRadius && node.glowColor) {
       graphics.circle(node.x, node.y, node.glowRadius).fill({ color: node.glowColor, alpha: node.current ? 0.2 : 0.16 });
     }
