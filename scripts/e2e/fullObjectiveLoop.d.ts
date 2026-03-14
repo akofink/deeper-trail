@@ -125,9 +125,21 @@ export interface ObjectiveLoopRunOptions {
   candidatePaths?: string[];
   launchBrowser?: (candidatePaths: string[]) => Promise<Browser>;
   runSmoke?: (smoke: ObjectiveLoopSmokeConfig, browser: Browser) => Promise<object | null>;
+  log?: (message: string) => void;
+  now?: () => number;
+}
+
+export interface ObjectiveLoopTimingEntry {
+  smoke: ObjectiveLoopSmokeConfig["name"];
+  durationMs: number;
 }
 
 export function logStep(message: string): void;
+export function formatObjectiveLoopTimingSummary(
+  selection: ObjectiveLoopSmokeConfig["name"] | "all",
+  timings: ObjectiveLoopTimingEntry[],
+  totalDurationMs: number
+): string;
 export function parseSmokeSelection(argv?: string[]): "town" | "ruin" | "nature" | "anomaly" | "all";
 export function withStepTimeout<T>(step: string, operation: () => Promise<T>, timeoutMs?: number): Promise<T>;
 export function findPlaywrightCacheExecutables(

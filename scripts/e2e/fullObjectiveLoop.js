@@ -44,6 +44,23 @@ export function logStep(message) {
   console.log(`[e2e] ${message}`);
 }
 
+function formatDurationMs(durationMs) {
+  if (durationMs < 1000) {
+    return `${durationMs}ms`;
+  }
+
+  return `${(durationMs / 1000).toFixed(2)}s`;
+}
+
+export function formatObjectiveLoopTimingSummary(selection, timings, totalDurationMs) {
+  if (timings.length === 0) {
+    return `objective loop timing (${selection}): no completed smokes`;
+  }
+
+  const detail = timings.map((timing) => `${timing.smoke} ${formatDurationMs(timing.durationMs)}`).join(", ");
+  return `objective loop timing (${selection}): ${detail} | total ${formatDurationMs(totalDurationMs)}`;
+}
+
 export function parseSmokeSelection(argv = process.argv.slice(2)) {
   let smoke = "town";
 
@@ -956,20 +973,33 @@ async function runObjectiveLoopSmokeInBrowser(smoke, browser) {
 
 export async function runObjectiveLoopSmoke(
   smoke,
-  { browser, candidatePaths = resolveExecutablePathCandidates(), launchBrowser = launchBrowserWithFallback, runSmoke = runObjectiveLoopSmokeInBrowser } = {}
+  {
+    browser,
+    candidatePaths = resolveExecutablePathCandidates(),
+    launchBrowser = launchBrowserWithFallback,
+    runSmoke = runObjectiveLoopSmokeInBrowser,
+    log = logStep,
+    now = () => Date.now()
+  } = {}
 ) {
+  const startedAt = now();
+
   if (browser) {
-    return runSmoke(smoke, browser);
+    const result = await runSmoke(smoke, browser);
+    log(`${smoke.name} timing ${formatDurationMs(Math.max(0, now() - startedAt))}`);
+    return result;
   }
 
-  logStep(`launching ${smoke.logLabel} for seed ${smoke.seed}`);
+  log(`launching ${smoke.logLabel} for seed ${smoke.seed}`);
   const ownedBrowser = await tryLaunchObjectiveLoopBrowser(candidatePaths, smoke.skipLabel, launchBrowser);
   if (!ownedBrowser) {
     return null;
   }
 
   try {
-    return await runSmoke(smoke, ownedBrowser);
+    const result = await runSmoke(smoke, ownedBrowser);
+    log(`${smoke.name} timing ${formatDurationMs(Math.max(0, now() - startedAt))}`);
+    return result;
   } finally {
     await ownedBrowser.close();
   }
@@ -977,17 +1007,25 @@ export async function runObjectiveLoopSmoke(
 
 export async function runSelectedObjectiveLoopSmokes(
   selection,
-  { candidatePaths = resolveExecutablePathCandidates(), launchBrowser = launchBrowserWithFallback, runSmoke = runObjectiveLoopSmokeInBrowser } = {}
+  {
+    candidatePaths = resolveExecutablePathCandidates(),
+    launchBrowser = launchBrowserWithFallback,
+    runSmoke = runObjectiveLoopSmokeInBrowser,
+    log = logStep,
+    now = () => Date.now()
+  } = {}
 ) {
   const smokeNames = selection === "all" ? OBJECTIVE_LOOP_SMOKE_NAMES : [selection];
   const results = [];
+  const timings = [];
   const selectedSmokes = smokeNames.map((smokeName) => resolveObjectiveLoopSmoke(smokeName));
+  const suiteStartedAt = now();
 
   if (selectedSmokes.length === 0) {
     return results;
   }
 
-  logStep(
+  log(
     `launching shared browser smoke session for ${selectedSmokes.map((smoke) => `${smoke.name}:${smoke.seed}`).join(", ")}`
   );
   const browser = await tryLaunchObjectiveLoopBrowser(candidatePaths, `${selection} browser smoke`, launchBrowser);
@@ -997,12 +1035,20 @@ export async function runSelectedObjectiveLoopSmokes(
 
   try {
     for (const smoke of selectedSmokes) {
+      const smokeStartedAt = now();
       const result = await runSmoke(smoke, browser);
+      const durationMs = Math.max(0, now() - smokeStartedAt);
+      timings.push({
+        smoke: smoke.name,
+        durationMs
+      });
+      log(`${smoke.name} timing ${formatDurationMs(durationMs)}`);
       if (result) {
         results.push(result);
       }
     }
 
+    log(formatObjectiveLoopTimingSummary(selection, timings, Math.max(0, now() - suiteStartedAt)));
     return results;
   } finally {
     await browser.close();
