@@ -1,3 +1,8 @@
+- Browser-shell runtime-factory pass:
+  - Added `src/game/runtime/browserShellRuntimeFactory.ts` so browser-shell state-controller creation, event-bridge wiring, loop-controller assembly, and debug-hook attachment now live behind one focused helper instead of staying mixed with the runtime controller's final draw handoff.
+  - Updated `src/game/runtime/browserShellRuntime.ts` to delegate browser-shell object-graph assembly to the new factory while keeping the public controller focused on initial scene draw ownership and Pixi frame presentation.
+  - Added `tests/browserShellRuntimeFactory.test.ts`, refreshed the browser-shell runtime slice, and updated `README.md`, `ARCHITECTURE.md`, `docs/README.md`, and `IMPLEMENTATION_NOTES.md` so the docs describe the new runtime-factory seam.
+
 - Browser-shell bootstrap-session extraction pass:
   - Added `src/game/runtime/browserShellBootstrapSession.ts` so module loading, Pixi app creation, scene-renderer binding, and runtime-controller assembly now live behind one focused bootstrap-session helper instead of staying inline in `src/game/runtime/browserShellBootstrap.ts`.
   - Updated `src/game/runtime/browserShellBootstrap.ts` to stay as the thin public entrypoint that creates the session and draws the initial scene.

@@ -25,7 +25,7 @@ This is still a prototype, not a content-complete vertical slice. The near-term 
 
 `Now`
 - tighten the current expedition loop so travel, biome verbs, upgrades, notebook clues, and route payoffs read as one coherent run
-- continue tightening the browser shell split so bootstrap-session assembly, runtime/session ownership, and renderer bindings stay in focused helpers instead of drifting back together
+- continue tightening the browser shell split so bootstrap-session assembly, runtime/session ownership, runtime-factory wiring, and renderer bindings stay in focused helpers instead of drifting back together
 - keep map readability, HUD clarity, and deterministic simulation quality high as content grows
 
 `Next`
