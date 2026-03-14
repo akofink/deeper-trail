@@ -44,6 +44,9 @@ type HazardTemplate = {
   phase?: number;
 };
 
+const GROUNDED_PLAYER_CENTER_OFFSET = 22;
+const MAX_RELIABLE_COLLECTIBLE_REACH = 108;
+
 function createHazard(groundY: number, nodeType: string, template: HazardTemplate, encounterIndex: number): Hazard {
   const rise = encounterRiseAt(nodeType, encounterIndex);
   const height = template.height;
@@ -117,6 +120,17 @@ function beaconOffsetY(nodeType: string, encounterIndex: number, beaconIndex: nu
   return ([58, 62, 60][beaconIndex] ?? 58) + Math.round(rise * 0.7);
 }
 
+function collectibleY(groundY: number, nodeType: string, encounterIndex: number, authoredHeight: number): number {
+  const groundedPlayerCenterY = groundY - GROUNDED_PLAYER_CENTER_OFFSET;
+  const minimumCollectibleY = groundedPlayerCenterY - MAX_RELIABLE_COLLECTIBLE_REACH;
+  const authoredY = groundY - authoredHeight - encounterRiseAt(nodeType, encounterIndex);
+  if (authoredY >= minimumCollectibleY) {
+    return authoredY;
+  }
+
+  return minimumCollectibleY + (encounterIndex % 3) * 2;
+}
+
 export function buildRunLayout(groundY: number, nodeType: string): {
   goalX: number;
   hazards: Hazard[];
@@ -135,7 +149,7 @@ export function buildRunLayout(groundY: number, nodeType: string): {
     hazards: hazardTemplates.map((hazard, i) => createHazard(groundY, nodeType, hazard, i)),
     collectibles: hazardTemplates.map((hazard, i) => ({
       x: hazard.x + Math.round(hazard.width * 0.5) + hazard.collectibleOffsetX,
-      y: groundY - hazard.collectibleHeight - encounterRiseAt(nodeType, i),
+      y: collectibleY(groundY, nodeType, i, hazard.collectibleHeight),
       r: 11,
       collected: false
     })),
