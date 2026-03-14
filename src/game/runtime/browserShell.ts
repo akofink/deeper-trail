@@ -1,11 +1,8 @@
-import { Application, Graphics, Text } from 'pixi.js';
 import { getMaxHealth } from '../../engine/sim/vehicle';
-import { drawMapScene as renderMapScene, drawRunScene as renderRunScene } from '../render/sceneRenderer';
 import { buildDebugStateSnapshot } from './debugState';
 import { createFrameLoopController } from './frameLoop';
 import { stepMapScene } from './mapSceneFlow';
 import { bindShellRuntimeLoop } from './shellRuntimeLoop';
-import { createSceneTextNodes } from '../render/sceneTextBootstrap';
 import { createShellEventBridge } from './shellEventBridge';
 import { stepRunState } from './runStep';
 import { createInitialRuntimeState } from './runtimeState';
@@ -70,6 +67,13 @@ export async function bootstrapBrowserShell(
   shellWindow: BrowserShellHost = window,
   documentHost: BrowserDocumentHost = document
 ): Promise<void> {
+  const [{ Application, Graphics, Text }, { createSceneTextNodes }, { drawMapScene: renderMapScene, drawRunScene: renderRunScene }] =
+    await Promise.all([
+      import('pixi.js'),
+      import('../render/sceneTextBootstrap'),
+      import('../render/sceneRenderer')
+    ]);
+
   const app = new Application();
   await app.init({ background: '#89c3f0', resizeTo: shellWindow as unknown as Window, antialias: true });
 
