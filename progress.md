@@ -1,3 +1,7 @@
+- Full biome expedition-flow coverage pass:
+  - Expanded `tests/expeditionFlow.test.ts` so `town`, `ruin`, `nature`, and `anomaly` runs now exercise their real layout/objective helpers end-to-end before returning to the map, instead of only covering the nature path.
+  - Added shared test helpers for route layout setup, biome-specific relay positioning, and post-completion map-return assertions so future route-loop regressions can be expressed without re-embedding shell logic.
+
 - Legacy echo charge-preservation pass:
   - Updated `src/game/runtime/runtimeState.ts` and `src/game/runtime/goalSignal.ts` so queued legacy echoes now preserve stacked unspent afterglow charges when a completed expedition rolls into a fresh seeded world, instead of collapsing all remaining residue into a single carry-over entry.
   - Updated `src/game/runtime/mapSceneContent.ts` and `src/game/runtime/debugState.ts` so map cards, field notes, and automation snapshots preview stacked legacy payouts with their true charge counts.
