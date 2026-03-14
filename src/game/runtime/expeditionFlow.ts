@@ -4,7 +4,7 @@ import { travelToNode, type TravelResult } from '../../engine/sim/travel';
 import { currentNodeType, findNode } from '../../engine/sim/world';
 import { getMaxHealth } from '../../engine/sim/vehicle';
 import { resolveArrivalEncounter } from './arrivalEncounters';
-import { goalSignalProfile } from './goalSignal';
+import { applyLegacyCarryOver, goalSignalProfile } from './goalSignal';
 import type { RuntimeState } from './runtimeState';
 import { applyNodeCompletionState } from './runCompletion';
 import { rechargeShieldCharge } from './shieldCharge';
@@ -146,6 +146,11 @@ export function travelToNodeWithRuntimeEffects(state: RuntimeState, destinationN
 
   const arrivalNodeType = currentNodeType(state.sim);
   applyArrivalRewards(state);
+  const legacyCarryOverMessage = applyLegacyCarryOver(state);
+  if (legacyCarryOverMessage) {
+    state.mapMessage = `${state.mapMessage} ${legacyCarryOverMessage}`.trim();
+    state.mapMessageTimer = 4;
+  }
 
   return {
     ...result,

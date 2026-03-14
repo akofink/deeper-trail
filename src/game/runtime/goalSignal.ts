@@ -1,7 +1,7 @@
 import { notebookCoreClueSequence } from '../../engine/sim/notebook';
 import { getMaxHealth } from '../../engine/sim/vehicle';
 import { CANOPY_LIFT_HOLD_SECONDS } from './canopyLifts';
-import type { RuntimeState } from './runtimeState';
+import type { GoalRouteHookType, LegacyCarryOver, RuntimeState } from './runtimeState';
 import { SERVICE_STOP_HOLD_SECONDS } from './serviceStops';
 
 const RELAY_INDEX_BY_CLUE = {
@@ -30,7 +30,7 @@ export interface GoalSignalProfile {
     | 'soften-movers'
     | 'shorter-run'
     | 'clear-tail-hazard';
-  postGoalRouteHookType: 'relay-credit' | 'breach-fuel' | 'salvage-echo' | 'quiet-heal' | 'folded-hop' | 'vented-shield';
+  postGoalRouteHookType: GoalRouteHookType;
   postGoalRouteHookNote: string;
 }
 
@@ -358,6 +358,52 @@ export function goalSignalEndingSummary(state: RuntimeState): string | null {
   return goalSignalProfile(state)?.endingSummary ?? null;
 }
 
+function applyRouteHookEffect(state: RuntimeState, hookType: GoalRouteHookType): string | null {
+  switch (hookType) {
+    case 'relay-credit':
+      state.freeTravelCharges += 1;
+      return 'relay lattice grants +1 free travel credit';
+    case 'breach-fuel':
+      state.sim.fuel = Math.min(state.sim.fuelCapacity, state.sim.fuel + 4);
+      return 'breach reservoir restores +4 fuel';
+    case 'salvage-echo':
+      state.sim.scrap += 2;
+      return 'salvage echo recovered +2 scrap';
+    case 'quiet-heal':
+      state.health = Math.min(getMaxHealth(state.sim.vehicle), state.health + 1);
+      return 'quiet crossing restores +1 hull';
+    case 'folded-hop':
+      state.freeTravelCharges += 1;
+      return 'folded route refunds +1 free travel credit';
+    case 'vented-shield':
+      state.shieldChargeAvailable = true;
+      return 'vented channel re-primes shield charge';
+    default:
+      return null;
+  }
+}
+
+export function buildLegacyCarryOver(state: RuntimeState): LegacyCarryOver | null {
+  if (!state.expeditionComplete) {
+    return null;
+  }
+
+  const profile = decodedGoalSignalProfile(state);
+  const type = state.postGoalRouteHookType ?? profile?.postGoalRouteHookType ?? null;
+  if (!type) {
+    return null;
+  }
+
+  return {
+    type,
+    note:
+      state.postGoalRouteHookNote ??
+      profile?.postGoalRouteHookNote ??
+      'Decoded source aftermath remains active.',
+    sourceTitle: profile?.endingTitle ?? 'Decoded source aftermath'
+  };
+}
+
 export function applyGoalSignalPostGoalRouteHook(state: RuntimeState): string | null {
   if (!state.expeditionComplete) {
     return null;
@@ -380,26 +426,26 @@ export function applyGoalSignalPostGoalRouteHook(state: RuntimeState): string | 
     state.postGoalRouteHookNote = profile.postGoalRouteHookNote;
   }
 
-  switch (hookType) {
-    case 'relay-credit':
-      state.freeTravelCharges += 1;
-      return `Afterglow: relay lattice grants +1 free travel credit (${state.postGoalRouteHookCharges} hooks left).`;
-    case 'breach-fuel':
-      state.sim.fuel = Math.min(state.sim.fuelCapacity, state.sim.fuel + 4);
-      return `Afterglow: breach reservoir restores +4 fuel (${state.postGoalRouteHookCharges} hooks left).`;
-    case 'salvage-echo':
-      state.sim.scrap += 2;
-      return `Afterglow: salvage echo recovered +2 scrap (${state.postGoalRouteHookCharges} hooks left).`;
-    case 'quiet-heal':
-      state.health = Math.min(getMaxHealth(state.sim.vehicle), state.health + 1);
-      return `Afterglow: quiet crossing restores +1 hull (${state.postGoalRouteHookCharges} hooks left).`;
-    case 'folded-hop':
-      state.freeTravelCharges += 1;
-      return `Afterglow: folded route refunds +1 free travel credit (${state.postGoalRouteHookCharges} hooks left).`;
-    case 'vented-shield':
-      state.shieldChargeAvailable = true;
-      return `Afterglow: vented channel re-primes shield charge (${state.postGoalRouteHookCharges} hooks left).`;
-    default:
-      return null;
+  const effectNote = applyRouteHookEffect(state, hookType);
+  return effectNote ? `Afterglow: ${effectNote} (${state.postGoalRouteHookCharges} hooks left).` : null;
+}
+
+export function applyLegacyCarryOver(state: RuntimeState): string | null {
+  if (state.expeditionComplete) {
+    return null;
   }
+
+  const hookType = state.legacyCarryOverType ?? null;
+  if (!hookType) {
+    return null;
+  }
+
+  const effectNote = applyRouteHookEffect(state, hookType);
+  const sourceTitle = state.legacyCarryOverSourceTitle ? `${state.legacyCarryOverSourceTitle}: ` : '';
+
+  state.legacyCarryOverType = null;
+  state.legacyCarryOverNote = '';
+  state.legacyCarryOverSourceTitle = '';
+
+  return effectNote ? `Legacy echo ${sourceTitle}${effectNote}.` : null;
 }

@@ -1,3 +1,15 @@
+- Legacy afterglow carry-over pass:
+  - Completed expeditions now package one deterministic legacy echo from the decoded source signature into the next `N`-started seeded world instead of dropping all aftermath state at reset.
+  - Added pending legacy carry-over state in `src/game/runtime/runtimeState.ts`, legacy build/consume helpers in `src/game/runtime/goalSignal.ts`, and new-world wiring in `src/game/runtime/shellControl.ts`.
+  - The next expedition now spends that legacy echo on its first successful travel via `src/game/runtime/expeditionFlow.ts`, and map/debug helpers surface the pending carry-over through `src/game/runtime/mapSceneContent.ts` and `src/game/runtime/debugState.ts`.
+  - Added/updated regression coverage in `tests/runtimeState.test.ts`, `tests/goalSignal.test.ts`, `tests/shellControl.test.ts`, `tests/mapSceneFlow.test.ts`, `tests/mapSceneContent.test.ts`, and `tests/debugState.test.ts`.
+  - Updated `docs/06-puzzles-and-meta-mystery.md` and `IMPLEMENTATION_NOTES.md`.
+
+TODO next:
+
+- Decide whether multiple completed expeditions should eventually compose or overwrite legacy echoes once there is more than one past-ending residue to carry.
+- Continue breaking remaining orchestration concerns out of `src/main.ts` only where there is still meaningful runtime/render logic to extract; the shell is now small enough that forced extraction would risk negative abstraction.
+
 - Scene-draw orchestration extraction pass:
   - Added `src/game/render/sceneRenderer.ts` so run/map scene draw sequencing, render-plan construction, text measurement routing, and render-helper dispatch now live in one render-layer helper instead of remaining inline in `src/main.ts`.
   - Updated `src/main.ts` to delegate both scene draws through the extracted helper, leaving the Pixi shell focused on bootstrap, loop wiring, and debug exports.

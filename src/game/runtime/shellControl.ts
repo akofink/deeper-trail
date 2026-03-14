@@ -1,5 +1,6 @@
 import { connectedNeighbors } from '../../engine/sim/world';
 import { attemptBeaconActivation } from './beaconActivation';
+import { buildLegacyCarryOver } from './goalSignal';
 import {
   advanceMapSelection,
   mapSceneStatusText,
@@ -71,7 +72,7 @@ export function handleShellKeyDown(state: RuntimeState, code: string, options: S
 
   if (code === 'KeyN' && state.scene === 'map') {
     return {
-      nextState: createInitialRuntimeState(options.canvasHeight, options.createSeed()),
+      nextState: createInitialRuntimeState(options.canvasHeight, options.createSeed(), buildLegacyCarryOver(state) ?? undefined),
       preventDefault: true,
       previousMapNavigate: false,
       toggleFullscreen: false

@@ -9,6 +9,19 @@ import { rechargeShieldCharge } from './shieldCharge';
 
 export type Mode = 'playing' | 'paused' | 'won' | 'lost';
 export type Scene = 'run' | 'map';
+export type GoalRouteHookType =
+  | 'relay-credit'
+  | 'breach-fuel'
+  | 'salvage-echo'
+  | 'quiet-heal'
+  | 'folded-hop'
+  | 'vented-shield';
+
+export interface LegacyCarryOver {
+  type: GoalRouteHookType;
+  note: string;
+  sourceTitle: string;
+}
 
 export const START_X = 80;
 export const PLAYER_W = 34;
@@ -72,16 +85,12 @@ export interface RuntimeState {
   seed: string;
   expeditionGoalNodeId: string;
   expeditionComplete: boolean;
-  postGoalRouteHookType?:
-    | 'relay-credit'
-    | 'breach-fuel'
-    | 'salvage-echo'
-    | 'quiet-heal'
-    | 'folded-hop'
-    | 'vented-shield'
-    | null;
+  postGoalRouteHookType?: GoalRouteHookType | null;
   postGoalRouteHookCharges?: number;
   postGoalRouteHookNote?: string;
+  legacyCarryOverType?: GoalRouteHookType | null;
+  legacyCarryOverNote?: string;
+  legacyCarryOverSourceTitle?: string;
   score: number;
   health: number;
   elapsedSeconds: number;
@@ -143,7 +152,7 @@ export function tryUseMedPatch(state: RuntimeState): MedPatchResult {
   return { didHeal: true };
 }
 
-export function createInitialRuntimeState(canvasHeight: number, seed: string): RuntimeState {
+export function createInitialRuntimeState(canvasHeight: number, seed: string, legacyCarryOver?: LegacyCarryOver): RuntimeState {
   const sim = createInitialGameState(seed);
   const groundY = groundYForCanvasHeight(canvasHeight);
   const run = buildRunLayout(groundY, currentNodeType(sim));
@@ -158,6 +167,9 @@ export function createInitialRuntimeState(canvasHeight: number, seed: string): R
     postGoalRouteHookType: null,
     postGoalRouteHookCharges: 0,
     postGoalRouteHookNote: '',
+    legacyCarryOverType: legacyCarryOver?.type ?? null,
+    legacyCarryOverNote: legacyCarryOver?.note ?? '',
+    legacyCarryOverSourceTitle: legacyCarryOver?.sourceTitle ?? '',
     score: 0,
     health: maxHealth,
     elapsedSeconds: 0,
