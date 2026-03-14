@@ -1,5 +1,6 @@
 import { connectedNeighbors } from '../../engine/sim/world';
 import { visibleBiomeKnowledge } from '../../engine/sim/exploration';
+import { notebookSignalRouteIntel } from '../../engine/sim/notebook';
 import { mapNodePalette } from './runLayout';
 import type { RuntimeState } from './runtimeState';
 import { projectMapPoint } from './mapProjection';
@@ -24,6 +25,8 @@ export interface MapBoardNodeView {
   completed: boolean;
   current: boolean;
   depth: number;
+  bestLead: boolean;
+  bestLeadRadius: number | null;
   fill: string;
   glowColor: string | null;
   glowRadius: number | null;
@@ -97,6 +100,11 @@ export function buildMapBoardView(
   const selectedOption = options[state.mapSelectionIndex] ?? null;
   const selectedNodeId = selectedOption?.nodeId ?? null;
   const nodeById = new Map(state.sim.world.nodes.map((node) => [node.id, node] as const));
+  const bestLeadNodeIds = new Set(
+    options
+      .filter((option) => notebookSignalRouteIntel(state.sim, state.expeditionGoalNodeId, option.nodeId).isBestLead)
+      .map((option) => option.nodeId)
+  );
 
   const edges = state.sim.world.edges.flatMap((edge) => {
     const from = nodeById.get(edge.from);
@@ -135,8 +143,11 @@ export function buildMapBoardView(
       const goal = node.id === state.expeditionGoalNodeId;
       const palette = mapNodePalette(node.type);
       const radius = (current ? 14 : selected ? 12 : 10) + clamp(projected.depth / 420, -1.5, 1.5);
+      const bestLead = bestLeadNodeIds.has(node.id);
 
       return {
+        bestLead,
+        bestLeadRadius: bestLead ? radius + 6 : null,
         completed,
         current,
         depth: projected.depth,

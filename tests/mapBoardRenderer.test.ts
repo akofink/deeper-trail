@@ -61,6 +61,8 @@ describe('mapBoardRenderer', () => {
       ],
       nodes: [
         {
+          bestLead: false,
+          bestLeadRadius: null,
           completed: false,
           current: false,
           depth: 0,
@@ -101,6 +103,8 @@ describe('mapBoardRenderer', () => {
       edges: [],
       nodes: [
         {
+          bestLead: true,
+          bestLeadRadius: 20,
           completed: true,
           current: false,
           depth: 12,
@@ -132,6 +136,8 @@ describe('mapBoardRenderer', () => {
     expect(graphics.ops).toEqual([
       { kind: 'circle', x: 120, y: 140, radius: 24 },
       { kind: 'stroke', value: { color: '#f59e0b', width: 2.5, alpha: 0.55 } },
+      { kind: 'circle', x: 120, y: 140, radius: 20 },
+      { kind: 'stroke', value: { color: '#22d3ee', width: 2.2, alpha: 0.75 } },
       { kind: 'circle', x: 120, y: 140, radius: 18 },
       { kind: 'fill', value: { color: '#86efac', alpha: 0.16 } },
       { kind: 'circle', x: 120, y: 140, radius: 16 },
@@ -167,6 +173,8 @@ describe('mapBoardRenderer', () => {
       edges: [],
       nodes: [
         {
+          bestLead: false,
+          bestLeadRadius: null,
           completed: false,
           current: true,
           depth: 4,

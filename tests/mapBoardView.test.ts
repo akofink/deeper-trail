@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { notebookSignalRouteIntel } from '../src/engine/sim/notebook';
 import { connectedNeighbors } from '../src/engine/sim/world';
 import { buildMapActionChips, buildMapBoardView } from '../src/game/runtime/mapBoardView';
 import type { RuntimeState } from '../src/game/runtime/runtimeState';
@@ -94,6 +95,7 @@ describe('mapBoardView', () => {
     expect(selectedNode?.goal).toBe(true);
     expect(selectedNode?.outline).toBe(true);
     expect(selectedNode?.innerDot).toBe(true);
+    expect(selectedNode?.bestLead).toBe(false);
     expect(selectedNode?.starRadius).toBeGreaterThan(0);
     expect(selectedNode?.intelMarkers).toHaveLength(1);
     expect(selectedNode?.intelMarkers[0]?.fill).toBe('#34d399');
@@ -124,6 +126,26 @@ describe('mapBoardView', () => {
     view = buildMapBoardView(state, 1280, 720, 110);
     node = view.nodes.find((entry) => entry.id === candidate.id);
     expect(node?.intelMarkers.map((marker) => marker.fill)).toEqual(['#34d399', '#fbbf24', '#fb7185']);
+  });
+
+  it('marks synthesized strongest-lead neighbors directly on the board', () => {
+    const state = buildRuntimeState();
+    state.sim.notebook.discoveredClues.ruin = true;
+    state.sim.notebook.discoveredClues.nature = true;
+    state.sim.notebook.discoveredClues.anomaly = true;
+    state.sim.notebook.synthesisUnlocked = true;
+
+    const options = connectedNeighbors(state.sim);
+    const expectedBestLeadNodeIds = options
+      .filter((option) => notebookSignalRouteIntel(state.sim, state.expeditionGoalNodeId, option.nodeId).isBestLead)
+      .map((option) => option.nodeId);
+
+    const view = buildMapBoardView(state, 1280, 720, 110);
+    const bestLeadNodes = view.nodes.filter((node) => node.bestLead);
+
+    expect(expectedBestLeadNodeIds.length).toBeGreaterThan(0);
+    expect(bestLeadNodes.map((node) => node.id).sort()).toEqual([...expectedBestLeadNodeIds].sort());
+    expect(bestLeadNodes.every((node) => node.bestLeadRadius !== null && node.bestLeadRadius > node.radius)).toBe(true);
   });
 
   it('switches the final chip label when the expedition is complete', () => {
