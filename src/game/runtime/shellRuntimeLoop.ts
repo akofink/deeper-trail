@@ -5,6 +5,7 @@ export interface ShellKeyDispatchResult {
 
 export interface ShellRuntimeHandlers {
   onAnimationFrame: (now: number) => void;
+  onBlur: () => void;
   onKeyDown: (code: string) => ShellKeyDispatchResult;
   onKeyUp: (code: string) => void;
   onResize: () => void;
@@ -17,7 +18,7 @@ export interface ShellKeyboardEvent {
 }
 
 export interface ShellRuntimeHost {
-  addEventListener: (type: 'keydown' | 'keyup' | 'resize', listener: (event: unknown) => void) => void;
+  addEventListener: (type: 'blur' | 'keydown' | 'keyup' | 'resize', listener: (event: unknown) => void) => void;
   requestAnimationFrame: (callback: (now: number) => void) => void;
 }
 
@@ -57,6 +58,10 @@ export function bindShellRuntimeLoop(host: ShellRuntimeHost, handlers: ShellRunt
 
   host.addEventListener('resize', () => {
     handlers.onResize();
+  });
+
+  host.addEventListener('blur', () => {
+    handlers.onBlur();
   });
 
   const gameLoop = (now: number): void => {

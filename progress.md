@@ -1,3 +1,7 @@
+- Browser shell blur-reset pass:
+  - Updated `src/game/runtime/shellEventBridge.ts`, `src/game/runtime/shellRuntimeLoop.ts`, and `src/game/runtime/browserShellRuntimeLoopController.ts` so the browser shell now clears held keys and edge-trigger latches when the window loses focus instead of letting movement, jump, dash, or map-navigation input stick across a blur.
+  - Expanded `tests/shellEventBridge.test.ts`, `tests/shellRuntimeLoop.test.ts`, `tests/browserShellRuntimeLoopController.test.ts`, and `tests/browserShellRuntime.test.ts` to lock down blur handling through the event bridge and runtime loop wiring.
+
 - Route site-rack preview pass:
   - Updated `src/game/runtime/mapSceneContent.ts` so selected route cards now preview the destination biome's currently available install offers, or explicitly report when that site rack is exhausted for the current build.
   - Updated `src/game/runtime/debugState.ts` so automation snapshots expose the same destination-site install rack data on the selected route.

@@ -149,4 +149,51 @@ describe('shellEventBridge', () => {
     bridge.onKeyDown('ArrowDown');
     expect(state.mapSelectionIndex).toBe((firstSelection + 1) % connectedNeighbors(state.sim).length);
   });
+
+  it('clears held inputs and latches when the shell loses focus', () => {
+    let state = createInitialRuntimeState(720, 'bridge-blur-reset');
+    state.scene = 'map';
+    state.completedNodeIds.push(state.sim.currentNodeId);
+
+    const branchingNode = state.sim.world.nodes.find((node) => {
+      state.sim.currentNodeId = node.id;
+      return connectedNeighbors(state.sim).length > 1;
+    });
+    expect(branchingNode).toBeDefined();
+    if (!branchingNode) {
+      throw new Error('Expected branching node');
+    }
+    state.sim.currentNodeId = branchingNode.id;
+
+    const bridge = createShellEventBridge({
+      createSeed: () => 'unused',
+      getCanvasHeight: () => 720,
+      getState: () => state,
+      setState: (nextState) => {
+        state = nextState;
+      }
+    });
+
+    bridge.onKeyDown('ArrowLeft');
+    bridge.onKeyDown('Space');
+    bridge.onKeyDown('ShiftRight');
+    bridge.onKeyDown('ArrowDown');
+    bridge.updateRunStepInputResult({ previousJumpPressed: true, previousDashPressed: true });
+
+    bridge.onBlur();
+
+    expect(bridge.buildRunStepInputSnapshot()).toEqual({
+      leftPressed: false,
+      rightPressed: false,
+      jumpPressed: false,
+      dashLeftPressed: false,
+      dashRightPressed: false,
+      previousJumpPressed: false,
+      previousDashPressed: false
+    });
+
+    const selectionAfterBlur = state.mapSelectionIndex;
+    bridge.onKeyDown('ArrowDown');
+    expect(state.mapSelectionIndex).toBe((selectionAfterBlur + 1) % connectedNeighbors(state.sim).length);
+  });
 });

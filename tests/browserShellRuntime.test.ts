@@ -118,6 +118,7 @@ describe('browserShellRuntime controller', () => {
         rightPressed: false
       }),
       mapRotateInput: () => 0,
+      onBlur: () => {},
       onKeyDown: () => {
         setState(mapState);
         return { preventDefault: false, toggleFullscreen: false };

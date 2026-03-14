@@ -64,6 +64,7 @@ describe('browserShellRuntimeLoopController', () => {
             rightPressed: false
           }),
           mapRotateInput: () => 1,
+          onBlur: () => {},
           onKeyDown: () => {
             state = mapState;
             return { preventDefault: false, toggleFullscreen: false };
@@ -93,6 +94,7 @@ describe('browserShellRuntimeLoopController', () => {
     );
 
     expect(handlers).toBeDefined();
+    handlers?.onBlur();
 
     controller.advanceTime(16);
 
@@ -130,6 +132,7 @@ describe('browserShellRuntimeLoopController', () => {
         shellEventBridge: {
           buildRunStepInputSnapshot: vi.fn(),
           mapRotateInput: vi.fn(),
+          onBlur: vi.fn(),
           onKeyDown: vi.fn(() => ({ preventDefault: false, toggleFullscreen: true })),
           onKeyUp: vi.fn(),
           onResize: vi.fn(),
