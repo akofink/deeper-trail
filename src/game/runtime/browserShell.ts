@@ -1,5 +1,6 @@
 import { getMaxHealth } from '../../engine/sim/vehicle';
 import { buildDebugStateSnapshot } from './debugState';
+import { createBrowserShellApp, type BrowserShellAppDependencies } from './browserShellApp';
 import { createFrameLoopController } from './frameLoop';
 import { stepMapScene } from './mapSceneFlow';
 import { bindShellRuntimeLoop } from './shellRuntimeLoop';
@@ -74,82 +75,22 @@ export async function bootstrapBrowserShell(
       import('../render/sceneRenderer')
     ]);
 
-  const app = new Application();
-  await app.init({ background: '#89c3f0', resizeTo: shellWindow as unknown as Window, antialias: true });
-
-  const root = documentHost.querySelector<HTMLDivElement>('#app');
-  if (!root) throw new Error('Expected #app root element.');
-  root.appendChild(app.canvas);
-  app.ticker.stop();
-
-  const graphics = new Graphics();
-  app.stage.addChild(graphics);
-  const playerGraphics = new Graphics();
-  app.stage.addChild(playerGraphics);
-
-  const {
-    beaconLabels,
-    celebrationOverlay,
-    chipLabels,
-    fieldNotesText,
-    hud,
-    mapLeftRowLabels,
-    mapLeftRowValues,
-    mapRightHeaderLines,
-    moduleLabels,
-    overlay,
-    panelMeta,
-    panelSeed,
-    runLeftRowLabels,
-    runLeftRowValues,
-    runRightRowLabels,
-    runRightRowValues,
-    sharedSceneTextGroups
-  } = createSceneTextNodes(app.stage, (options) => new Text(options));
+  const { app, sceneRendererContext, screenHeight, screenWidth } = await createBrowserShellApp(shellWindow, documentHost, {
+    Application: Application as BrowserShellAppDependencies['Application'],
+    createSceneTextNodes: createSceneTextNodes as BrowserShellAppDependencies['createSceneTextNodes'],
+    Graphics,
+    Text: Text as BrowserShellAppDependencies['Text']
+  });
 
   let state = createInitialRuntimeState(app.screen.height, initialSeedFromWindow(shellWindow) ?? createRunSeed());
   const shellEventBridge = createShellEventBridge({
     createSeed: createRunSeed,
-    getCanvasHeight: () => app.screen.height,
+    getCanvasHeight: screenHeight,
     getState: () => state,
     setState: (nextState) => {
       state = nextState;
     }
   });
-
-  function screenWidth(): number {
-    return Math.max(1, app.screen.width);
-  }
-
-  function screenHeight(): number {
-    return Math.max(1, app.screen.height);
-  }
-
-  const sceneRendererContext = {
-    graphics,
-    labels: {
-      beaconLabels,
-      celebrationOverlay,
-      chipLabels,
-      fieldNotesText,
-      hud,
-      mapLeftRowLabels,
-      mapLeftRowValues,
-      mapRightHeaderLines,
-      moduleLabels,
-      overlay,
-      panelMeta,
-      panelSeed,
-      runLeftRowLabels,
-      runLeftRowValues,
-      runRightRowLabels,
-      runRightRowValues,
-      sharedSceneTextGroups
-    },
-    playerGraphics,
-    screenHeight,
-    screenWidth
-  } as const;
 
   function stepRun(dt: number): void {
     const input = shellEventBridge.buildRunStepInputSnapshot();
