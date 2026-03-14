@@ -68,6 +68,13 @@ export function damageSubsystem(state: GameState, subsystem: VehicleSubsystemKey
   return next;
 }
 
+export function repairSubsystem(state: GameState, subsystem: VehicleSubsystemKey, amount = 1): number {
+  const current = state.vehicleCondition[subsystem];
+  const next = clampCondition(current + amount);
+  state.vehicleCondition[subsystem] = next;
+  return next;
+}
+
 export function getDamageSubsystemForNodeType(nodeType: string): VehicleSubsystemKey {
   return DAMAGE_PRIORITY_BY_NODE_TYPE[nodeType] ?? 'engine';
 }

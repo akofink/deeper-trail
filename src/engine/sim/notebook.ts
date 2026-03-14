@@ -1,6 +1,7 @@
 import { createSeededRng } from '../rng/seededRng';
 import type { CoreNotebookClueKey, GameState, NodeTypeKey, NotebookEntry } from '../../game/state/gameState';
-import { connectedNeighbors, shortestLegCountBetweenNodes } from './world';
+import { getDamageSubsystemForNodeType } from './vehicle';
+import { connectedNeighbors, findNode, shortestLegCountBetweenNodes } from './world';
 
 const NOTEBOOK_CLUE_ORDER: CoreNotebookClueKey[] = ['ruin', 'nature', 'anomaly'];
 
@@ -48,6 +49,8 @@ export interface NotebookSignalRouteIntel {
   revealsBenefit: boolean;
   revealsObjective: boolean;
   revealsRisk: boolean;
+  isBestLead: boolean;
+  bestLeadArrivalRewardHint: string | null;
 }
 
 export function notebookCoreClueSequence(state: GameState): CoreNotebookClueKey[] {
@@ -128,7 +131,9 @@ export function notebookSignalRouteIntel(
       routeHint: null,
       revealsBenefit: false,
       revealsObjective: false,
-      revealsRisk: false
+      revealsRisk: false,
+      isBestLead: false,
+      bestLeadArrivalRewardHint: null
     };
   }
 
@@ -142,7 +147,9 @@ export function notebookSignalRouteIntel(
       routeHint: null,
       revealsBenefit: false,
       revealsObjective: false,
-      revealsRisk: false
+      revealsRisk: false,
+      isBestLead: false,
+      bestLeadArrivalRewardHint: null
     };
   }
 
@@ -155,7 +162,9 @@ export function notebookSignalRouteIntel(
       routeHint: null,
       revealsBenefit: false,
       revealsObjective: false,
-      revealsRisk: false
+      revealsRisk: false,
+      isBestLead: false,
+      bestLeadArrivalRewardHint: null
     };
   }
 
@@ -172,6 +181,7 @@ export function notebookSignalRouteIntel(
   }
 
   let revealsArrivalProfile = false;
+  let isBestLead = false;
   if (state.notebook.synthesisUnlocked) {
     const bestNeighborLegs = connectedNeighbors(state)
       .map((neighbor) => shortestLegCountBetweenNodes(state, neighbor.nodeId, expeditionGoalNodeId))
@@ -181,8 +191,15 @@ export function notebookSignalRouteIntel(
     if (bestNeighborLegCount !== null && selectedLegs === bestNeighborLegCount) {
       routeHint += ' Best current lead.';
       revealsArrivalProfile = true;
+      isBestLead = true;
     }
   }
+
+  const selectedNode = findNode(state, selectedNodeId);
+  const bestLeadArrivalRewardHint =
+    isBestLead && selectedNode
+      ? `Lead route tune-up: +1 ${getDamageSubsystemForNodeType(selectedNode.type)} condition on first arrival, else +1 scrap.`
+      : null;
 
   return {
     clueCount: progress.discovered,
@@ -190,7 +207,9 @@ export function notebookSignalRouteIntel(
     routeHint,
     revealsBenefit: revealsArrivalProfile,
     revealsObjective: revealsArrivalProfile,
-    revealsRisk: revealsArrivalProfile
+    revealsRisk: revealsArrivalProfile,
+    isBestLead,
+    bestLeadArrivalRewardHint
   };
 }
 

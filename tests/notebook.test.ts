@@ -90,6 +90,8 @@ describe('notebook clues', () => {
     expect(offline.fieldNote).toContain('bearing offline');
     expect(offline.routeHint).toBeNull();
     expect(offline.revealsObjective).toBe(false);
+    expect(offline.isBestLead).toBe(false);
+    expect(offline.bestLeadArrivalRewardHint).toBeNull();
 
     recordNotebookClue(state, { nodeType: 'ruin', nodeId: routeCase.currentNodeId });
     const bearingOnly = notebookSignalRouteIntel(state, goalNodeId, routeCase.stronger.nodeId);
@@ -111,11 +113,15 @@ describe('notebook clues', () => {
     expect(synthesized.revealsBenefit).toBe(true);
     expect(synthesized.revealsObjective).toBe(true);
     expect(synthesized.revealsRisk).toBe(true);
+    expect(synthesized.isBestLead).toBe(true);
+    expect(synthesized.bestLeadArrivalRewardHint).toContain('Lead route tune-up');
 
     const nonLead = notebookSignalRouteIntel(state, goalNodeId, routeCase.weaker.nodeId);
     expect(nonLead.routeHint).not.toContain('Best current lead.');
     expect(nonLead.revealsBenefit).toBe(false);
     expect(nonLead.revealsObjective).toBe(false);
     expect(nonLead.revealsRisk).toBe(false);
+    expect(nonLead.isBestLead).toBe(false);
+    expect(nonLead.bestLeadArrivalRewardHint).toBeNull();
   });
 });

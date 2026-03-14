@@ -1,5 +1,5 @@
 import { asNodeTypeKey, markNodeVisited, noteBiomeArrival } from '../../engine/sim/exploration';
-import { recordNotebookClue, type NotebookUnlockResult } from '../../engine/sim/notebook';
+import { notebookSignalRouteIntel, recordNotebookClue, type NotebookUnlockResult } from '../../engine/sim/notebook';
 import { travelToNode, type TravelResult } from '../../engine/sim/travel';
 import { currentNodeType, findNode } from '../../engine/sim/world';
 import { getMaxHealth } from '../../engine/sim/vehicle';
@@ -25,7 +25,12 @@ export function hasCompletedCurrentNode(state: RuntimeState): boolean {
   return state.completedNodeIds.includes(state.sim.currentNodeId);
 }
 
-export function applyArrivalRewards(state: RuntimeState): string {
+export function applyArrivalRewards(
+  state: RuntimeState,
+  options: {
+    arrivedViaBestLeadRoute?: boolean;
+  } = {}
+): string {
   const node = findNode(state.sim, state.sim.currentNodeId);
   if (!node) {
     return '';
@@ -70,7 +75,7 @@ export function applyArrivalRewards(state: RuntimeState): string {
     message += ` Goal decode: ${goalSignal.arrivalBonusNote}. Source read: ${goalSignal.encounterBonusNote}.`;
   }
 
-  message += resolveArrivalEncounter(state, asNodeTypeKey(node.type), firstVisit).message;
+  message += resolveArrivalEncounter(state, asNodeTypeKey(node.type), firstVisit, options).message;
 
   state.mapMessage = message;
   state.mapMessageTimer = 3;
@@ -126,6 +131,7 @@ export function completeCurrentNodeRun(state: RuntimeState): NodeCompletionOutco
 }
 
 export function travelToNodeWithRuntimeEffects(state: RuntimeState, destinationNodeId: string): RuntimeTravelResult {
+  const signalIntel = notebookSignalRouteIntel(state.sim, state.expeditionGoalNodeId, destinationNodeId);
   const fuelBefore = state.sim.fuel;
   const freeTravelChargesBefore = state.freeTravelCharges;
   const useFreeTravelCharge = state.freeTravelCharges > 0;
@@ -150,7 +156,7 @@ export function travelToNodeWithRuntimeEffects(state: RuntimeState, destinationN
   const fuelAfterTravel = state.sim.fuel;
   const freeTravelChargesAfter = state.freeTravelCharges;
   const arrivalNodeType = currentNodeType(state.sim);
-  applyArrivalRewards(state);
+  applyArrivalRewards(state, { arrivedViaBestLeadRoute: signalIntel.isBestLead });
   const legacyCarryOverMessage = applyLegacyCarryOver(state);
   if (legacyCarryOverMessage) {
     state.mapMessage = `${state.mapMessage} ${legacyCarryOverMessage}`.trim();
