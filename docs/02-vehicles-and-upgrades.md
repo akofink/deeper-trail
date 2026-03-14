@@ -59,6 +59,11 @@ Every module should:
 - `scanner` lv.2 previews biome benefits directly on route-board nodes and can phase-lock anomaly relays during open sync windows; lv.3 adds objective-pattern markers and auto-linking; lv.4 adds hazard-strain markers as well.
 - `storage` lv.2 starts pulling nearby salvage pickups inward; lv.3 also increases scrap gained per pickup.
 - `shielding` lv.2 grants one rechargeable shielded hit each run.
+- Biome-aligned subsystems now also ease their matching run objective in deterministic ways:
+  - `engine` shortens town service-bay hold time
+  - `frame` lowers the ruin impact-plate slam threshold
+  - `suspension` shortens the airborne hold needed to chart nature canopy lifts
+  - `shielding` lowers the speed / boost threshold needed to stabilize anomaly sync gates
 
 ## Visual persistence
 

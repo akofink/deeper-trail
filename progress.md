@@ -1,3 +1,8 @@
+- Biome-aligned objective easing pass:
+  - Added deterministic subsystem-to-objective tuning in `src/game/runtime/vehicleDerivedStats.ts` so engine/frame/suspension/shielding levels now ease their matching biome verb instead of only improving broad stats.
+  - Updated `src/game/runtime/serviceStops.ts`, `src/game/runtime/impactPlates.ts`, `src/game/runtime/canopyLifts.ts`, `src/game/runtime/syncGates.ts`, `src/game/runtime/runObjectiveUpdates.ts`, and `src/game/runtime/runObjectiveUi.ts` so run objective thresholds and prompt percentages follow those tuned values consistently.
+  - Expanded runtime regressions in `tests/vehicleDerivedStats.test.ts`, `tests/serviceStops.test.ts`, `tests/impactPlates.test.ts`, `tests/canopyLifts.test.ts`, `tests/syncGates.test.ts`, `tests/runObjectiveUpdates.test.ts`, and `tests/runObjectiveUi.test.ts`, and updated `docs/01-core-loop.md` plus `docs/02-vehicles-and-upgrades.md`.
+
 - Browser shell loop-controller extraction pass:
   - Added `src/game/runtime/browserShellRuntimeLoopController.ts` so fixed-step frame-loop setup, run/map stepping callbacks, shell event binding, and fullscreen toggling now live behind one focused runtime helper instead of staying inside `src/game/runtime/browserShellRuntime.ts`.
   - Updated `src/game/runtime/browserShellRuntime.ts` to keep seed/state/bootstrap ownership while delegating loop wiring into the extracted helper.

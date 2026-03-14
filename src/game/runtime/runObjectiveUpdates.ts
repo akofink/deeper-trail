@@ -11,7 +11,14 @@ import {
 import { canStabilizeSyncGate } from './syncGates';
 import { updateServiceStopProgress } from './serviceStops';
 import { currentNodeType } from '../../engine/sim/world';
-import { beaconInteractRadius } from './vehicleDerivedStats';
+import {
+  beaconInteractRadius,
+  canopyLiftHoldSecondsForState,
+  impactPlateMinFallSpeedForState,
+  serviceStopHoldSecondsForState,
+  syncGateMinDashBoostForState,
+  syncGateMinSpeedForState
+} from './vehicleDerivedStats';
 
 export interface RunObjectiveUpdateResult {
   message: string | null;
@@ -39,6 +46,11 @@ export function updateRunObjectives(state: RuntimeState, input: RunObjectiveUpda
   const steadyReady = isSteadyLinkReady(Math.abs(state.player.vx), !state.player.onGround);
   const nodeType = currentNodeType(state.sim);
   const interactRadius = beaconInteractRadius(state);
+  const serviceStopHoldSeconds = serviceStopHoldSecondsForState(state);
+  const canopyLiftHoldSeconds = canopyLiftHoldSecondsForState(state);
+  const impactPlateMinFallSpeed = impactPlateMinFallSpeedForState(state);
+  const syncGateMinSpeed = syncGateMinSpeedForState(state);
+  const syncGateMinDashBoost = syncGateMinDashBoostForState(state);
   const playerBounds = {
     x: state.player.x,
     y: state.player.y,
@@ -77,7 +89,7 @@ export function updateRunObjectives(state: RuntimeState, input: RunObjectiveUpda
 
   for (const stop of state.serviceStops) {
     const inZone = Math.abs(px - stop.x) <= stop.w * 0.5;
-    const update = updateServiceStopProgress(stop, input.dt, inZone, steadyReady);
+    const update = updateServiceStopProgress(stop, input.dt, inZone, steadyReady, serviceStopHoldSeconds);
     if (update.completedNow) {
       state.score += 20;
       message = `Bay ${stop.id.toUpperCase()} calibrated.`;
@@ -88,7 +100,16 @@ export function updateRunObjectives(state: RuntimeState, input: RunObjectiveUpda
   for (let index = 0; index < state.syncGates.length; index += 1) {
     const gate = state.syncGates[index];
     if (gate.stabilized) continue;
-    const result = canStabilizeSyncGate(gate, index, playerBounds, Math.abs(state.player.vx), state.dashBoost, state.elapsedSeconds);
+    const result = canStabilizeSyncGate(
+      gate,
+      index,
+      playerBounds,
+      Math.abs(state.player.vx),
+      state.dashBoost,
+      state.elapsedSeconds,
+      syncGateMinSpeed,
+      syncGateMinDashBoost
+    );
     if (!result.canStabilize) continue;
     gate.stabilized = true;
     state.score += 20;
@@ -104,7 +125,8 @@ export function updateRunObjectives(state: RuntimeState, input: RunObjectiveUpda
       input.dt,
       inZone,
       !state.player.onGround,
-      canopyLiftChargeWindowOpen(state.elapsedSeconds, index)
+      canopyLiftChargeWindowOpen(state.elapsedSeconds, index),
+      canopyLiftHoldSeconds
     );
     if (update.completedNow) {
       state.score += 20;
@@ -114,7 +136,7 @@ export function updateRunObjectives(state: RuntimeState, input: RunObjectiveUpda
   }
 
   for (const plate of state.impactPlates) {
-    if (!canShatterImpactPlate(plate, px, input.landingSpeed, input.landedThisFrame)) continue;
+    if (!canShatterImpactPlate(plate, px, input.landingSpeed, input.landedThisFrame, impactPlateMinFallSpeed)) continue;
     plate.shattered = true;
     state.score += 20;
     message = `Plate ${plate.id.toUpperCase()} shattered.`;

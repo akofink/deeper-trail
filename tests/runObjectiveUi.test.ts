@@ -113,6 +113,33 @@ describe('run objective ui helpers', () => {
     expect(runObjectivePrompt(state)).toBe('Bloom open: stay airborne 50%');
   });
 
+  it('reflects subsystem-tuned objective thresholds in prompts', () => {
+    const state = buildRuntimeState();
+    const node = state.sim.world.nodes.find((item) => item.id === state.sim.currentNodeId);
+    if (!node) throw new Error('Expected node');
+
+    node.type = 'town';
+    state.sim.vehicle.engine = 4;
+    state.serviceStops = [{ id: 'svc0', x: 17, w: 80, progress: 0.23, serviced: false }];
+    state.player.x = 0;
+    state.player.onGround = true;
+    expect(runObjectivePrompt(state)).toBe('Hold steady at bay 50%');
+
+    node.type = 'ruin';
+    state.serviceStops = [];
+    state.impactPlates = [{ id: 'ip0', x: 17, w: 100, shattered: false }];
+    state.sim.vehicle.frame = 4;
+    expect(runObjectivePrompt(state)).toBe('Jump and slam the impact plate (175+ landing)');
+
+    node.type = 'nature';
+    state.impactPlates = [];
+    state.canopyLifts = [{ id: 'cl0', x: 17, y: 22, w: 70, h: 80, progress: 0.21, charted: false }];
+    state.sim.vehicle.suspension = 4;
+    state.elapsedSeconds = 0.1;
+    state.player.onGround = false;
+    expect(runObjectivePrompt(state)).toBe('Bloom open: stay airborne 50%');
+  });
+
   it('falls back to beacon prompts and exposes compact objective labels', () => {
     const state = buildRuntimeState();
     const node = state.sim.world.nodes.find((item) => item.id === state.sim.currentNodeId);

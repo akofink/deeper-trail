@@ -13,7 +13,16 @@ export function usesSyncGates(nodeType: string): boolean {
 }
 
 export function syncGateReady(currentSpeed: number, dashBoost: number): boolean {
-  return currentSpeed >= SYNC_GATE_MIN_SPEED || dashBoost >= SYNC_GATE_MIN_DASH_BOOST;
+  return syncGateReadyWithThresholds(currentSpeed, dashBoost, SYNC_GATE_MIN_SPEED, SYNC_GATE_MIN_DASH_BOOST);
+}
+
+export function syncGateReadyWithThresholds(
+  currentSpeed: number,
+  dashBoost: number,
+  minSpeed: number,
+  minDashBoost: number
+): boolean {
+  return currentSpeed >= minSpeed || dashBoost >= minDashBoost;
 }
 
 export function totalSyncGateProgress(gates: SyncGate[]): { completed: number; total: number } {
@@ -29,7 +38,9 @@ export function canStabilizeSyncGate(
   playerBounds: { x: number; y: number; w: number; h: number },
   currentSpeed: number,
   dashBoost: number,
-  elapsedSeconds: number
+  elapsedSeconds: number,
+  minSpeed = SYNC_GATE_MIN_SPEED,
+  minDashBoost = SYNC_GATE_MIN_DASH_BOOST
 ): { canStabilize: boolean; reason?: string } {
   if (gate.stabilized) {
     return { canStabilize: false };
@@ -45,7 +56,7 @@ export function canStabilizeSyncGate(
     return { canStabilize: false };
   }
 
-  if (!syncGateReady(currentSpeed, dashBoost)) {
+  if (!syncGateReadyWithThresholds(currentSpeed, dashBoost, minSpeed, minDashBoost)) {
     return {
       canStabilize: false,
       reason: 'Need more speed or boost for the gate'

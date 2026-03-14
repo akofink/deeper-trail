@@ -185,4 +185,70 @@ describe('run objective update helper', () => {
     expect(state.canopyLifts[0]?.charted).toBe(false);
     expect(result.message).toBeNull();
   });
+
+  it('uses aligned subsystem levels to ease matching biome objective thresholds', () => {
+    const state = buildRuntimeState();
+    const node = state.sim.world.nodes.find((item) => item.id === state.sim.currentNodeId);
+    if (!node) throw new Error('Expected node');
+
+    node.type = 'town';
+    state.sim.vehicle.engine = 4;
+    state.serviceStops = [{ id: 'svc0', x: 17, w: 80, progress: 0.42, serviced: false }];
+    state.player.x = 0;
+    state.player.y = 0;
+    state.player.vx = 0;
+    state.player.onGround = true;
+
+    let result = updateRunObjectives(state, {
+      dt: 0.05,
+      landedThisFrame: false,
+      landingSpeed: 0
+    });
+
+    expect(state.serviceStops[0]?.serviced).toBe(true);
+    expect(result.message).toContain('Bay');
+
+    node.type = 'ruin';
+    state.impactPlates = [{ id: 'ip0', x: 17, w: 90, shattered: false }];
+    state.sim.vehicle.frame = 4;
+
+    result = updateRunObjectives(state, {
+      dt: 0.05,
+      landedThisFrame: true,
+      landingSpeed: 180
+    });
+
+    expect(state.impactPlates[0]?.shattered).toBe(true);
+    expect(result.message).toContain('Plate');
+
+    node.type = 'nature';
+    state.canopyLifts = [{ id: 'cl0', x: 17, y: 22, w: 70, h: 80, progress: 0.4, charted: false }];
+    state.sim.vehicle.suspension = 4;
+    state.player.onGround = false;
+    state.elapsedSeconds = 0.1;
+
+    result = updateRunObjectives(state, {
+      dt: 0.03,
+      landedThisFrame: false,
+      landingSpeed: 0
+    });
+
+    expect(state.canopyLifts[0]?.charted).toBe(true);
+    expect(result.message).toContain('Lift');
+
+    node.type = 'anomaly';
+    state.syncGates = [{ id: 'sg0', x: 17, y: 22, w: 60, h: 90, stabilized: false }];
+    state.sim.vehicle.shielding = 4;
+    state.player.vx = 170;
+    state.dashBoost = 0.08;
+
+    result = updateRunObjectives(state, {
+      dt: 0.03,
+      landedThisFrame: false,
+      landingSpeed: 0
+    });
+
+    expect(state.syncGates[0]?.stabilized).toBe(true);
+    expect(result.message).toContain('Gate');
+  });
 });
