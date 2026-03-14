@@ -1,3 +1,8 @@
+- Goal-ending presentation pass:
+  - Added explicit goal-ending presentation helpers in `src/game/runtime/goalSignal.ts` so the decoded source signature can be formatted differently for the run-end overlay and the map celebration card instead of forcing both surfaces through one long summary string.
+  - Updated `src/game/runtime/runSceneView.ts` so expedition-ending overlays now show the decoded title, discovery beat, and completion line together.
+  - Updated `src/game/runtime/mapSceneRenderPlan.ts` so the celebration card now breaks the decoded ending into readable discovery/epilogue/mechanical lines, and refreshed `tests/goalSignal.test.ts`, `tests/runSceneView.test.ts`, and `tests/mapSceneRenderPlan.test.ts`.
+
 - Browser-shell runtime-factory pass:
   - Added `src/game/runtime/browserShellRuntimeFactory.ts` so browser-shell state-controller creation, event-bridge wiring, loop-controller assembly, and debug-hook attachment now live behind one focused helper instead of staying mixed with the runtime controller's final draw handoff.
   - Updated `src/game/runtime/browserShellRuntime.ts` to delegate browser-shell object-graph assembly to the new factory while keeping the public controller focused on initial scene draw ownership and Pixi frame presentation.

@@ -6,6 +6,8 @@ import {
   applyGoalSignalPrimer,
   applyGoalSignalRunBonus,
   buildLegacyCarryOvers,
+  goalSignalCelebrationDetail,
+  goalSignalEndingOverlayText,
   goalSignalEndingSummary,
   goalSignalProfile,
   goalSignalPrimerNote,
@@ -133,6 +135,25 @@ describe('goal signal primer helpers', () => {
     );
     expect(goalSignalEndingSummary(state)).toContain(
       'Each recovered fragment repeats the outward trail, turning salvage into a readable memory map.'
+    );
+    expect(goalSignalEndingOverlayText(state)).toBe(
+      [
+        'Echo Salvage Orchard',
+        'At the source, recovered route fragments hang like tagged fruit around a live salvage trunk still carrying the signal.',
+        'The source paid back the route in salvage echoes all the way to its heart.'
+      ].join('\n')
+    );
+    expect(goalSignalCelebrationDetail(state)).toBe(
+      [
+        'Echo Salvage Orchard',
+        'At the source, recovered route fragments hang like tagged fruit around a live salvage trunk still carrying the signal.',
+        'The source paid back the route in salvage echoes all the way to its heart.',
+        'Each recovered fragment repeats the outward trail, turning salvage into a readable memory map.',
+        'Arrival  source cache: +2 scrap on arrival',
+        'Approach  grove/quarry braid: salvage echoes line the source path',
+        'Run assist  anomaly line: shield charge starts primed and one site objective starts stabilized',
+        'Afterglow  each post-goal route yields +2 salvage.'
+      ].join('\n')
     );
     expect(goalSignalPrimerNote(state.expeditionGoalNodeId, state)).toContain('B1 pre-linked');
     expect(goalSignalPrimerNote(state.expeditionGoalNodeId, state)).toContain('source cache: +2 scrap on arrival');
