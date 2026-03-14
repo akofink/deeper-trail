@@ -43,6 +43,25 @@ const GOAL_ROUTE_HOOK_PREVIEW = {
   'vented-shield': 'shield charge re-primed after arrival'
 } as const satisfies Record<GoalRouteHookType, string>;
 
+function normalizedLegacyCharges(charges: number | undefined): number {
+  return Math.max(1, Math.trunc(charges || 1));
+}
+
+function mergeLegacyCarryOver(carryOvers: LegacyCarryOver[], nextCarryOver: LegacyCarryOver): void {
+  const existing = carryOvers.find(
+    (carryOver) =>
+      carryOver.type === nextCarryOver.type &&
+      carryOver.note === nextCarryOver.note &&
+      carryOver.sourceTitle === nextCarryOver.sourceTitle
+  );
+  if (existing) {
+    existing.charges += nextCarryOver.charges;
+    return;
+  }
+
+  carryOvers.push(nextCarryOver);
+}
+
 export function hasGoalSignalPrimer(state: RuntimeState): boolean {
   return state.sim.notebook.synthesisUnlocked && state.sim.currentNodeId === state.expeditionGoalNodeId;
 }
@@ -367,49 +386,80 @@ export function goalSignalEndingSummary(state: RuntimeState): string | null {
   return goalSignalProfile(state)?.endingSummary ?? null;
 }
 
-function applyRouteHookEffect(state: RuntimeState, hookType: GoalRouteHookType): string | null {
+function applyRouteHookEffect(state: RuntimeState, hookType: GoalRouteHookType, charges = 1): string | null {
+  const normalizedCharges = normalizedLegacyCharges(charges);
   switch (hookType) {
     case 'relay-credit':
-      state.freeTravelCharges += 1;
-      return 'relay lattice grants +1 free travel credit';
+      state.freeTravelCharges += normalizedCharges;
+      return `relay lattice grants +${normalizedCharges} free travel credit${normalizedCharges === 1 ? '' : 's'}`;
     case 'breach-fuel':
-      state.sim.fuel = Math.min(state.sim.fuelCapacity, state.sim.fuel + 4);
-      return 'breach reservoir restores +4 fuel';
+      state.sim.fuel = Math.min(state.sim.fuelCapacity, state.sim.fuel + 4 * normalizedCharges);
+      return `breach reservoir restores +${4 * normalizedCharges} fuel`;
     case 'salvage-echo':
-      state.sim.scrap += 2;
-      return 'salvage echo recovered +2 scrap';
+      state.sim.scrap += 2 * normalizedCharges;
+      return `salvage echo recovered +${2 * normalizedCharges} scrap`;
     case 'quiet-heal':
-      state.health = Math.min(getMaxHealth(state.sim.vehicle), state.health + 1);
-      return 'quiet crossing restores +1 hull';
+      {
+        const previousHealth = state.health;
+        state.health = Math.min(getMaxHealth(state.sim.vehicle), state.health + normalizedCharges);
+        return `quiet crossing restores +${state.health - previousHealth} hull`;
+      }
     case 'folded-hop':
-      state.freeTravelCharges += 1;
-      return 'folded route refunds +1 free travel credit';
+      state.freeTravelCharges += normalizedCharges;
+      return `folded route refunds +${normalizedCharges} free travel credit${normalizedCharges === 1 ? '' : 's'}`;
     case 'vented-shield':
       state.shieldChargeAvailable = true;
-      return 'vented channel re-primes shield charge';
+      return normalizedCharges === 1
+        ? 'vented channel re-primes shield charge'
+        : `vented channel re-primes shield charge (${normalizedCharges} queued)`;
     default:
       return null;
   }
 }
 
-export function describeGoalRouteHookEffect(hookType: GoalRouteHookType): string {
-  return GOAL_ROUTE_HOOK_PREVIEW[hookType];
+export function describeGoalRouteHookEffect(hookType: GoalRouteHookType, charges = 1): string {
+  const normalizedCharges = normalizedLegacyCharges(charges);
+  if (normalizedCharges === 1) {
+    return GOAL_ROUTE_HOOK_PREVIEW[hookType];
+  }
+
+  switch (hookType) {
+    case 'relay-credit':
+      return `+${normalizedCharges} free travel credits after arrival`;
+    case 'breach-fuel':
+      return `+${4 * normalizedCharges} fuel after arrival`;
+    case 'salvage-echo':
+      return `+${2 * normalizedCharges} salvage after arrival`;
+    case 'quiet-heal':
+      return `+${normalizedCharges} hull after arrival`;
+    case 'folded-hop':
+      return `+${normalizedCharges} free travel credits after arrival`;
+    case 'vented-shield':
+      return `shield charge re-primed after arrival (x${normalizedCharges})`;
+    default:
+      return GOAL_ROUTE_HOOK_PREVIEW[hookType];
+  }
 }
 
 export function buildLegacyCarryOvers(state: RuntimeState): LegacyCarryOver[] {
-  const carryOvers = state.legacyCarryOvers.map((carryOver) => ({ ...carryOver }));
+  const carryOvers = state.legacyCarryOvers.map((carryOver) => ({
+    ...carryOver,
+    charges: normalizedLegacyCharges(carryOver.charges)
+  }));
   if (!state.expeditionComplete) {
     return carryOvers;
   }
 
   const profile = decodedGoalSignalProfile(state);
   const type = state.postGoalRouteHookType ?? profile?.postGoalRouteHookType ?? null;
-  if (!type) {
+  const charges = Math.max(0, Math.trunc(state.postGoalRouteHookCharges ?? 0));
+  if (!type || charges <= 0) {
     return carryOvers;
   }
 
-  carryOvers.push({
+  mergeLegacyCarryOver(carryOvers, {
     type,
+    charges,
     note:
       state.postGoalRouteHookNote ??
       profile?.postGoalRouteHookNote ??
@@ -442,7 +492,7 @@ export function applyGoalSignalPostGoalRouteHook(state: RuntimeState): string | 
     state.postGoalRouteHookNote = profile.postGoalRouteHookNote;
   }
 
-  const effectNote = applyRouteHookEffect(state, hookType);
+  const effectNote = applyRouteHookEffect(state, hookType, 1);
   return effectNote ? `Afterglow: ${effectNote} (${state.postGoalRouteHookCharges} hooks left).` : null;
 }
 
@@ -456,7 +506,7 @@ export function applyLegacyCarryOver(state: RuntimeState): string | null {
   }
 
   const messages = state.legacyCarryOvers.flatMap((carryOver) => {
-    const effectNote = applyRouteHookEffect(state, carryOver.type);
+    const effectNote = applyRouteHookEffect(state, carryOver.type, carryOver.charges);
     if (!effectNote) {
       return [];
     }

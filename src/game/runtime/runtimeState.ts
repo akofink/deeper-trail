@@ -19,6 +19,7 @@ export type GoalRouteHookType =
 
 export interface LegacyCarryOver {
   type: GoalRouteHookType;
+  charges: number;
   note: string;
   sourceTitle: string;
 }
@@ -178,7 +179,10 @@ export function createInitialRuntimeState(canvasHeight: number, seed: string, le
     postGoalRouteHookType: null,
     postGoalRouteHookCharges: 0,
     postGoalRouteHookNote: '',
-    legacyCarryOvers: legacyCarryOvers.map((carryOver) => ({ ...carryOver })),
+    legacyCarryOvers: legacyCarryOvers.map((carryOver) => ({
+      ...carryOver,
+      charges: Math.max(1, Math.trunc(carryOver.charges || 1))
+    })),
     score: 0,
     health: maxHealth,
     elapsedSeconds: 0,

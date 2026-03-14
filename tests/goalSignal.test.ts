@@ -285,22 +285,26 @@ describe('goal signal primer helpers', () => {
     completedState.legacyCarryOvers = [
       {
         type: 'breach-fuel',
+        charges: 1,
         note: 'Legacy echo: breach reservoir restores +4 fuel on the next route.',
         sourceTitle: 'Breached Entry Core'
       }
     ];
     completedState.sim.fuel = 10;
+    completedState.postGoalRouteHookCharges = 2;
 
     const carryOvers = buildLegacyCarryOvers(completedState);
 
     expect(carryOvers).toEqual([
       {
         type: 'breach-fuel',
+        charges: 1,
         note: 'Legacy echo: breach reservoir restores +4 fuel on the next route.',
         sourceTitle: 'Breached Entry Core'
       },
       {
         type: 'salvage-echo',
+        charges: 2,
         note: 'Afterglow hook: each post-goal route yields +2 salvage.',
         sourceTitle: 'Echo Salvage Orchard'
       }
@@ -313,9 +317,9 @@ describe('goal signal primer helpers', () => {
     const message = applyLegacyCarryOver(nextState);
 
     expect(message).toBe(
-      'Legacy echoes Breached Entry Core: breach reservoir restores +4 fuel. Echo Salvage Orchard: salvage echo recovered +2 scrap.'
+      'Legacy echoes Breached Entry Core: breach reservoir restores +4 fuel. Echo Salvage Orchard: salvage echo recovered +4 scrap.'
     );
-    expect(nextState.sim.scrap).toBe(2);
+    expect(nextState.sim.scrap).toBe(4);
     expect(nextState.sim.fuel).toBe(14);
     expect(nextState.legacyCarryOvers).toEqual([]);
   });

@@ -41,6 +41,10 @@ export interface MapSceneContentOptions {
   hasCompletedCurrentNode: boolean;
 }
 
+function totalLegacyCarryOverCharges(state: RuntimeState): number {
+  return state.legacyCarryOvers.reduce((total, carryOver) => total + carryOver.charges, 0);
+}
+
 export function buildMapSceneContent(
   state: RuntimeState,
   selectedNodeId: string | null,
@@ -69,13 +73,18 @@ export function buildMapSceneContent(
 
   const legacyCarryOvers = state.legacyCarryOvers;
   const legacyCarryOverSummary =
-    legacyCarryOvers.length > 0 ? legacyCarryOvers.map((carryOver) => carryOver.note || 'carry-over route hook ready').join(' / ') : null;
+    legacyCarryOvers.length > 0
+      ? legacyCarryOvers
+          .map((carryOver) => `${carryOver.note || 'carry-over route hook ready'}${carryOver.charges > 1 ? ` (${carryOver.charges}x)` : ''}`)
+          .join(' / ')
+      : null;
   const legacyCarryOverPreview =
     legacyCarryOvers.length > 0
       ? legacyCarryOvers
-          .map((carryOver) => `${carryOver.sourceTitle}: ${describeGoalRouteHookEffect(carryOver.type)}`)
+          .map((carryOver) => `${carryOver.sourceTitle}: ${describeGoalRouteHookEffect(carryOver.type, carryOver.charges)}`)
           .join(' / ')
       : null;
+  const legacyCarryOverCharges = totalLegacyCarryOverCharges(state);
   const activeAfterglowPreview =
     state.expeditionComplete && (state.postGoalRouteHookCharges ?? 0) > 0 && state.postGoalRouteHookType
       ? describeGoalRouteHookEffect(state.postGoalRouteHookType)
@@ -114,7 +123,7 @@ export function buildMapSceneContent(
           goalPrimerNote,
           legacyCarryOverPreview ? `Legacy route payout: ${legacyCarryOverPreview}` : null,
           !state.expeditionComplete && legacyCarryOverSummary
-            ? `Legacy echoes armed (${legacyCarryOvers.length}): ${legacyCarryOverSummary}`
+            ? `Legacy echoes armed (${legacyCarryOverCharges}x): ${legacyCarryOverSummary}`
             : null,
           activeAfterglowPreview
             ? `Next route afterglow (${state.postGoalRouteHookCharges}x): ${activeAfterglowPreview}`
@@ -187,11 +196,13 @@ export function buildMapSceneContent(
     fieldNotes.push(state.postGoalRouteHookNote ?? 'Decoded source aftermath remains active.');
   } else if (legacyCarryOvers.length > 0) {
     fieldNotes.push('');
-    fieldNotes.push(`LEGACY ECHOES ${legacyCarryOvers.length}x`);
+    fieldNotes.push(`LEGACY ECHOES ${legacyCarryOverCharges}x`);
     legacyCarryOvers.forEach((carryOver) => {
-      fieldNotes.push(carryOver.sourceTitle.toUpperCase());
-      fieldNotes.push(`NEXT ROUTE ${describeGoalRouteHookEffect(carryOver.type)}`);
-      fieldNotes.push(carryOver.note || 'Decoded source aftermath is queued for the next route.');
+      fieldNotes.push(`${carryOver.sourceTitle.toUpperCase()}${carryOver.charges > 1 ? ` x${carryOver.charges}` : ''}`);
+      fieldNotes.push(`NEXT ROUTE ${describeGoalRouteHookEffect(carryOver.type, carryOver.charges)}`);
+      fieldNotes.push(
+        `${carryOver.note || 'Decoded source aftermath is queued for the next route.'}${carryOver.charges > 1 ? ` (${carryOver.charges}x)` : ''}`
+      );
     });
   }
 

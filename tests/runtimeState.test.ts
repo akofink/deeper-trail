@@ -46,6 +46,7 @@ describe('runtimeState helpers', () => {
     const state = createInitialRuntimeState(720, 'runtime-legacy', [
       {
         type: 'salvage-echo',
+        charges: 2,
         note: 'Legacy echo: salvage echo recovered +2 scrap on the next route.',
         sourceTitle: 'Echo Salvage Orchard'
       }
@@ -54,6 +55,7 @@ describe('runtimeState helpers', () => {
     expect(state.legacyCarryOvers).toEqual([
       {
         type: 'salvage-echo',
+        charges: 2,
         note: 'Legacy echo: salvage echo recovered +2 scrap on the next route.',
         sourceTitle: 'Echo Salvage Orchard'
       }

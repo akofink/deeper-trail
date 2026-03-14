@@ -179,6 +179,7 @@ describe('buildDebugStateSnapshot', () => {
     const state = createInitialRuntimeState(720, 'debug-snapshot-legacy', [
       {
         type: 'vented-shield',
+        charges: 2,
         note: 'Legacy echo: vented channel re-primes shield charge on the next route.',
         sourceTitle: 'Vented Bloom Channel'
       }
@@ -189,13 +190,14 @@ describe('buildDebugStateSnapshot', () => {
     expect(snapshot.sim.legacyCarryOvers).toEqual([
       {
         type: 'vented-shield',
+        charges: 2,
         note: 'Legacy echo: vented channel re-primes shield charge on the next route.',
         sourceTitle: 'Vented Bloom Channel'
       }
     ]);
     expect(snapshot.map.selectedRoute).toMatchObject({
       afterglowPreview: null,
-      legacyEchoPreview: ['Vented Bloom Channel: shield charge re-primed after arrival']
+      legacyEchoPreview: ['Vented Bloom Channel: shield charge re-primed after arrival (x2)']
     });
   });
 
