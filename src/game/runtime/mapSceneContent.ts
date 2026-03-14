@@ -53,6 +53,7 @@ export function buildMapSceneContent(
   const installOffer = getInstallOffer(state.sim, activeNodeType, selectedInstallIndex);
   const selectedNodeType = asNodeTypeKey(selectedNode?.type ?? 'town');
   const selectedSiteBonus = selectedNode ? arrivalSiteBonusPreview(state.sim, selectedNode.type) : null;
+  const selectedSiteInstallOffers = selectedNode ? getInstallOffers(state.sim, selectedNode.type) : [];
   const signalIntel = notebookSignalRouteIntel(state.sim, state.expeditionGoalNodeId, selectedNodeId);
   const goalPrimerNote = goalSignalPrimerNote(selectedNodeId, state);
   const selectedRouteKnowledge = visibleBiomeKnowledgeWithSignalIntel(state.sim, selectedNodeType, signalIntel);
@@ -91,6 +92,13 @@ export function buildMapSceneContent(
             ? `${selectedSiteBonus.active ? 'Site synergy ready' : 'Site synergy locked'}: ${selectedSiteBonus.subsystem} lv${
                 selectedSiteBonus.requiredLevel
               } ${selectedSiteBonus.summary}.`
+            : null,
+          selectedNode
+            ? selectedSiteInstallOffers.length > 0
+              ? `Site rack: ${selectedSiteInstallOffers
+                  .map((offer) => `+${offer.subsystem} lv${offer.nextLevel} (${offer.scrapCost} scrap)`)
+                  .join(' / ')}`
+              : 'Site rack: no further installs for this build.'
             : null,
           selectedRouteKnowledge.objectiveKnown ? getObjectiveSummary(selectedNode.type) : 'Objective pattern ?',
           signalIntel.routeHint ?? 'Signal triangulation offline.',

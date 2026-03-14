@@ -110,6 +110,7 @@ describe('map scene content helper', () => {
     expect(content.routeDetail).toContain('NATURE');
     expect(content.routeDetail).toContain(`dist ${routeCase.weaker.distance}  fuel ${routeCase.weaker.distance}`);
     expect(content.routeDetail).toContain('Site synergy locked: suspension lv2 repairs 1 damaged module condition on arrival.');
+    expect(content.routeDetail).toContain('Site rack: +suspension lv2 (2 scrap) / +storage lv2 (2 scrap)');
     expect(content.routeDetail).toContain('Objective pattern ?');
     expect(content.routeDetail).toContain('Signal triangulation offline.');
     expect(content.installHint).toContain('Site 1/2: +');
@@ -134,6 +135,7 @@ describe('map scene content helper', () => {
 
     expect(upgradedContent.routeDetail).toContain('Air relays + canopy lifts');
     expect(upgradedContent.routeDetail).toContain('Site synergy ready: suspension lv2 repairs 1 damaged module condition on arrival.');
+    expect(upgradedContent.routeDetail).toContain('Site rack: +storage lv2 (2 scrap) / +suspension lv3 (3 scrap)');
     expect(upgradedContent.scannerHint).toContain('objective scan');
     expect(upgradedContent.scannerHint).toContain('auto-link online');
     expect(upgradedContent.routeDetail).toContain('Signal bearing weakens.');
@@ -221,6 +223,28 @@ describe('map scene content helper', () => {
 
     expect(content.installHint).toContain('Site 2/2: +storage lv2  cost 2');
     expect(content.installHint).toContain('Alt engine available.');
+  });
+
+  it('reports when a selected route biome has exhausted its install rack for the current build', () => {
+    const state = buildRuntimeState();
+    state.sim.vehicle.frame = 4;
+    state.sim.vehicle.scanner = 4;
+
+    const selectedNode = state.sim.world.nodes.find((node) => node.id === 'n1');
+    if (!selectedNode) {
+      throw new Error('Expected selected node');
+    }
+    selectedNode.type = 'ruin';
+
+    const exhaustedContent = buildMapSceneContent(state, 'n1', 7, {
+      canUseMedPatch: false,
+      medPatchHealAmount: 1,
+      medPatchScrapCost: 2,
+      hasAutoLinkScanner: false,
+      hasCompletedCurrentNode: false
+    });
+
+    expect(exhaustedContent.routeDetail).toContain('Site rack: no further installs for this build.');
   });
 
   it('shows workshop repair pricing in towns and med-patch fallback when the workshop is idle', () => {
