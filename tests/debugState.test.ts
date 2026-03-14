@@ -103,4 +103,32 @@ describe('buildDebugStateSnapshot', () => {
       sourceTitle: 'Vented Bloom Channel'
     });
   });
+
+  it('reports last-travel fuel refund details for automation checks', () => {
+    const state = createInitialRuntimeState(720, 'debug-snapshot-last-travel');
+
+    state.lastTravel = {
+      destinationNodeId: 'n4',
+      fuelCost: 7,
+      usedFreeTravel: true,
+      freeTravelChargesBefore: 1,
+      freeTravelChargesAfter: 0,
+      fuelBefore: 19,
+      fuelAfterTravel: 19,
+      arrivalNodeType: 'ruin'
+    };
+
+    const snapshot = buildDebugStateSnapshot(state, 900, getMaxHealth(state.sim.vehicle));
+
+    expect(snapshot.map.lastTravel).toEqual({
+      destinationNodeId: 'n4',
+      fuelCost: 7,
+      usedFreeTravel: true,
+      freeTravelChargesBefore: 1,
+      freeTravelChargesAfter: 0,
+      fuelBefore: 19,
+      fuelAfterTravel: 19,
+      arrivalNodeType: 'ruin'
+    });
+  });
 });

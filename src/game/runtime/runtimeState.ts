@@ -99,6 +99,18 @@ export interface RuntimeState {
   runPromptText?: string;
   runPromptTimer?: number;
   mapSelectionIndex: number;
+  lastTravel?:
+    | {
+        destinationNodeId: string;
+        fuelCost: number;
+        usedFreeTravel: boolean;
+        freeTravelChargesBefore: number;
+        freeTravelChargesAfter: number;
+        fuelBefore: number;
+        fuelAfterTravel: number;
+        arrivalNodeType?: string;
+      }
+    | null;
   completedNodeIds: string[];
   freeTravelCharges: number;
   dashEnergy: number;
@@ -178,6 +190,7 @@ export function createInitialRuntimeState(canvasHeight: number, seed: string, le
     runPromptText: '',
     runPromptTimer: 0,
     mapSelectionIndex: 0,
+    lastTravel: null,
     completedNodeIds: [],
     freeTravelCharges: 0,
     dashEnergy: 1,
