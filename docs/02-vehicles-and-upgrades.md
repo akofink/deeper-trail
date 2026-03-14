@@ -51,7 +51,7 @@ Every module should:
 
 - Map biome sites now expose a small deterministic install rack instead of one implicit upgrade; use Left/Right on the map to choose which site module to install before pressing `C`.
 - `scanner` lv.3 enables relay auto-linking.
-- `scanner` lv.2 previews biome benefits on the route board and can phase-lock anomaly relays during open sync windows; lv.4 previews hazard strain as well.
+- `scanner` lv.2 previews biome benefits directly on route-board nodes and can phase-lock anomaly relays during open sync windows; lv.3 adds objective-pattern markers and auto-linking; lv.4 adds hazard-strain markers as well.
 - `storage` lv.2 starts pulling nearby salvage pickups inward; lv.3 also increases scrap gained per pickup.
 - `shielding` lv.2 grants one rechargeable shielded hit each run.
 
