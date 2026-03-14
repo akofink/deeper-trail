@@ -1,33 +1,62 @@
-# docs/00-vision.md
+# Vision
 
-## Working tagline
-**“Start with a bicycle. End by rewriting the map of reality.”**
+## Tagline
+**Start with a bicycle. End by reading the routes behind reality.**
 
 ## One-sentence pitch
-A 2D journey game where your vehicle evolves component-by-component from humble beginnings into increasingly strange forms, while a procedural world and layered puzzles pull you deeper into an expanding mystery.
+Deeper Trail is a deterministic 2D journey game where a humble machine evolves subsystem by subsystem into stranger forms, while each seeded route pushes the player deeper into a layered travel mystery.
+
+## The player promise
+
+The game should consistently deliver three feelings:
+
+- grounded engineering: upgrades feel built, repaired, scavenged, and understood
+- widening wonder: each successful loop suggests a larger world than the player first assumed
+- discussable runs: players can compare seeds, routes, builds, and clue discoveries because the simulation is deterministic
+
+## Core pillars
+
+1. **One machine, many forms**
+   The player should feel like they are evolving a single machine through modules, scars, and discoveries, not swapping menu-selected vehicle classes.
+2. **Deterministic journeys**
+   Identical seeds and inputs should produce identical world, route, and puzzle outcomes.
+3. **Capabilities over numbers**
+   Progression should unlock verbs, access, and interpretation. Pure numeric inflation is secondary.
+4. **Readable routes and consequences**
+   The map scene, run scene, HUD, and route cards should make the current decision space legible without burying the player in prose.
+5. **A mystery that pays off through play**
+   Notebook clues, route variants, and expedition endings should mutate gameplay and meaning together, not act as disconnected lore drops.
+
+## Current playable interpretation
+
+The prototype already expresses the vision in a compact form:
+
+- map travel between seeded nodes
+- route-specific run objectives across multiple biome types
+- subsystem upgrades and condition wear on one persistent machine
+- clue discovery that feeds back into route reading and expedition outcomes
+
+The roadmap should keep sharpening this expression before expanding into larger-scale travel layers.
 
 ## Target vibe
-- Curious, intelligent, slightly eerie
-- Wonder + grounded engineering
-- “Escape room” moments in a travel/crafting structure
-- Discovery-driven rather than combat-driven (combat optional)
 
-## The “share it” promise
-Players will share:
-- Seeds (“try seed 41802, the blue obelisk appears early”)
-- Screenshot-worthy transformations of their vehicle
-- Puzzle discoveries (symbols, codes, circuits, maps)
-- “I can’t believe this started as a bike game” reactions
+- curious and slightly eerie, not grim or combat-first
+- handmade and mechanical even when the world becomes anomalous
+- compact, readable, and browser-friendly rather than maximalist
 
-## Non-goals (guardrails)
-- No servers required for core play
-- No 3D rendering
-- Avoid grindy resource loops
-- Avoid pure stat inflation (“+5 speed”) unless it changes behavior
+## Shareable moments
 
-## Game pillars
-1. **Evolving vehicle = evolving verbs**
-2. **Deterministic procedural world**
-3. **Obstacles are mechanical + logical**
-4. **Meta-mystery ties all scales together**
-5. **Failure creates story, not reset**
+Players should want to share:
+
+- unusual or high-value seeds
+- distinctive machine builds and subsystem tradeoffs
+- route-board screenshots that show meaningful decisions
+- clue chains or endings that reframe earlier discoveries
+
+## Non-goals
+
+- no servers or backend dependencies for core play
+- no 3D rendering requirement
+- no grind-heavy resource treadmill
+- no progression model that collapses into generic stat stacking
+- no mystery layer that lives only in text and not in route or run behavior
