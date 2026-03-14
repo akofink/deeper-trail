@@ -1,3 +1,8 @@
+- Map-board arrival-encounter marker pass:
+  - Updated `src/game/runtime/mapBoardView.ts` so connected unvisited routes now add a dedicated intel marker when their deterministic first-arrival encounter preview has a real payoff, including best-lead route variants that reuse the existing signal intel.
+  - Expanded `tests/mapBoardView.test.ts` so the board view now asserts the encounter marker appears only while that route remains unvisited, preserving the route-card preview as the detailed readout while surfacing the opportunity directly on the board.
+  - Re-ran `npm run test -- mapBoardView`, `npm run test -- mapBoardRenderer`, and `npm run typecheck`.
+
 - Goal-ending presentation pass:
   - Added explicit goal-ending presentation helpers in `src/game/runtime/goalSignal.ts` so the decoded source signature can be formatted differently for the run-end overlay and the map celebration card instead of forcing both surfaces through one long summary string.
   - Updated `src/game/runtime/runSceneView.ts` so expedition-ending overlays now show the decoded title, discovery beat, and completion line together.
