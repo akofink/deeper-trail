@@ -69,6 +69,13 @@ describe('buildDebugStateSnapshot', () => {
       nodeType: 'anomaly',
       objectiveRule: 'boosted',
       objectiveSummary: 'Boost-sync relays + sync gates',
+      travelCostPreview: {
+        fuelCost: selectedRoute.distance,
+        effectiveFuelCost: selectedRoute.distance,
+        usesFreeTravel: false,
+        freeTravelChargesBefore: 0,
+        freeTravelChargesAfter: 0
+      },
       isBestLead: false,
       bestLeadArrivalRewardHint: null,
       arrivalEncounterPreview: null,
@@ -203,6 +210,30 @@ describe('buildDebugStateSnapshot', () => {
     expect(snapshot.map.selectedRoute).toMatchObject({
       afterglowPreview: '+2 salvage after arrival',
       legacyEchoPreview: []
+    });
+  });
+
+  it('exports effective selected-route travel cost when a trip credit will be spent', () => {
+    const state = createInitialRuntimeState(720, 'debug-snapshot-trip-credit');
+    state.freeTravelCharges = 1;
+
+    const selectedRoute = connectedNeighbors(state.sim)[0];
+    if (!selectedRoute) {
+      throw new Error('Expected a connected route');
+    }
+
+    const snapshot = buildDebugStateSnapshot(state, 900, getMaxHealth(state.sim.vehicle));
+
+    expect(snapshot.map.selectedRoute).toMatchObject({
+      nodeId: selectedRoute.nodeId,
+      fuelCost: selectedRoute.distance,
+      travelCostPreview: {
+        fuelCost: selectedRoute.distance,
+        effectiveFuelCost: 0,
+        usesFreeTravel: true,
+        freeTravelChargesBefore: 1,
+        freeTravelChargesAfter: 0
+      }
     });
   });
 

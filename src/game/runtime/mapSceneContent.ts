@@ -21,6 +21,7 @@ import { mapNodePalette } from './runLayout';
 import type { RuntimeState } from './runtimeState';
 import { getObjectiveSummary } from '../../engine/sim/runObjectives';
 import { previewArrivalEncounter } from './arrivalEncounters';
+import { previewTravelCost } from './expeditionFlow';
 
 export interface MapSceneContent {
   completionState: 'COMPLETE' | 'READY' | 'LOCKED';
@@ -64,6 +65,7 @@ export function buildMapSceneContent(
           arrivedViaBestLeadRoute: signalIntel.isBestLead
         })
       : null;
+  const selectedTravelCost = selectedNode ? previewTravelCost(state, selectedDistance) : null;
 
   const legacyCarryOvers = state.legacyCarryOvers;
   const legacyCarryOverSummary =
@@ -83,7 +85,12 @@ export function buildMapSceneContent(
     selectedNode && selectedNodeId
       ? [
           `${selectedNode.id}  ${mapNodePalette(selectedNode.type).label}${selectedNode.id === state.expeditionGoalNodeId ? '  SIGNAL' : ''}`,
-          `dist ${selectedDistance}  fuel ${selectedDistance}`,
+          `dist ${selectedDistance}  fuel ${selectedTravelCost?.effectiveFuelCost ?? selectedDistance}${
+            selectedTravelCost?.usesFreeTravel ? ' (trip credit)' : ''
+          }`,
+          selectedTravelCost?.usesFreeTravel
+            ? `Trip credits ${selectedTravelCost.freeTravelChargesBefore} -> ${selectedTravelCost.freeTravelChargesAfter} after travel.`
+            : null,
           `${selectedRouteKnowledge.benefitKnown ? biomeBenefitLabel(selectedNodeType).replace(' on arrival', '') : 'benefit ?'} / ${
             selectedRouteKnowledge.riskKnown ? selectedRiskDescriptor.shortLabel : 'risk ?'
           }`,
