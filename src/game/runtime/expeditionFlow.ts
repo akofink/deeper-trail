@@ -22,6 +22,14 @@ export interface RuntimeTravelResult extends TravelResult {
   readonly arrivalNodeType?: string;
 }
 
+export interface TravelCostPreview {
+  readonly fuelCost: number;
+  readonly effectiveFuelCost: number;
+  readonly usesFreeTravel: boolean;
+  readonly freeTravelChargesBefore: number;
+  readonly freeTravelChargesAfter: number;
+}
+
 export function hasCompletedCurrentNode(state: RuntimeState): boolean {
   return state.completedNodeIds.includes(state.sim.currentNodeId);
 }
@@ -132,10 +140,22 @@ export function completeCurrentNodeRun(state: RuntimeState): NodeCompletionOutco
   };
 }
 
+export function previewTravelCost(state: RuntimeState, fuelCost: number): TravelCostPreview {
+  const normalizedFuelCost = Math.max(0, fuelCost);
+  const usesFreeTravel = normalizedFuelCost > 0 && state.freeTravelCharges > 0;
+
+  return {
+    fuelCost: normalizedFuelCost,
+    effectiveFuelCost: usesFreeTravel ? 0 : normalizedFuelCost,
+    usesFreeTravel,
+    freeTravelChargesBefore: state.freeTravelCharges,
+    freeTravelChargesAfter: Math.max(0, state.freeTravelCharges - (usesFreeTravel ? 1 : 0))
+  };
+}
+
 export function travelToNodeWithRuntimeEffects(state: RuntimeState, destinationNodeId: string): RuntimeTravelResult {
   const signalIntel = notebookSignalRouteIntel(state.sim, state.expeditionGoalNodeId, destinationNodeId);
   const fuelBefore = state.sim.fuel;
-  const freeTravelChargesBefore = state.freeTravelCharges;
   const useFreeTravelCharge = state.freeTravelCharges > 0;
   const result = travelToNode(state.sim, destinationNodeId, {
     ignoreFuelRequirement: useFreeTravelCharge
@@ -148,15 +168,15 @@ export function travelToNodeWithRuntimeEffects(state: RuntimeState, destinationN
     };
   }
 
+  const travelCostPreview = previewTravelCost(state, result.fuelCost ?? 0);
   let usedFreeTravel = false;
-  if (state.freeTravelCharges > 0 && result.fuelCost) {
+  if (travelCostPreview.usesFreeTravel && result.fuelCost) {
     state.sim.fuel += result.fuelCost;
     state.freeTravelCharges -= 1;
     usedFreeTravel = true;
   }
 
   const fuelAfterTravel = state.sim.fuel;
-  const freeTravelChargesAfter = state.freeTravelCharges;
   const arrivalNodeType = currentNodeType(state.sim);
   applyArrivalRewards(state, { arrivedViaBestLeadRoute: signalIntel.isBestLead });
   const legacyCarryOverMessage = applyLegacyCarryOver(state);
@@ -169,8 +189,8 @@ export function travelToNodeWithRuntimeEffects(state: RuntimeState, destinationN
     destinationNodeId,
     fuelCost: result.fuelCost ?? 0,
     usedFreeTravel,
-    freeTravelChargesBefore,
-    freeTravelChargesAfter,
+    freeTravelChargesBefore: travelCostPreview.freeTravelChargesBefore,
+    freeTravelChargesAfter: travelCostPreview.freeTravelChargesAfter,
     fuelBefore,
     fuelAfterTravel,
     arrivalNodeType

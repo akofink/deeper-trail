@@ -13,6 +13,7 @@ import {
 import { asNodeTypeKey, biomeRiskDescriptor, visibleBiomeKnowledge, visibleBiomeKnowledgeWithSignalIntel } from '../../engine/sim/exploration';
 import { hasBeaconAutoLink } from './beaconActivation';
 import { hasCompletedCurrentNode } from './expeditionFlow';
+import { previewTravelCost } from './expeditionFlow';
 import { describeGoalRouteHookEffect } from './goalSignal';
 import type { RuntimeState } from './runtimeState';
 import { previewArrivalEncounter } from './arrivalEncounters';
@@ -80,6 +81,7 @@ export interface DebugStateSnapshot {
           nodeId: string;
           nodeType: string | null;
           fuelCost: number;
+          travelCostPreview: ReturnType<typeof previewTravelCost>;
           objectiveRule: ReturnType<typeof getBeaconRuleForNodeType> | null;
           objectiveSummary: string | null;
           isGoal: boolean;
@@ -241,6 +243,7 @@ export function buildDebugStateSnapshot(state: RuntimeState, viewportWidth: numb
           arrivedViaBestLeadRoute: signalIntel.isBestLead
         })
       : null;
+  const selectedTravelCostPreview = selectedOption ? previewTravelCost(state, selectedOption.distance) : null;
   const objectiveProgress = countObjectiveSupportProgress(state, activeNodeType);
   const installOffers = getInstallOffers(state.sim, currentNodeType(state.sim));
   const installOfferIndex = Math.max(0, Math.min(state.mapInstallSelectionIndex ?? 0, Math.max(0, installOffers.length - 1)));
@@ -311,6 +314,7 @@ export function buildDebugStateSnapshot(state: RuntimeState, viewportWidth: numb
             nodeId: selectedOption.nodeId,
             nodeType: selectedNode?.type ?? null,
             fuelCost: selectedOption.distance,
+            travelCostPreview: selectedTravelCostPreview ?? previewTravelCost(state, 0),
             objectiveRule: selectedNode ? getBeaconRuleForNodeType(selectedNode.type) : null,
             objectiveSummary: selectedNode ? getObjectiveSummary(selectedNode.type) : null,
             isGoal: selectedOption.nodeId === state.expeditionGoalNodeId,

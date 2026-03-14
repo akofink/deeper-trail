@@ -204,6 +204,22 @@ describe('map scene content helper', () => {
     expect(content.routeDetail).toContain('Afterglow 2x: Afterglow hook: each post-goal route restores +4 fuel.');
   });
 
+  it('shows effective fuel spend when a route will consume a trip credit', () => {
+    const state = buildRuntimeState();
+    state.freeTravelCharges = 1;
+
+    const content = buildMapSceneContent(state, 'n1', 7, {
+      canUseMedPatch: false,
+      medPatchHealAmount: 1,
+      medPatchScrapCost: 2,
+      hasAutoLinkScanner: false,
+      hasCompletedCurrentNode: true
+    });
+
+    expect(content.routeDetail).toContain('dist 7  fuel 0 (trip credit)');
+    expect(content.routeDetail).toContain('Trip credits 1 -> 0 after travel.');
+  });
+
   it('shows the selected site module offer instead of collapsing installs to one implicit pick', () => {
     const state = buildRuntimeState();
     const currentNode = state.sim.world.nodes.find((node) => node.id === state.sim.currentNodeId);
