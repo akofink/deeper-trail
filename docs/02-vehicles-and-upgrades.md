@@ -50,6 +50,11 @@ Every module should:
 ### Current prototype hooks
 
 - Map biome sites now expose a small deterministic install rack instead of one implicit upgrade; use Left/Right on the map to choose which site module to install before pressing `C`.
+- Route cards now preview biome-arrival build synergies so route choice can key off the current machine:
+  - `town` + engine lv.2 adds +4 arrival fuel
+  - `ruin` + storage lv.2 adds +1 arrival scrap
+  - `nature` + suspension lv.2 repairs 1 damaged module condition on arrival
+  - `anomaly` + scanner lv.2 permanently reveals connected-route intel on arrival
 - `scanner` lv.3 enables relay auto-linking.
 - `scanner` lv.2 previews biome benefits directly on route-board nodes and can phase-lock anomaly relays during open sync windows; lv.3 adds objective-pattern markers and auto-linking; lv.4 adds hazard-strain markers as well.
 - `storage` lv.2 starts pulling nearby salvage pickups inward; lv.3 also increases scrap gained per pickup.

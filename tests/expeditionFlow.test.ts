@@ -209,6 +209,63 @@ describe('expedition flow runtime helpers', () => {
     expect(state.sim.scrap).toBe(5);
   });
 
+  it('applies capability-linked site synergies on arrival and reveals anomaly route intel', () => {
+    const townState = buildRuntimeState('arrival-town-site-bonus');
+    const townNode = findNode(townState.sim, townState.sim.currentNodeId);
+    expect(townNode).toBeDefined();
+    if (!townNode) {
+      throw new Error('Expected current town node');
+    }
+    townNode.type = 'town';
+    townState.sim.vehicle.engine = 2;
+    townState.sim.fuel = 10;
+
+    const townMessage = applyArrivalRewards(townState);
+
+    expect(townMessage).toContain('fuel topped up +8');
+    expect(townMessage).toContain('Engine tune-up cache added +4 fuel');
+    expect(townState.sim.fuel).toBe(22);
+
+    const natureState = buildRuntimeState('arrival-nature-site-bonus');
+    const natureNode = findNode(natureState.sim, natureState.sim.currentNodeId);
+    expect(natureNode).toBeDefined();
+    if (!natureNode) {
+      throw new Error('Expected current nature node');
+    }
+    natureNode.type = 'nature';
+    natureState.sim.vehicle.suspension = 2;
+    natureState.sim.vehicleCondition.frame = 1;
+
+    const natureMessage = applyArrivalRewards(natureState);
+
+    expect(natureMessage).toContain('Spring shelter reset frame condition +1');
+    expect(natureState.sim.vehicleCondition.frame).toBe(2);
+
+    const anomalyState = buildRuntimeState('arrival-anomaly-site-bonus');
+    const anomalyNode = findNode(anomalyState.sim, anomalyState.sim.currentNodeId);
+    expect(anomalyNode).toBeDefined();
+    if (!anomalyNode) {
+      throw new Error('Expected current anomaly node');
+    }
+    anomalyNode.type = 'anomaly';
+    anomalyState.sim.vehicle.scanner = 2;
+    const neighborTypes = connectedNeighbors(anomalyState.sim)
+      .map((neighbor) => findNode(anomalyState.sim, neighbor.nodeId)?.type ?? null)
+      .filter((type): type is 'town' | 'ruin' | 'nature' | 'anomaly' => type !== null);
+
+    const anomalyMessage = applyArrivalRewards(anomalyState);
+
+    expect(anomalyMessage).toContain('Scanner echo mapped');
+    for (const type of new Set(neighborTypes)) {
+      expect(anomalyState.sim.exploration.biomeKnowledge[type]).toEqual({
+        visits: anomalyState.sim.exploration.biomeKnowledge[type].visits,
+        benefitKnown: true,
+        objectiveKnown: true,
+        riskKnown: true
+      });
+    }
+  });
+
   it('banks an anomaly free transfer when synthesis and shielding stabilize the arrival pulse', () => {
     const state = buildRuntimeState('arrival-anomaly-encounter');
     const neighbor = connectedNeighbors(state.sim)[0];

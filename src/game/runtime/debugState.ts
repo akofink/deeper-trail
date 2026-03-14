@@ -1,6 +1,7 @@
 import { notebookSignalRouteIntel } from '../../engine/sim/notebook';
 import { anomalyFacingLabel, anomalyRequiredFacing, getObjectiveSummary, getBeaconRuleForNodeType } from '../../engine/sim/runObjectives';
 import { buildSeedBuildShareCode } from '../../engine/sim/shareCode';
+import { arrivalSiteBonusPreview } from '../../engine/sim/siteBonuses';
 import { connectedNeighbors, currentNodeType, findNode } from '../../engine/sim/world';
 import {
   getInstallOffer,
@@ -71,6 +72,7 @@ export interface DebugStateSnapshot {
           objectiveSummary: string | null;
           isGoal: boolean;
           knowledge: ReturnType<typeof visibleBiomeKnowledge>;
+          siteBonusPreview: ReturnType<typeof arrivalSiteBonusPreview> | null;
           signalHint: string | null;
           isBestLead: boolean;
           bestLeadArrivalRewardHint: string | null;
@@ -275,6 +277,7 @@ export function buildDebugStateSnapshot(state: RuntimeState, viewportWidth: numb
             objectiveSummary: selectedNode ? getObjectiveSummary(selectedNode.type) : null,
             isGoal: selectedOption.nodeId === state.expeditionGoalNodeId,
             knowledge: routeKnowledge ?? visibleBiomeKnowledge(state.sim, 'town'),
+            siteBonusPreview: selectedNode ? arrivalSiteBonusPreview(state.sim, selectedNode.type) : null,
             signalHint: signalIntel.routeHint,
             isBestLead: signalIntel.isBestLead,
             bestLeadArrivalRewardHint: signalIntel.bestLeadArrivalRewardHint,
