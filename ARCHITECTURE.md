@@ -65,6 +65,7 @@ Map-scene readability priorities:
 
 - continuous, legible route edges
 - clear selected-route emphasis
+- scanner/unlock intel that writes back into node markers instead of living only in side-card copy
 - route and notebook detail in stable card regions
 - action chips that do not compete with route detail
 - generated layouts that feel spatially meaningful instead of flat debug output

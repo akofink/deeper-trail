@@ -5,6 +5,7 @@ import type { Browser } from "playwright";
 import {
   beaconApproachState,
   findPlaywrightCacheExecutables,
+  formatObjectiveLoopTimingSummary,
   isSkippableBrowserLaunchError,
   parseSmokeSelection,
   resolveObjectiveLoopSmoke,
@@ -62,6 +63,19 @@ describe("fullObjectiveLoop helpers", () => {
     vi.spyOn(fs, "existsSync").mockReturnValue(true);
     expect(resolveExecutablePath("/tmp/chromium", "/tmp/managed", ["/tmp/fallback"])).toBe("/tmp/chromium");
     expect(resolveExecutablePath(undefined, "/tmp/managed", ["/tmp/fallback"])).toBe("/tmp/managed");
+  });
+
+  it("formats a compact timing summary for completed smokes", () => {
+    expect(
+      formatObjectiveLoopTimingSummary(
+        "all",
+        [
+          { smoke: "town", durationMs: 840 },
+          { smoke: "ruin", durationMs: 1215 }
+        ],
+        2055
+      )
+    ).toBe("objective loop timing (all): town 840ms, ruin 1.22s | total 2.06s");
   });
 
   it("falls back to common local Chromium installs", () => {
@@ -234,11 +248,26 @@ describe("fullObjectiveLoop helpers", () => {
     const browser = { close: vi.fn() } as unknown as Browser;
     const launchBrowser = vi.fn<(candidatePaths: string[]) => Promise<Browser>>(async () => browser);
     const runSmoke = vi.fn(async (smoke: { name: string }, calledBrowser: Browser) => ({ smoke: smoke.name, browser: calledBrowser }));
+    const log = vi.fn();
+    const now = vi
+      .fn<() => number>()
+      .mockReturnValueOnce(1000)
+      .mockReturnValueOnce(1100)
+      .mockReturnValueOnce(1500)
+      .mockReturnValueOnce(1600)
+      .mockReturnValueOnce(2200)
+      .mockReturnValueOnce(2300)
+      .mockReturnValueOnce(2300)
+      .mockReturnValueOnce(2400)
+      .mockReturnValueOnce(2400)
+      .mockReturnValueOnce(2600);
 
     const results = await runSelectedObjectiveLoopSmokes("all", {
       candidatePaths: ["/tmp/chromium"],
       launchBrowser,
-      runSmoke
+      runSmoke,
+      log,
+      now
     });
 
     expect(launchBrowser).toHaveBeenCalledTimes(1);
@@ -256,6 +285,14 @@ describe("fullObjectiveLoop helpers", () => {
       { smoke: "anomaly", browser }
     ]);
     expect((browser.close as unknown as ReturnType<typeof vi.fn>)).toHaveBeenCalledTimes(1);
+    expect(log.mock.calls.map(([message]) => message)).toEqual([
+      "launching shared browser smoke session for town:e2e-1, ruin:e2e-0, nature:e2e-2, anomaly:e2e-3",
+      "town timing 400ms",
+      "ruin timing 600ms",
+      "nature timing 0ms",
+      "anomaly timing 0ms",
+      "objective loop timing (all): town 400ms, ruin 600ms, nature 0ms, anomaly 0ms | total 1.60s"
+    ]);
   });
 
   it("launches and closes an owned browser for a single smoke when one is not provided", async () => {
@@ -263,17 +300,25 @@ describe("fullObjectiveLoop helpers", () => {
     const smoke = resolveObjectiveLoopSmoke("town");
     const launchBrowser = vi.fn<(candidatePaths: string[]) => Promise<Browser>>(async () => browser);
     const runSmoke = vi.fn(async () => ({ smoke: "town" }));
+    const log = vi.fn();
+    const now = vi.fn<() => number>().mockReturnValueOnce(200).mockReturnValueOnce(950);
 
     const result = await runObjectiveLoopSmoke(smoke, {
       candidatePaths: ["/tmp/chromium"],
       launchBrowser,
-      runSmoke
+      runSmoke,
+      log,
+      now
     });
 
     expect(launchBrowser).toHaveBeenCalledTimes(1);
     expect(runSmoke).toHaveBeenCalledWith(smoke, browser);
     expect((browser.close as unknown as ReturnType<typeof vi.fn>)).toHaveBeenCalledTimes(1);
     expect(result).toEqual({ smoke: "town" });
+    expect(log.mock.calls.map(([message]) => message)).toEqual([
+      "launching browser smoke for seed e2e-1",
+      "town timing 750ms"
+    ]);
   });
 
   it("returns an empty result set when a shared browser launch is skippable", async () => {
