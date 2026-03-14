@@ -59,6 +59,7 @@ function buildRuntimeState(): RuntimeState {
 describe('mapBoardView', () => {
   it('builds deterministic selected-edge and node emphasis state', () => {
     const state = buildRuntimeState();
+    state.sim.vehicle.scanner = 2;
     const options = connectedNeighbors(state.sim);
     const selectedNodeId = options[0]?.nodeId;
     if (!selectedNodeId) throw new Error('Expected connected route option');
@@ -93,6 +94,35 @@ describe('mapBoardView', () => {
     expect(selectedNode?.outline).toBe(true);
     expect(selectedNode?.innerDot).toBe(true);
     expect(selectedNode?.starRadius).toBeGreaterThan(0);
+    expect(selectedNode?.intelMarkers).toHaveLength(1);
+    expect(selectedNode?.intelMarkers[0]?.fill).toBe('#34d399');
+  });
+
+  it('writes scanner knowledge tiers back into node intel markers', () => {
+    const state = buildRuntimeState();
+    const candidate = state.sim.world.nodes.find((node) => node.id !== state.sim.currentNodeId);
+    if (!candidate) throw new Error('Expected candidate node');
+    candidate.type = 'anomaly';
+
+    state.sim.vehicle.scanner = 1;
+    let view = buildMapBoardView(state, 1280, 720, 110);
+    let node = view.nodes.find((entry) => entry.id === candidate.id);
+    expect(node?.intelMarkers).toHaveLength(0);
+
+    state.sim.vehicle.scanner = 2;
+    view = buildMapBoardView(state, 1280, 720, 110);
+    node = view.nodes.find((entry) => entry.id === candidate.id);
+    expect(node?.intelMarkers.map((marker) => marker.fill)).toEqual(['#34d399']);
+
+    state.sim.vehicle.scanner = 3;
+    view = buildMapBoardView(state, 1280, 720, 110);
+    node = view.nodes.find((entry) => entry.id === candidate.id);
+    expect(node?.intelMarkers.map((marker) => marker.fill)).toEqual(['#34d399', '#fbbf24']);
+
+    state.sim.vehicle.scanner = 4;
+    view = buildMapBoardView(state, 1280, 720, 110);
+    node = view.nodes.find((entry) => entry.id === candidate.id);
+    expect(node?.intelMarkers.map((marker) => marker.fill)).toEqual(['#34d399', '#fbbf24', '#fb7185']);
   });
 
   it('switches the final chip label when the expedition is complete', () => {

@@ -27,6 +27,14 @@ export function drawMapBoard(graphics: Graphics, mapBoardView: MapBoardView): vo
       graphics.circle(node.x, node.y, Math.max(2, node.radius - 5)).fill('#f8fafc');
     }
 
+    node.intelMarkers.forEach((marker) => {
+      graphics
+        .circle(node.x + marker.xOffset, node.y + marker.yOffset, marker.radius)
+        .fill(marker.fill)
+        .circle(node.x + marker.xOffset, node.y + marker.yOffset, marker.radius + 1.4)
+        .stroke({ color: '#0f172a', width: 1.3, alpha: 0.55 });
+    });
+
     if (node.starRadius) {
       graphics
         .moveTo(node.x, node.y - node.starRadius)
