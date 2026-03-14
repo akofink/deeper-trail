@@ -14,7 +14,7 @@ export interface ArrivalEncounterPreview {
   readonly summary: string | null;
 }
 
-function revealConnectedBiomeIntel(state: RuntimeState): string[] {
+function connectedBiomeIntelLabels(state: RuntimeState, reveal: boolean): string[] {
   const revealedTypes = new Set<string>();
 
   for (const neighbor of connectedNeighbors(state.sim)) {
@@ -23,7 +23,9 @@ function revealConnectedBiomeIntel(state: RuntimeState): string[] {
       continue;
     }
 
-    revealBiomeIntel(state.sim, node.type);
+    if (reveal) {
+      revealBiomeIntel(state.sim, node.type);
+    }
     revealedTypes.add(node.type);
   }
 
@@ -103,7 +105,7 @@ function buildArrivalEncounterMessages(
     if (!options.previewOnly) {
       state.freeTravelCharges += 1;
     }
-    const revealedTypes = revealConnectedBiomeIntel(state);
+    const revealedTypes = connectedBiomeIntelLabels(state, !options.previewOnly);
     const previewRouteLabel = revealedTypes.length > 0 ? ` and reveal ${revealedTypes.join('/')} route intel` : '';
     const resolvedRouteLabel = revealedTypes.length > 0 ? ` charted ${revealedTypes.join('/')} routes and` : '';
     encounterIds.push('town-surveyor-synthesis');
