@@ -5,6 +5,43 @@ import { stepRunState } from '../src/game/runtime/runStep';
 import { createInitialRuntimeState } from '../src/game/runtime/runtimeState';
 
 describe('stepRunState', () => {
+  it('spends noticeably less boost energy on a quick tap than on a sustained hold', () => {
+    const tappedState = createInitialRuntimeState(720, 'run-step-dash-tap');
+    const heldState = createInitialRuntimeState(720, 'run-step-dash-hold');
+
+    const runFrame = (
+      state: ReturnType<typeof createInitialRuntimeState>,
+      dashPressed: boolean,
+      previousDashPressed: boolean
+    ) =>
+      stepRunState(state, {
+        dt: 1 / 60,
+        screenWidth: 1280,
+        leftPressed: false,
+        rightPressed: true,
+        jumpPressed: false,
+        dashLeftPressed: false,
+        dashRightPressed: dashPressed,
+        previousJumpPressed: false,
+        previousDashPressed
+      });
+
+    let tapResult = runFrame(tappedState, true, false);
+    for (let frame = 0; frame < 7; frame += 1) {
+      tapResult = runFrame(tappedState, false, tapResult.previousDashPressed);
+    }
+
+    let holdResult = runFrame(heldState, true, false);
+    for (let frame = 0; frame < 7; frame += 1) {
+      holdResult = runFrame(heldState, true, holdResult.previousDashPressed);
+    }
+
+    expect(tappedState.dashEnergy).toBeGreaterThan(0.75);
+    expect(heldState.dashEnergy).toBeLessThan(0.7);
+    expect(tappedState.dashEnergy - heldState.dashEnergy).toBeGreaterThan(0.18);
+    expect(holdResult.previousDashPressed).toBe(true);
+  });
+
   it('applies hazard damage, reset positioning, and hit feedback through the runtime helper', () => {
     const state = createInitialRuntimeState(720, 'run-step-hazard');
     const hazard = state.hazards[0];

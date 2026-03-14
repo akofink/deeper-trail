@@ -32,7 +32,7 @@ import {
 import { advanceWheelRotation } from './vehiclePresentation';
 
 const GRAVITY = 1050;
-const DASH_ENERGY_DRAIN_PER_SECOND = 2.6;
+const DASH_ENERGY_DRAIN_PER_SECOND = 2;
 const DASH_ENERGY_RECOVER_PER_SECOND = 0.48;
 const DASH_BOOST_RAMP_PER_SECOND = 8;
 const DASH_BOOST_DECAY_PER_SECOND = 9;

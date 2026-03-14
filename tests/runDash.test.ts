@@ -23,8 +23,8 @@ describe('run dash gating', () => {
   });
 
   it('charges more dash energy up front when already moving at speed', () => {
-    expect(dashEntryEnergyCost(0, 235)).toBeCloseTo(0.08);
-    expect(dashEntryEnergyCost(235, 235)).toBeCloseTo(0.28);
+    expect(dashEntryEnergyCost(0, 235)).toBeCloseTo(0.04);
+    expect(dashEntryEnergyCost(235, 235)).toBeCloseTo(0.14);
     expect(dashEntryEnergyCost(120, 235)).toBeGreaterThan(dashEntryEnergyCost(0, 235));
   });
 });
