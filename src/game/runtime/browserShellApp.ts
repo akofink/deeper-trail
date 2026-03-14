@@ -1,6 +1,6 @@
-import type { Graphics } from 'pixi.js';
 import type { SceneRendererContext } from '../render/sceneRenderer';
 import type { SceneTextNodeInit, SceneTextNodes } from '../render/sceneTextBootstrap';
+import { createBrowserShellSceneRendererContext } from './browserShellSceneRendererContext';
 
 interface BrowserShellAppRoot {
   appendChild: (node: unknown) => void;
@@ -73,23 +73,21 @@ export async function createBrowserShellApp(
   root.appendChild(app.canvas);
   app.ticker.stop();
 
-  const graphics = new dependencies.Graphics();
-  app.stage.addChild(graphics);
-  const playerGraphics = new dependencies.Graphics();
-  app.stage.addChild(playerGraphics);
-
-  const labels = dependencies.createSceneTextNodes(app.stage, (options) => new dependencies.Text(options));
+  const screenWidth = () => Math.max(1, app.screen.width);
+  const screenHeight = () => Math.max(1, app.screen.height);
+  const sceneRendererContext = createBrowserShellSceneRendererContext(
+    {
+      screenHeight,
+      screenWidth,
+      stage: app.stage
+    },
+    dependencies
+  );
 
   return {
     app,
-    sceneRendererContext: {
-      graphics: graphics as Graphics,
-      labels,
-      playerGraphics: playerGraphics as Graphics,
-      screenHeight: () => Math.max(1, app.screen.height),
-      screenWidth: () => Math.max(1, app.screen.width)
-    },
-    screenHeight: () => Math.max(1, app.screen.height),
-    screenWidth: () => Math.max(1, app.screen.width)
+    sceneRendererContext,
+    screenHeight,
+    screenWidth
   };
 }
