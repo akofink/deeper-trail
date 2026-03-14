@@ -10,11 +10,12 @@ import {
   missingVehicleConditionPoints,
   WORKSHOP_REPAIR_COST_PER_POINT
 } from '../../engine/sim/vehicle';
-import { visibleBiomeKnowledge, visibleBiomeKnowledgeWithSignalIntel } from '../../engine/sim/exploration';
+import { asNodeTypeKey, visibleBiomeKnowledge, visibleBiomeKnowledgeWithSignalIntel } from '../../engine/sim/exploration';
 import { hasBeaconAutoLink } from './beaconActivation';
 import { hasCompletedCurrentNode } from './expeditionFlow';
 import { describeGoalRouteHookEffect } from './goalSignal';
 import type { RuntimeState } from './runtimeState';
+import { previewArrivalEncounter } from './arrivalEncounters';
 
 type ObjectiveSupportKey = 'serviceStops' | 'impactPlates' | 'canopyLifts' | 'syncGates';
 
@@ -87,6 +88,7 @@ export interface DebugStateSnapshot {
           signalHint: string | null;
           isBestLead: boolean;
           bestLeadArrivalRewardHint: string | null;
+          arrivalEncounterPreview: string | null;
           afterglowPreview: string | null;
           legacyEchoPreview: string[];
         }
@@ -225,6 +227,12 @@ export function buildDebugStateSnapshot(state: RuntimeState, viewportWidth: numb
   const activeNodeType = currentNode?.type ?? 'town';
   const signalIntel = notebookSignalRouteIntel(state.sim, state.expeditionGoalNodeId, selectedOption?.nodeId ?? null);
   const routeKnowledge = selectedNode ? visibleBiomeKnowledgeWithSignalIntel(state.sim, selectedNode.type, signalIntel) : null;
+  const arrivalEncounterPreview =
+    selectedNode && selectedOption
+      ? previewArrivalEncounter(state, asNodeTypeKey(selectedNode.type), !state.sim.exploration.visitedNodeIds.includes(selectedOption.nodeId), {
+          arrivedViaBestLeadRoute: signalIntel.isBestLead
+        })
+      : null;
   const objectiveProgress = countObjectiveSupportProgress(state, activeNodeType);
   const installOffers = getInstallOffers(state.sim, currentNodeType(state.sim));
   const installOfferIndex = Math.max(0, Math.min(state.mapInstallSelectionIndex ?? 0, Math.max(0, installOffers.length - 1)));
@@ -303,6 +311,7 @@ export function buildDebugStateSnapshot(state: RuntimeState, viewportWidth: numb
             signalHint: signalIntel.routeHint,
             isBestLead: signalIntel.isBestLead,
             bestLeadArrivalRewardHint: signalIntel.bestLeadArrivalRewardHint,
+            arrivalEncounterPreview: arrivalEncounterPreview?.summary ?? null,
             afterglowPreview:
               state.expeditionComplete && (state.postGoalRouteHookCharges ?? 0) > 0 && state.postGoalRouteHookType
                 ? describeGoalRouteHookEffect(state.postGoalRouteHookType)

@@ -20,6 +20,7 @@ import { describeGoalRouteHookEffect, goalSignalPrimerNote } from './goalSignal'
 import { mapNodePalette } from './runLayout';
 import type { RuntimeState } from './runtimeState';
 import { getObjectiveSummary } from '../../engine/sim/runObjectives';
+import { previewArrivalEncounter } from './arrivalEncounters';
 
 export interface MapSceneContent {
   completionState: 'COMPLETE' | 'READY' | 'LOCKED';
@@ -55,6 +56,12 @@ export function buildMapSceneContent(
   const signalIntel = notebookSignalRouteIntel(state.sim, state.expeditionGoalNodeId, selectedNodeId);
   const goalPrimerNote = goalSignalPrimerNote(selectedNodeId, state);
   const selectedRouteKnowledge = visibleBiomeKnowledgeWithSignalIntel(state.sim, selectedNodeType, signalIntel);
+  const arrivalEncounterPreview =
+    selectedNode && selectedNodeId
+      ? previewArrivalEncounter(state, selectedNodeType, !state.sim.exploration.visitedNodeIds.includes(selectedNodeId), {
+          arrivedViaBestLeadRoute: signalIntel.isBestLead
+        })
+      : null;
 
   const legacyCarryOvers = state.legacyCarryOvers;
   const legacyCarryOverSummary =
@@ -86,6 +93,7 @@ export function buildMapSceneContent(
           selectedRouteKnowledge.objectiveKnown ? getObjectiveSummary(selectedNode.type) : 'Objective pattern ?',
           signalIntel.routeHint ?? 'Signal triangulation offline.',
           signalIntel.bestLeadArrivalRewardHint,
+          arrivalEncounterPreview?.summary ? `First arrival: ${arrivalEncounterPreview.summary}` : null,
           goalPrimerNote,
           legacyCarryOverPreview ? `Legacy route payout: ${legacyCarryOverPreview}` : null,
           !state.expeditionComplete && legacyCarryOverSummary

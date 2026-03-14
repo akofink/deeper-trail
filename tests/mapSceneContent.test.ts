@@ -259,6 +259,63 @@ describe('map scene content helper', () => {
     expect(pristineContent.repairHint).toBe('B: +1 HP med patch for 2 scrap.');
   });
 
+  it('previews first-arrival encounter payoffs on the selected route card', () => {
+    const state = buildRuntimeState();
+    const destination = state.sim.world.nodes.find((node) => node.id === 'n1');
+    if (!destination) {
+      throw new Error('Expected destination node');
+    }
+
+    destination.type = 'town';
+    state.sim.notebook.entries.push({
+      id: 'clue-ruin',
+      clueKey: 'ruin',
+      sourceNodeType: 'ruin',
+      sourceNodeId: 'n2',
+      dayDiscovered: 1,
+      title: 'Relay Masonry',
+      body: 'Ruin clue body'
+    });
+
+    const brokerPreview = buildMapSceneContent(state, 'n1', 7, {
+      canUseMedPatch: false,
+      medPatchHealAmount: 1,
+      medPatchScrapCost: 2,
+      hasAutoLinkScanner: false,
+      hasCompletedCurrentNode: false
+    });
+
+    expect(brokerPreview.routeDetail).toContain('First arrival: Surveyor broker: +1 free transfer.');
+
+    state.sim.notebook.discoveredClues.ruin = true;
+    state.sim.notebook.discoveredClues.nature = true;
+    state.sim.notebook.discoveredClues.anomaly = true;
+    state.sim.notebook.synthesisUnlocked = true;
+
+    const synthesisPreview = buildMapSceneContent(state, 'n1', 7, {
+      canUseMedPatch: false,
+      medPatchHealAmount: 1,
+      medPatchScrapCost: 2,
+      hasAutoLinkScanner: false,
+      hasCompletedCurrentNode: false
+    });
+
+    expect(synthesisPreview.routeDetail).toContain('First arrival:');
+    expect(synthesisPreview.routeDetail).toContain('Surveyor broker: +1 free transfer');
+    expect(synthesisPreview.routeDetail).toContain('reveal');
+
+    state.sim.exploration.visitedNodeIds.push('n1');
+    const revisited = buildMapSceneContent(state, 'n1', 7, {
+      canUseMedPatch: false,
+      medPatchHealAmount: 1,
+      medPatchScrapCost: 2,
+      hasAutoLinkScanner: false,
+      hasCompletedCurrentNode: false
+    });
+
+    expect(revisited.routeDetail).not.toContain('First arrival:');
+  });
+
   it('surfaces a pending legacy echo before the next expedition spends it', () => {
     const state = buildRuntimeState();
     state.legacyCarryOvers = [
@@ -323,6 +380,7 @@ describe('map scene content helper', () => {
       throw new Error('Expected strongest lead node');
     }
     strongestNode.type = 'nature';
+    state.sim.vehicleCondition.suspension = 1;
 
     const strongestLead = buildMapSceneContent(state, routeCase.best.nodeId, routeCase.best.distance, {
       canUseMedPatch: false,
@@ -337,6 +395,7 @@ describe('map scene content helper', () => {
     expect(strongestLead.routeDetail).toContain('suspension');
     expect(strongestLead.routeDetail).toContain('Best current lead.');
     expect(strongestLead.routeDetail).toContain('Lead route tune-up: +1 suspension condition on first arrival, else +1 scrap.');
+    expect(strongestLead.routeDetail).toContain('First arrival: Signal line holds on approach: +1 suspension condition.');
 
     const weakerLead = buildMapSceneContent(state, routeCase.weaker.nodeId, routeCase.weaker.distance, {
       canUseMedPatch: false,

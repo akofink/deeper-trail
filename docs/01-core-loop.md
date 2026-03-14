@@ -16,6 +16,7 @@ The current game should read as one loop, not separate prototype systems:
 `Map scene`
 - route choice
 - risk/reward reading
+- first-arrival encounter payoff previews
 - install and repair decisions
 - build-synergy reading on biome arrivals
 - notebook and clue payoff visibility
