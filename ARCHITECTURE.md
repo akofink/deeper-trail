@@ -36,9 +36,9 @@ tests/         # engine and runtime regressions
 ## Current runtime split
 
 - `engine/sim/*` owns deterministic rules for travel, vehicle wear/repair/install, biome exploration knowledge, run-objective rules, resource changes, share codes, and world-node lookup helpers.
-- `game/runtime/*` owns runtime-facing scene state types, initial/reset helpers, derived vehicle stats, route and notebook content assembly, HUD/card planning, debug snapshots, expedition-flow bookkeeping, and map/run scene render-plan preparation.
+- `game/runtime/*` owns runtime-facing scene state types, initial/reset helpers, browser-shell bootstrap helpers, derived vehicle stats, route and notebook content assembly, HUD/card planning, debug snapshots, expedition-flow bookkeeping, and map/run scene render-plan preparation.
 - `game/render/*` owns shared Pixi primitives, frame clearing, HUD chrome, route-board drawing, run-scene world drawing, and text/reset helpers.
-- `main.ts` still owns shell bootstrap, Pixi wiring, and scene orchestration, but ongoing work should keep pulling mixed concerns out of it.
+- `main.ts` should stay as a thin browser entrypoint that delegates Pixi/bootstrap orchestration to runtime and render helpers.
 
 ## Determinism rules
 
