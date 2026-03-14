@@ -14,9 +14,16 @@ import { currentNodeType } from '../../engine/sim/world';
 import { isInsideCanopyLift, totalCanopyLiftProgress, usesCanopyLifts } from './canopyLifts';
 import { impactPlatePrompt, totalImpactPlateProgress, usesImpactPlates } from './impactPlates';
 import type { RuntimeState } from './runtimeState';
-import { SERVICE_STOP_HOLD_SECONDS, totalServiceStopProgress, usesServiceStops } from './serviceStops';
+import { totalServiceStopProgress, usesServiceStops } from './serviceStops';
 import { canStabilizeSyncGate, totalSyncGateProgress, usesSyncGates } from './syncGates';
-import { beaconInteractRadius } from './vehicleDerivedStats';
+import {
+  beaconInteractRadius,
+  canopyLiftHoldSecondsForState,
+  impactPlateMinFallSpeedForState,
+  serviceStopHoldSecondsForState,
+  syncGateMinDashBoostForState,
+  syncGateMinSpeedForState
+} from './vehicleDerivedStats';
 
 function distanceSq(ax: number, ay: number, bx: number, by: number): number {
   const dx = ax - bx;
@@ -54,12 +61,13 @@ function serviceStopPromptText(state: RuntimeState): string | null {
 
   const px = state.player.x + state.player.w * 0.5;
   const ready = isSteadyLinkReady(Math.abs(state.player.vx), !state.player.onGround);
+  const holdSeconds = serviceStopHoldSecondsForState(state);
   for (const stop of state.serviceStops) {
     if (stop.serviced) continue;
     if (Math.abs(px - stop.x) > stop.w * 0.5) continue;
 
     return ready
-      ? `Hold steady at bay ${quantizedPercent(stop.progress, SERVICE_STOP_HOLD_SECONDS)}%`
+      ? `Hold steady at bay ${quantizedPercent(stop.progress, holdSeconds)}%`
       : !state.player.onGround
         ? 'Touch down and slow for the bay'
         : 'Ease off and settle into the bay';
@@ -79,6 +87,8 @@ function syncGatePromptText(state: RuntimeState): string | null {
     w: state.player.w,
     h: state.player.h
   };
+  const minSpeed = syncGateMinSpeedForState(state);
+  const minDashBoost = syncGateMinDashBoostForState(state);
   for (let index = 0; index < state.syncGates.length; index += 1) {
     const gate = state.syncGates[index];
     const result = canStabilizeSyncGate(
@@ -87,7 +97,9 @@ function syncGatePromptText(state: RuntimeState): string | null {
       bounds,
       Math.abs(state.player.vx),
       state.dashBoost,
-      state.elapsedSeconds
+      state.elapsedSeconds,
+      minSpeed,
+      minDashBoost
     );
 
     if (result.canStabilize) {
@@ -113,6 +125,7 @@ function canopyLiftPromptText(state: RuntimeState): string | null {
     w: state.player.w,
     h: state.player.h
   };
+  const holdSeconds = canopyLiftHoldSecondsForState(state);
   for (let index = 0; index < state.canopyLifts.length; index += 1) {
     const lift = state.canopyLifts[index];
     if (lift.charted || !isInsideCanopyLift(lift, bounds)) continue;
@@ -123,7 +136,7 @@ function canopyLiftPromptText(state: RuntimeState): string | null {
     }
 
     return !state.player.onGround
-      ? `Bloom open: stay airborne ${quantizedPercent(lift.progress, 0.6)}%`
+      ? `Bloom open: stay airborne ${quantizedPercent(lift.progress, holdSeconds)}%`
       : 'Bloom open: jump and ride the updraft';
   }
 
@@ -136,9 +149,11 @@ function impactPlatePromptText(state: RuntimeState): string | null {
   }
 
   const px = state.player.x + state.player.w * 0.5;
+  const minFallSpeed = impactPlateMinFallSpeedForState(state);
   for (const plate of state.impactPlates) {
     const prompt = impactPlatePrompt(plate, px, state.player.onGround);
-    if (prompt) return prompt;
+    if (!prompt) continue;
+    return state.sim.vehicle.frame >= 2 && state.player.onGround ? `${prompt} (${Math.round(minFallSpeed)}+ landing)` : prompt;
   }
 
   return null;

@@ -83,4 +83,15 @@ describe('canopy lift runtime rules', () => {
 
     expect(totalCanopyLiftProgress(lifts)).toEqual({ completed: 1, total: 2 });
   });
+
+  it('supports shorter chart windows for upgraded suspension', () => {
+    const lift = makeLift();
+
+    const first = updateCanopyLiftProgress(lift, 0.2, true, true, true, 0.42);
+    expect(first.completedNow).toBe(false);
+
+    const second = updateCanopyLiftProgress(lift, 0.22, true, true, true, 0.42);
+    expect(second.completedNow).toBe(true);
+    expect(lift.progress).toBeCloseTo(0.42);
+  });
 });

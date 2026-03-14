@@ -24,6 +24,7 @@ The current game should read as one loop, not separate prototype systems:
 `Run scene`
 - embodied execution
 - biome-specific verbs and timing
+- subsystem-aligned objective easing that makes matching upgrades reshape those verbs instead of only raising stats
 - hazard pressure and salvage opportunity
 - local confirmation that a route was worth taking
 

@@ -22,21 +22,22 @@ export function updateServiceStopProgress(
   stop: ServiceStop,
   dt: number,
   inZone: boolean,
-  canService: boolean
+  canService: boolean,
+  holdSeconds = SERVICE_STOP_HOLD_SECONDS
 ): { completedNow: boolean } {
   if (stop.serviced) {
-    stop.progress = SERVICE_STOP_HOLD_SECONDS;
+    stop.progress = holdSeconds;
     return { completedNow: false };
   }
 
   if (inZone && canService) {
-    stop.progress = clamp(stop.progress + dt, 0, SERVICE_STOP_HOLD_SECONDS);
+    stop.progress = clamp(stop.progress + dt, 0, holdSeconds);
   } else {
-    stop.progress = clamp(stop.progress - dt * SERVICE_STOP_DECAY_PER_SECOND, 0, SERVICE_STOP_HOLD_SECONDS);
+    stop.progress = clamp(stop.progress - dt * SERVICE_STOP_DECAY_PER_SECOND, 0, holdSeconds);
   }
 
-  if (stop.progress >= SERVICE_STOP_HOLD_SECONDS) {
-    stop.progress = SERVICE_STOP_HOLD_SECONDS;
+  if (stop.progress >= holdSeconds) {
+    stop.progress = holdSeconds;
     stop.serviced = true;
     return { completedNow: true };
   }

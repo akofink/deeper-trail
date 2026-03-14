@@ -50,21 +50,22 @@ export function updateCanopyLiftProgress(
   dt: number,
   inZone: boolean,
   isAirborne: boolean,
-  chargeWindowOpen: boolean
+  chargeWindowOpen: boolean,
+  holdSeconds = CANOPY_LIFT_HOLD_SECONDS
 ): { completedNow: boolean } {
   if (lift.charted) {
-    lift.progress = CANOPY_LIFT_HOLD_SECONDS;
+    lift.progress = holdSeconds;
     return { completedNow: false };
   }
 
   if (inZone && isAirborne && chargeWindowOpen) {
-    lift.progress = clamp(lift.progress + dt, 0, CANOPY_LIFT_HOLD_SECONDS);
+    lift.progress = clamp(lift.progress + dt, 0, holdSeconds);
   } else {
-    lift.progress = clamp(lift.progress - dt * CANOPY_LIFT_DECAY_PER_SECOND, 0, CANOPY_LIFT_HOLD_SECONDS);
+    lift.progress = clamp(lift.progress - dt * CANOPY_LIFT_DECAY_PER_SECOND, 0, holdSeconds);
   }
 
-  if (lift.progress >= CANOPY_LIFT_HOLD_SECONDS) {
-    lift.progress = CANOPY_LIFT_HOLD_SECONDS;
+  if (lift.progress >= holdSeconds) {
+    lift.progress = holdSeconds;
     lift.charted = true;
     return { completedNow: true };
   }

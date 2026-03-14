@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { collectibleMagnetRadius, collectibleMagnetSpeed, scrapGainPerCollectible } from '../src/game/runtime/vehicleDerivedStats';
+import {
+  canopyLiftHoldSecondsForState,
+  collectibleMagnetRadius,
+  collectibleMagnetSpeed,
+  impactPlateMinFallSpeedForState,
+  scrapGainPerCollectible,
+  serviceStopHoldSecondsForState,
+  syncGateMinDashBoostForState,
+  syncGateMinSpeedForState
+} from '../src/game/runtime/vehicleDerivedStats';
 import type { RuntimeState } from '../src/game/runtime/runtimeState';
 import { createInitialGameState } from '../src/game/state/gameState';
 
@@ -77,5 +86,49 @@ describe('storage-derived collectible bonuses', () => {
     state.sim.vehicle.storage = 3;
 
     expect(scrapGainPerCollectible(state)).toBe(2);
+  });
+});
+
+describe('biome objective tuning from subsystem levels', () => {
+  it('reduces the steady-hold time as engine levels increase', () => {
+    const state = buildRuntimeState();
+
+    expect(serviceStopHoldSecondsForState(state)).toBe(0.7);
+
+    state.sim.vehicle.engine = 3;
+
+    expect(serviceStopHoldSecondsForState(state)).toBeCloseTo(0.54);
+  });
+
+  it('reduces the impact slam threshold as frame levels increase', () => {
+    const state = buildRuntimeState();
+
+    expect(impactPlateMinFallSpeedForState(state)).toBe(235);
+
+    state.sim.vehicle.frame = 4;
+
+    expect(impactPlateMinFallSpeedForState(state)).toBe(175);
+  });
+
+  it('reduces the canopy hold requirement as suspension levels increase', () => {
+    const state = buildRuntimeState();
+
+    expect(canopyLiftHoldSecondsForState(state)).toBe(0.6);
+
+    state.sim.vehicle.suspension = 4;
+
+    expect(canopyLiftHoldSecondsForState(state)).toBeCloseTo(0.42);
+  });
+
+  it('reduces sync-gate speed and boost thresholds as shielding levels increase', () => {
+    const state = buildRuntimeState();
+
+    expect(syncGateMinSpeedForState(state)).toBe(210);
+    expect(syncGateMinDashBoostForState(state)).toBe(0.18);
+
+    state.sim.vehicle.shielding = 4;
+
+    expect(syncGateMinSpeedForState(state)).toBe(165);
+    expect(syncGateMinDashBoostForState(state)).toBeCloseTo(0.09);
   });
 });

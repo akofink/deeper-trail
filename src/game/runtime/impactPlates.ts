@@ -21,13 +21,14 @@ export function canShatterImpactPlate(
   plate: ImpactPlate,
   playerCenterX: number,
   landingSpeed: number,
-  landedThisFrame: boolean
+  landedThisFrame: boolean,
+  minFallSpeed = IMPACT_PLATE_MIN_FALL_SPEED
 ): boolean {
   if (plate.shattered || !landedThisFrame) {
     return false;
   }
 
-  return isWithinImpactPlate(plate, playerCenterX) && landingSpeed >= IMPACT_PLATE_MIN_FALL_SPEED;
+  return isWithinImpactPlate(plate, playerCenterX) && landingSpeed >= minFallSpeed;
 }
 
 export function impactPlatePrompt(plate: ImpactPlate, playerCenterX: number, playerOnGround: boolean): string | null {

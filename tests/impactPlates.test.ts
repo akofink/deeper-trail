@@ -47,4 +47,11 @@ describe('impact plate runtime rules', () => {
 
     expect(totalImpactPlateProgress(plates)).toEqual({ completed: 1, total: 2 });
   });
+
+  it('allows upgraded frames to shatter on a lower landing threshold', () => {
+    const plate = makePlate();
+
+    expect(canShatterImpactPlate(plate, 620, 190, true, 175)).toBe(true);
+    expect(canShatterImpactPlate(plate, 620, 190, true, 200)).toBe(false);
+  });
 });

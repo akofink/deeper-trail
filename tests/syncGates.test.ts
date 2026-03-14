@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { canStabilizeSyncGate, syncGateReady, totalSyncGateProgress, usesSyncGates } from '../src/game/runtime/syncGates';
+import {
+  canStabilizeSyncGate,
+  syncGateReady,
+  syncGateReadyWithThresholds,
+  totalSyncGateProgress,
+  usesSyncGates
+} from '../src/game/runtime/syncGates';
 import type { SyncGate } from '../src/game/state/runObjectives';
 
 function makeGate(): SyncGate {
@@ -53,5 +59,16 @@ describe('sync gate runtime rules', () => {
     ];
 
     expect(totalSyncGateProgress(gates)).toEqual({ completed: 1, total: 2 });
+  });
+
+  it('accepts lower shielding-tuned thresholds when passed in', () => {
+    const gate = makeGate();
+    const bounds = { x: 680, y: 270, w: 40, h: 44 };
+
+    expect(syncGateReadyWithThresholds(170, 0.08, 165, 0.09)).toBe(true);
+    expect(syncGateReadyWithThresholds(150, 0.08, 165, 0.09)).toBe(false);
+
+    const tunedWindow = canStabilizeSyncGate(gate, 0, bounds, 170, 0.08, 0.1, 165, 0.09);
+    expect(tunedWindow.canStabilize).toBe(true);
   });
 });

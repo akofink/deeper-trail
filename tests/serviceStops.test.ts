@@ -50,4 +50,15 @@ describe('service stop runtime rules', () => {
 
     expect(totalServiceStopProgress(stops)).toEqual({ completed: 1, total: 2 });
   });
+
+  it('supports shorter hold targets for upgraded engines', () => {
+    const stop = makeStop();
+
+    const first = updateServiceStopProgress(stop, 0.25, true, true, 0.46);
+    expect(first.completedNow).toBe(false);
+
+    const second = updateServiceStopProgress(stop, 0.22, true, true, 0.46);
+    expect(second.completedNow).toBe(true);
+    expect(stop.progress).toBeCloseTo(0.46);
+  });
 });
