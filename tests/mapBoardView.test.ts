@@ -177,6 +177,38 @@ describe('mapBoardView', () => {
     expect(node?.intelMarkers[2]?.subsystem).toBe('shielding');
   });
 
+  it('marks unvisited connected routes that have deterministic first-arrival encounter payoffs', () => {
+    const state = buildRuntimeState();
+    state.sim.notebook.entries.push({
+      id: 'clue-ruin',
+      clueKey: 'ruin',
+      sourceNodeType: 'ruin',
+      sourceNodeId: 'n2',
+      dayDiscovered: 1,
+      title: 'Relay Masonry',
+      body: 'Ruin clue body'
+    });
+
+    const destination = connectedNeighbors(state.sim)
+      .map((neighbor) => state.sim.world.nodes.find((node) => node.id === neighbor.nodeId) ?? null)
+      .find((node): node is NonNullable<typeof node> => node !== null);
+    if (!destination) {
+      throw new Error('Expected connected destination');
+    }
+    destination.type = 'town';
+
+    let view = buildMapBoardView(state, 1280, 720, 110);
+    let node = view.nodes.find((entry) => entry.id === destination.id);
+
+    expect(node?.intelMarkers.map((marker) => marker.fill)).toContain('#f472b6');
+
+    state.sim.exploration.visitedNodeIds.push(destination.id);
+    view = buildMapBoardView(state, 1280, 720, 110);
+    node = view.nodes.find((entry) => entry.id === destination.id);
+
+    expect(node?.intelMarkers.map((marker) => marker.fill)).not.toContain('#f472b6');
+  });
+
   it('marks synthesized strongest-lead neighbors directly on the board', () => {
     const state = buildRuntimeState();
     state.sim.notebook.discoveredClues.ruin = true;

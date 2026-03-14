@@ -1,10 +1,11 @@
 import { connectedNeighbors } from '../../engine/sim/world';
-import { biomeRiskDescriptor, visibleBiomeKnowledge } from '../../engine/sim/exploration';
+import { asNodeTypeKey, biomeRiskDescriptor, visibleBiomeKnowledge } from '../../engine/sim/exploration';
 import { notebookSignalRouteIntel } from '../../engine/sim/notebook';
 import { mapNodePalette } from './runLayout';
 import type { RuntimeState } from './runtimeState';
 import { projectMapPoint } from './mapProjection';
 import { buildSceneActionChipRow, type SceneActionChip } from './sceneActionChips';
+import { previewArrivalEncounter } from './arrivalEncounters';
 
 export interface MapBoardPoint {
   x: number;
@@ -106,11 +107,28 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-function buildNodeIntelMarkers(radius: number, nodeType: string, state: RuntimeState): MapBoardNodeIntelMarker[] {
+function buildNodeIntelMarkers(
+  radius: number,
+  nodeId: string,
+  nodeType: string,
+  state: RuntimeState,
+  options: {
+    connectedNodeIds: ReadonlySet<string>;
+    bestLeadNodeIds: ReadonlySet<string>;
+  }
+): MapBoardNodeIntelMarker[] {
   const knowledge = visibleBiomeKnowledge(state.sim, nodeType);
   const orbit = radius + 5;
   const markerRadius = Math.max(2.5, Math.min(4.5, radius * 0.28));
   const markers: MapBoardNodeIntelMarker[] = [];
+  const isConnected = options.connectedNodeIds.has(nodeId);
+  const firstVisit = !state.sim.exploration.visitedNodeIds.includes(nodeId);
+  const arrivalEncounter =
+    isConnected && firstVisit
+      ? previewArrivalEncounter(state, asNodeTypeKey(nodeType), true, {
+          arrivedViaBestLeadRoute: options.bestLeadNodeIds.has(nodeId)
+        })
+      : null;
 
   if (knowledge.benefitKnown) {
     markers.push({ fill: '#34d399', radius: markerRadius, subsystem: null, xOffset: -orbit * 0.72, yOffset: -orbit * 0.68 });
@@ -121,6 +139,9 @@ function buildNodeIntelMarkers(radius: number, nodeType: string, state: RuntimeS
   if (knowledge.riskKnown) {
     const risk = biomeRiskDescriptor(nodeType as Parameters<typeof biomeRiskDescriptor>[0]);
     markers.push({ fill: risk.markerColor, radius: markerRadius, subsystem: risk.subsystem, xOffset: 0, yOffset: orbit * 0.9 });
+  }
+  if (arrivalEncounter?.summary) {
+    markers.push({ fill: '#f472b6', radius: markerRadius, subsystem: null, xOffset: orbit * 0.86, yOffset: orbit * 0.3 });
   }
 
   return markers;
@@ -146,6 +167,7 @@ export function buildMapBoardView(
   const selectedOption = options[state.mapSelectionIndex] ?? null;
   const selectedNodeId = selectedOption?.nodeId ?? null;
   const nodeById = new Map(state.sim.world.nodes.map((node) => [node.id, node] as const));
+  const connectedNodeIds = new Set(options.map((option) => option.nodeId));
   const signalEdgeStyles = new Map(options.map((option) => [option.nodeId, signalEdgeStyle(state, option.nodeId)] as const));
   const bestLeadNodeIds = new Set(
     options
@@ -208,7 +230,7 @@ export function buildMapBoardView(
         goal,
         id: node.id,
         innerDot: visited && !current,
-        intelMarkers: buildNodeIntelMarkers(radius, node.type, state),
+        intelMarkers: buildNodeIntelMarkers(radius, node.id, node.type, state, { connectedNodeIds, bestLeadNodeIds }),
         outline: completed,
         paletteLabel: palette.label,
         radius,
