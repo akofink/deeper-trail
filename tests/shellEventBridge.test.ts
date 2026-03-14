@@ -110,4 +110,43 @@ describe('shellEventBridge', () => {
     bridge.onResize();
     expect(state.groundY).toBe(expectedGroundY);
   });
+
+  it('does not unlock map route repeat while the opposite vertical arrow is still held', () => {
+    let state = createInitialRuntimeState(720, 'bridge-map-vertical-latch');
+    state.scene = 'map';
+    state.completedNodeIds.push(state.sim.currentNodeId);
+
+    const branchingNode = state.sim.world.nodes.find((node) => {
+      state.sim.currentNodeId = node.id;
+      return connectedNeighbors(state.sim).length > 1;
+    });
+    expect(branchingNode).toBeDefined();
+    if (!branchingNode) {
+      throw new Error('Expected branching node');
+    }
+    state.sim.currentNodeId = branchingNode.id;
+
+    const bridge = createShellEventBridge({
+      createSeed: () => 'unused',
+      getCanvasHeight: () => 720,
+      getState: () => state,
+      setState: (nextState) => {
+        state = nextState;
+      }
+    });
+
+    bridge.onKeyDown('ArrowDown');
+    const firstSelection = state.mapSelectionIndex;
+
+    bridge.onKeyDown('ArrowUp');
+    expect(state.mapSelectionIndex).toBe(firstSelection);
+
+    bridge.onKeyUp('ArrowUp');
+    bridge.onKeyDown('ArrowDown');
+    expect(state.mapSelectionIndex).toBe(firstSelection);
+
+    bridge.onKeyUp('ArrowDown');
+    bridge.onKeyDown('ArrowDown');
+    expect(state.mapSelectionIndex).toBe((firstSelection + 1) % connectedNeighbors(state.sim).length);
+  });
 });

@@ -30,6 +30,10 @@ export interface ShellKeyUpResult {
   previousMapNavigate: boolean;
 }
 
+export interface ShellKeyUpOptions {
+  hasHeldMapNavigationKey?: boolean;
+}
+
 export function handleShellKeyDown(state: RuntimeState, code: string, options: ShellKeyDownOptions): ShellKeyDownResult {
   if (code === 'KeyF') {
     return {
@@ -181,9 +185,9 @@ export function handleShellKeyDown(state: RuntimeState, code: string, options: S
   };
 }
 
-export function handleShellKeyUp(code: string, previousMapNavigate: boolean): ShellKeyUpResult {
+export function handleShellKeyUp(code: string, previousMapNavigate: boolean, options: ShellKeyUpOptions = {}): ShellKeyUpResult {
   if (code === 'ArrowUp' || code === 'ArrowDown') {
-    return { previousMapNavigate: false };
+    return { previousMapNavigate: options.hasHeldMapNavigationKey ?? false };
   }
 
   return { previousMapNavigate };
