@@ -1,3 +1,7 @@
+- Post-goal travel telemetry pass:
+  - Updated `src/game/runtime/mapSceneFlow.ts` so `lastTravel.freeTravelChargesAfter` now stays aligned with the real runtime credit count after a post-goal afterglow hook mutates free-travel charges.
+  - Expanded `tests/mapSceneFlow.test.ts` with a relay-credit regression that covers post-goal travel, afterglow messaging, and aligned travel telemetry.
+
 - Browser-shell renderer helper pass:
   - Added `src/game/runtime/browserShellRenderer.ts` so browser-shell render module loading, Pixi app dependency shaping, and scene-render callback binding now live behind one focused runtime helper instead of staying embedded in `src/game/runtime/browserShellBootstrap.ts`.
   - Updated `src/game/runtime/browserShellBootstrap.ts` to consume the new renderer helper and keep bootstrap focused on app creation plus runtime-controller wiring.

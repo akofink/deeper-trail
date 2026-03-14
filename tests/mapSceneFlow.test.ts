@@ -103,6 +103,31 @@ describe('map scene flow helpers', () => {
     expect(state.sim.scrap).toBeGreaterThanOrEqual(2);
   });
 
+  it('keeps last-travel credit telemetry aligned after a post-goal relay-credit hook refunds travel', () => {
+    const state = createInitialRuntimeState(720, 'map-scene-post-goal-relay-credit');
+    state.scene = 'map';
+    state.expeditionComplete = true;
+    state.postGoalRouteHookType = 'relay-credit';
+    state.postGoalRouteHookCharges = 2;
+    state.postGoalRouteHookNote = 'Afterglow hook: each post-goal route grants +1 free travel credit.';
+    state.freeTravelCharges = 1;
+
+    const options = connectedNeighbors(state.sim);
+    expect(options.length).toBeGreaterThan(0);
+
+    tryTravelSelectedNode(state);
+
+    expect(state.scene).toBe('run');
+    expect(state.freeTravelCharges).toBe(1);
+    expect(state.postGoalRouteHookCharges).toBe(1);
+    expect(state.mapMessage).toContain('Afterglow: relay lattice grants +1 free travel credit');
+    expect(state.lastTravel).toMatchObject({
+      usedFreeTravel: true,
+      freeTravelChargesBefore: 1,
+      freeTravelChargesAfter: 1
+    });
+  });
+
   it('consumes a pending legacy echo on the first new-expedition travel after arrival rewards', () => {
     const state = createInitialRuntimeState(720, 'map-scene-legacy-travel', [
       {

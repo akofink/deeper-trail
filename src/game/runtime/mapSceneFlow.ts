@@ -94,6 +94,9 @@ export function tryTravelSelectedNode(state: RuntimeState): void {
   if (state.expeditionComplete) {
     const hookMessage = applyGoalSignalPostGoalRouteHook(state);
     if (hookMessage) {
+      if (state.lastTravel) {
+        state.lastTravel.freeTravelChargesAfter = state.freeTravelCharges;
+      }
       state.mapMessage = `${state.mapMessage} ${hookMessage}`.trim();
       state.mapMessageTimer = 4;
     }
