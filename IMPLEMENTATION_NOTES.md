@@ -57,6 +57,7 @@
 
 - `main.ts` is now just the browser entrypoint. Browser-shell session/bootstrap ownership should stay in focused helpers under `src/game/runtime/*`, while runtime state types, deterministic run layout data, and derived vehicle stat formulas continue living in `src/game/runtime/*` or `src/engine/sim/*` instead of drifting back into the entry shell.
 - Browser-shell stage-surface and `SceneRendererContext` allocation should stay behind focused app/context factories in `src/game/runtime/*` so Pixi object assembly remains testable without re-expanding the entry shell or bootstrap wrapper.
+- Browser-shell module loading, app creation, renderer binding, and runtime-controller assembly should stay behind a dedicated bootstrap-session helper in `src/game/runtime/*` so the public entrypoint only triggers the session and initial draw.
 - Initial runtime-state construction, per-node run reset, med-patch rules, and resize-driven run-scene vertical shifts now belong in `game/runtime/runtimeState.ts` so they can be regression-tested without booting Pixi.
 - Node-completion and post-travel side effects now belong in dedicated runtime helpers (`game/runtime/expeditionFlow.ts`) so the full core loop can be regression-tested without driving the Pixi shell.
 - Synthesized goal-signal aftermath hooks now also route through runtime helpers (`goalSignal.ts`, `expeditionFlow.ts`, `mapSceneFlow.ts`) so post-goal branching consequences remain deterministic and testable without Pixi.

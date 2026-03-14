@@ -1,22 +1,13 @@
-import { createBrowserShellApp } from './browserShellApp';
 import {
-  createBrowserShellAppDependencies,
-  createBrowserShellRendererBindings,
-  loadBrowserShellRendererModules,
-  type BrowserShellRendererModules
-} from './browserShellRenderer';
-import {
-  createBrowserShellRuntimeController,
+  createBrowserShellBootstrapSession,
+  type BrowserShellBootstrapSessionDependencies,
+  type BrowserShellBootstrapSessionResult,
   type BrowserDocumentHost,
-  type BrowserShellHost,
-  type BrowserShellRuntimeController
-} from './browserShellRuntime';
+  type BrowserShellHost
+} from './browserShellBootstrapSession';
 
-export interface BrowserShellBootstrapDependencies {
-  readonly createApp?: typeof createBrowserShellApp;
-  readonly createRuntimeController?: typeof createBrowserShellRuntimeController;
-  readonly createRendererBindings?: typeof createBrowserShellRendererBindings;
-  readonly loadModules?: () => Promise<BrowserShellRendererModules>;
+export interface BrowserShellBootstrapDependencies extends BrowserShellBootstrapSessionDependencies {
+  readonly createBrowserShellBootstrapSession?: typeof createBrowserShellBootstrapSession;
 }
 
 export async function bootstrapBrowserShell(
@@ -24,29 +15,24 @@ export async function bootstrapBrowserShell(
   documentHost: BrowserDocumentHost = document,
   dependencies: BrowserShellBootstrapDependencies = {}
 ): Promise<void> {
-  const createApp = dependencies.createApp ?? createBrowserShellApp;
-  const createRuntimeController = dependencies.createRuntimeController ?? createBrowserShellRuntimeController;
-  const createRendererBindings = dependencies.createRendererBindings ?? createBrowserShellRendererBindings;
-  const modules = await (dependencies.loadModules ?? loadBrowserShellRendererModules)();
-
-  const { app, sceneRendererContext, screenHeight, screenWidth } = await createApp(
+  const createSession = dependencies.createBrowserShellBootstrapSession ?? createBrowserShellBootstrapSession;
+  const sessionDependencies: BrowserShellBootstrapSessionDependencies = {
+    createApp: dependencies.createApp,
+    createRendererBindings: dependencies.createRendererBindings,
+    createRuntimeController: dependencies.createRuntimeController,
+    loadModules: dependencies.loadModules
+  };
+  const { runtime } = await createSession(
     shellWindow,
     documentHost,
-    createBrowserShellAppDependencies(modules)
-  );
-  const rendererBindings = createRendererBindings(modules, sceneRendererContext);
-
-  const runtime = createRuntimeController({
-    app,
-    documentHost,
-    renderMapScene: rendererBindings.renderMapScene,
-    renderRunScene: rendererBindings.renderRunScene,
-    screenHeight,
-    screenWidth,
-    shellWindow
-  });
+    sessionDependencies
+  ) as BrowserShellBootstrapSessionResult;
 
   runtime.drawInitialScene();
 }
 
-export type { BrowserDocumentHost, BrowserShellHost, BrowserShellRuntimeController };
+export type {
+  BrowserDocumentHost,
+  BrowserShellHost,
+  BrowserShellRuntimeController
+} from './browserShellBootstrapSession';

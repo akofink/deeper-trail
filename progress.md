@@ -1,3 +1,8 @@
+- Browser-shell bootstrap-session extraction pass:
+  - Added `src/game/runtime/browserShellBootstrapSession.ts` so module loading, Pixi app creation, scene-renderer binding, and runtime-controller assembly now live behind one focused bootstrap-session helper instead of staying inline in `src/game/runtime/browserShellBootstrap.ts`.
+  - Updated `src/game/runtime/browserShellBootstrap.ts` to stay as the thin public entrypoint that creates the session and draws the initial scene.
+  - Added `tests/browserShellBootstrapSession.test.ts`, refreshed `tests/browserShellBootstrap.test.ts`, and updated `README.md`, `ARCHITECTURE.md`, `docs/README.md`, and `IMPLEMENTATION_NOTES.md` so the docs describe the new bootstrap-session seam.
+
 - Browser-shell scene-renderer-context factory pass:
   - Added `src/game/runtime/browserShellSceneRendererContext.ts` so browser-shell stage graphics, shared text-node allocation, and `SceneRendererContext` assembly now live behind one focused helper instead of staying embedded in `src/game/runtime/browserShellApp.ts`.
   - Updated `src/game/runtime/browserShellApp.ts` to keep Pixi app init, DOM mount, and ticker setup local while delegating scene-renderer context creation to the new helper.
