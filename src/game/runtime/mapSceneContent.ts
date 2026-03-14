@@ -55,6 +55,9 @@ export function buildMapSceneContent(
           selectedRouteKnowledge.objectiveKnown ? getObjectiveSummary(selectedNode.type) : 'Objective pattern ?',
           signalIntel.routeHint ?? 'Signal triangulation offline.',
           goalPrimerNote,
+          !state.expeditionComplete && state.legacyCarryOverType
+            ? `Legacy echo armed: ${state.legacyCarryOverNote ?? 'carry-over route hook ready'}`
+            : null,
           state.expeditionComplete && (state.postGoalRouteHookCharges ?? 0) > 0
             ? `Afterglow ${state.postGoalRouteHookCharges}x: ${state.postGoalRouteHookNote ?? 'follow-on route hook active'}`
             : null
@@ -104,6 +107,10 @@ export function buildMapSceneContent(
     fieldNotes.push('');
     fieldNotes.push(`AFTERGLOW ${state.postGoalRouteHookCharges}x`);
     fieldNotes.push(state.postGoalRouteHookNote ?? 'Decoded source aftermath remains active.');
+  } else if (state.legacyCarryOverType) {
+    fieldNotes.push('');
+    fieldNotes.push('LEGACY ECHO READY');
+    fieldNotes.push(state.legacyCarryOverNote ?? 'Decoded source aftermath is queued for the next route.');
   }
 
   return {

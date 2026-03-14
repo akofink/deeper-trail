@@ -96,6 +96,36 @@ describe('map scene flow helpers', () => {
     expect(state.sim.scrap).toBeGreaterThanOrEqual(2);
   });
 
+  it('consumes a pending legacy echo on the first new-expedition travel after arrival rewards', () => {
+    const state = createInitialRuntimeState(720, 'map-scene-legacy-travel', {
+      type: 'quiet-heal',
+      note: 'Legacy echo: quiet crossing restores +1 hull on the next route.',
+      sourceTitle: 'Quiet Phase Garden'
+    });
+    state.scene = 'map';
+    state.health = 2;
+
+    const completion = findNode(state.sim, state.sim.currentNodeId);
+    expect(completion).toBeDefined();
+    if (!completion) {
+      throw new Error('Expected current node');
+    }
+    completion.type = 'town';
+    state.completedNodeIds.push(state.sim.currentNodeId);
+
+    const options = connectedNeighbors(state.sim);
+    expect(options.length).toBeGreaterThan(0);
+
+    tryTravelSelectedNode(state);
+
+    expect(state.scene).toBe('run');
+    expect(state.health).toBe(3);
+    expect(state.mapMessage).toContain('Legacy echo Quiet Phase Garden: quiet crossing restores +1 hull.');
+    expect(state.legacyCarryOverType).toBeNull();
+    expect(state.legacyCarryOverNote).toBe('');
+    expect(state.legacyCarryOverSourceTitle).toBe('');
+  });
+
   it('repairs damaged subsystems and falls back to a med patch when the vehicle is already repaired', () => {
     const state = createInitialRuntimeState(720, 'map-scene-repair');
     state.scene = 'map';

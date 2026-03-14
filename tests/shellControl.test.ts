@@ -42,6 +42,57 @@ describe('shellControl helpers', () => {
     expect(result.previousMapNavigate).toBe(false);
   });
 
+  it('carries the completed expedition aftermath into the next seeded world as a pending legacy echo', () => {
+    const state = createInitialRuntimeState(720, 'shell-legacy-source');
+    state.scene = 'map';
+    state.expeditionComplete = true;
+    state.postGoalRouteHookType = 'salvage-echo';
+    state.postGoalRouteHookNote = 'Afterglow hook: each post-goal route yields +2 salvage.';
+    state.legacyCarryOverType = null;
+    state.sim.notebook.entries.push(
+      {
+        id: 'clue-nature',
+        clueKey: 'nature',
+        sourceNodeType: 'nature',
+        sourceNodeId: 'n1',
+        dayDiscovered: 1,
+        title: 'Nature',
+        body: 'Nature'
+      },
+      {
+        id: 'clue-ruin',
+        clueKey: 'ruin',
+        sourceNodeType: 'ruin',
+        sourceNodeId: 'n2',
+        dayDiscovered: 2,
+        title: 'Ruin',
+        body: 'Ruin'
+      },
+      {
+        id: 'clue-anomaly',
+        clueKey: 'anomaly',
+        sourceNodeType: 'anomaly',
+        sourceNodeId: 'n3',
+        dayDiscovered: 3,
+        title: 'Anomaly',
+        body: 'Anomaly'
+      }
+    );
+    state.sim.notebook.synthesisUnlocked = true;
+    state.sim.currentNodeId = state.expeditionGoalNodeId;
+
+    const result = handleShellKeyDown(state, 'KeyN', {
+      canvasHeight: 720,
+      createSeed: () => 'shell-legacy-next',
+      previousMapNavigate: false
+    });
+
+    expect(result.nextState.seed).toBe('shell-legacy-next');
+    expect(result.nextState.legacyCarryOverType).toBe('salvage-echo');
+    expect(result.nextState.legacyCarryOverNote).toContain('post-goal route yields +2 salvage');
+    expect(result.nextState.legacyCarryOverSourceTitle).toBe('Echo Salvage Orchard');
+  });
+
   it('restarts lost runs with a fresh state and resets won runs in place', () => {
     const lostState = createInitialRuntimeState(720, 'shell-lost');
     lostState.mode = 'lost';

@@ -79,5 +79,6 @@ Use a “mystery graph”:
   - each source-signature ending now also carries a distinct discovery beat about what the player actually finds at the signal source, so the clue-order payoff changes the resolved encounter and not only the approach modifiers,
   - the ending now also carries a short signature-specific epilogue line so the expedition resolves as a distinct outcome, not just a distinct approach mutation,
   - finishing the goal now also unlocks two deterministic post-goal route hooks whose effect depends on the decoded source signature (for example extra salvage echoes, fuel reserves, or shield re-prime), so clue order influences follow-on play and not only the final overlay text,
+  - starting a fresh seeded world after a completed expedition now carries one pending legacy echo from that decoded source signature into the next expedition's first outbound route, so the previous ending leaves a small mechanical residue instead of resetting to pure amnesia,
   - the goal encounter is still deterministic and replayable: the same clue order produces the same source signature every run.
 - The current notebook is still intentionally lightweight: it is a discovery layer and route-intel aid, not yet a full branching puzzle graph.

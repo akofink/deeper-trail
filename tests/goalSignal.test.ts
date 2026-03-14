@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  applyLegacyCarryOver,
   applyGoalSignalEncounterBonus,
   applyGoalSignalPostGoalRouteHook,
   applyGoalSignalPrimer,
   applyGoalSignalRunBonus,
+  buildLegacyCarryOver,
   goalSignalEndingSummary,
   goalSignalProfile,
   goalSignalPrimerNote,
@@ -272,5 +274,33 @@ describe('goal signal primer helpers', () => {
     expect(message).toContain('Afterglow');
     expect(state.sim.scrap).toBe(3);
     expect(state.postGoalRouteHookCharges).toBe(1);
+  });
+
+  it('builds a legacy carry-over from a completed expedition and consumes it on the next route', () => {
+    const completedState = synthesizeGoalState(['nature', 'ruin', 'anomaly']);
+    completedState.expeditionComplete = true;
+    completedState.postGoalRouteHookType = 'salvage-echo';
+    completedState.postGoalRouteHookNote = 'Afterglow hook: each post-goal route yields +2 salvage.';
+
+    const carryOver = buildLegacyCarryOver(completedState);
+
+    expect(carryOver).toEqual({
+      type: 'salvage-echo',
+      note: 'Afterglow hook: each post-goal route yields +2 salvage.',
+      sourceTitle: 'Echo Salvage Orchard'
+    });
+
+    const nextState = buildRuntimeState();
+    nextState.legacyCarryOverType = carryOver?.type ?? null;
+    nextState.legacyCarryOverNote = carryOver?.note ?? '';
+    nextState.legacyCarryOverSourceTitle = carryOver?.sourceTitle ?? '';
+
+    const message = applyLegacyCarryOver(nextState);
+
+    expect(message).toBe('Legacy echo Echo Salvage Orchard: salvage echo recovered +2 scrap.');
+    expect(nextState.sim.scrap).toBe(2);
+    expect(nextState.legacyCarryOverType).toBeNull();
+    expect(nextState.legacyCarryOverNote).toBe('');
+    expect(nextState.legacyCarryOverSourceTitle).toBe('');
   });
 });

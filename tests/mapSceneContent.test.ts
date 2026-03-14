@@ -176,6 +176,25 @@ describe('map scene content helper', () => {
     expect(content.fieldNotes.join('\n')).toContain('post-goal route yields +2 salvage');
   });
 
+  it('surfaces a pending legacy echo before the next expedition spends it', () => {
+    const state = buildRuntimeState();
+    state.legacyCarryOverType = 'breach-fuel';
+    state.legacyCarryOverNote = 'Legacy echo: breach reservoir restores +4 fuel on the next route.';
+    state.legacyCarryOverSourceTitle = 'Breached Entry Core';
+
+    const content = buildMapSceneContent(state, 'n1', 7, {
+      canUseMedPatch: false,
+      medPatchHealAmount: 1,
+      medPatchScrapCost: 2,
+      hasAutoLinkScanner: false,
+      hasCompletedCurrentNode: true
+    });
+
+    expect(content.routeDetail).toContain('Legacy echo armed: Legacy echo: breach reservoir restores +4 fuel on the next route.');
+    expect(content.fieldNotes.join('\n')).toContain('LEGACY ECHO READY');
+    expect(content.fieldNotes.join('\n')).toContain('breach reservoir restores +4 fuel');
+  });
+
   it('uses persisted biome objective intel even before scanner upgrades or a direct visit', () => {
     const state = buildRuntimeState();
     state.sim.vehicle.scanner = 1;
