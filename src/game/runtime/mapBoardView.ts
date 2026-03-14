@@ -1,5 +1,5 @@
 import { connectedNeighbors } from '../../engine/sim/world';
-import { visibleBiomeKnowledge } from '../../engine/sim/exploration';
+import { biomeRiskDescriptor, visibleBiomeKnowledge } from '../../engine/sim/exploration';
 import { notebookSignalRouteIntel } from '../../engine/sim/notebook';
 import { mapNodePalette } from './runLayout';
 import type { RuntimeState } from './runtimeState';
@@ -47,6 +47,7 @@ export interface MapBoardNodeView {
 export interface MapBoardNodeIntelMarker {
   fill: string;
   radius: number;
+  subsystem: string | null;
   xOffset: number;
   yOffset: number;
 }
@@ -68,13 +69,14 @@ function buildNodeIntelMarkers(radius: number, nodeType: string, state: RuntimeS
   const markers: MapBoardNodeIntelMarker[] = [];
 
   if (knowledge.benefitKnown) {
-    markers.push({ fill: '#34d399', radius: markerRadius, xOffset: -orbit * 0.72, yOffset: -orbit * 0.68 });
+    markers.push({ fill: '#34d399', radius: markerRadius, subsystem: null, xOffset: -orbit * 0.72, yOffset: -orbit * 0.68 });
   }
   if (knowledge.objectiveKnown) {
-    markers.push({ fill: '#fbbf24', radius: markerRadius, xOffset: orbit * 0.72, yOffset: -orbit * 0.68 });
+    markers.push({ fill: '#fbbf24', radius: markerRadius, subsystem: null, xOffset: orbit * 0.72, yOffset: -orbit * 0.68 });
   }
   if (knowledge.riskKnown) {
-    markers.push({ fill: '#fb7185', radius: markerRadius, xOffset: 0, yOffset: orbit * 0.9 });
+    const risk = biomeRiskDescriptor(nodeType as Parameters<typeof biomeRiskDescriptor>[0]);
+    markers.push({ fill: risk.markerColor, radius: markerRadius, subsystem: risk.subsystem, xOffset: 0, yOffset: orbit * 0.9 });
   }
 
   return markers;

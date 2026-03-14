@@ -1,7 +1,7 @@
 import {
   asNodeTypeKey,
   biomeBenefitLabel,
-  biomeRiskLabel,
+  biomeRiskDescriptor,
   visibleBiomeKnowledge,
   visibleBiomeKnowledgeWithSignalIntel
 } from '../../engine/sim/exploration';
@@ -56,6 +56,7 @@ export function buildMapSceneContent(
   const signalIntel = notebookSignalRouteIntel(state.sim, state.expeditionGoalNodeId, selectedNodeId);
   const goalPrimerNote = goalSignalPrimerNote(selectedNodeId, state);
   const selectedRouteKnowledge = visibleBiomeKnowledgeWithSignalIntel(state.sim, selectedNodeType, signalIntel);
+  const selectedRiskDescriptor = biomeRiskDescriptor(selectedNodeType);
   const arrivalEncounterPreview =
     selectedNode && selectedNodeId
       ? previewArrivalEncounter(state, selectedNodeType, !state.sim.exploration.visitedNodeIds.includes(selectedNodeId), {
@@ -83,8 +84,9 @@ export function buildMapSceneContent(
           `${selectedNode.id}  ${mapNodePalette(selectedNode.type).label}${selectedNode.id === state.expeditionGoalNodeId ? '  SIGNAL' : ''}`,
           `dist ${selectedDistance}  fuel ${selectedDistance}`,
           `${selectedRouteKnowledge.benefitKnown ? biomeBenefitLabel(selectedNodeType).replace(' on arrival', '') : 'benefit ?'} / ${
-            selectedRouteKnowledge.riskKnown ? biomeRiskLabel(selectedNodeType).replace('Hazards strain ', '') : 'risk ?'
+            selectedRouteKnowledge.riskKnown ? selectedRiskDescriptor.shortLabel : 'risk ?'
           }`,
+          selectedRouteKnowledge.riskKnown ? selectedRiskDescriptor.preview : null,
           selectedSiteBonus
             ? `${selectedSiteBonus.active ? 'Site synergy ready' : 'Site synergy locked'}: ${selectedSiteBonus.subsystem} lv${
                 selectedSiteBonus.requiredLevel
@@ -144,10 +146,11 @@ export function buildMapSceneContent(
   for (const type of ['town', 'ruin', 'nature', 'anomaly'] as const) {
     const knowledge = state.sim.exploration.biomeKnowledge[type];
     const visibleKnowledge = visibleBiomeKnowledge(state.sim, type);
+    const riskDescriptor = biomeRiskDescriptor(type);
     const name = mapNodePalette(type).label.padEnd(6, ' ');
     const benefit = visibleKnowledge.benefitKnown ? biomeBenefitLabel(type).replace(' on arrival', '') : '+?';
     const objective = visibleKnowledge.objectiveKnown ? getObjectiveSummary(type) : 'pattern ?';
-    const risk = visibleKnowledge.riskKnown ? biomeRiskLabel(type).replace('Hazards strain ', '') : '?';
+    const risk = visibleKnowledge.riskKnown ? riskDescriptor.shortLabel : '?';
     fieldNotes.push(`${name} ${knowledge.visits}x  ${benefit}  /  ${objective}  /  ${risk}`);
   }
   fieldNotes.push('');

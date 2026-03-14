@@ -399,6 +399,8 @@ describe('map scene content helper', () => {
     expect(content.routeDetail).toContain('Boost-sync relays + sync gates');
     expect(content.routeDetail).not.toContain('Objective pattern ?');
     expect(content.routeDetail).not.toContain('benefit ? / risk ?');
+    expect(content.routeDetail).toContain('shielding strain');
+    expect(content.routeDetail).toContain('Hazard preview: sync fields and pulse shards strain shielding.');
   });
 
   it('lets notebook synthesis decode the strongest connected lead before scanner unlocks it', () => {

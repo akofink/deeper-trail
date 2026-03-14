@@ -99,6 +99,7 @@ describe('mapBoardView', () => {
     expect(selectedNode?.starRadius).toBeGreaterThan(0);
     expect(selectedNode?.intelMarkers).toHaveLength(1);
     expect(selectedNode?.intelMarkers[0]?.fill).toBe('#34d399');
+    expect(selectedNode?.intelMarkers[0]?.subsystem).toBeNull();
   });
 
   it('writes scanner knowledge tiers back into node intel markers', () => {
@@ -125,7 +126,8 @@ describe('mapBoardView', () => {
     state.sim.vehicle.scanner = 4;
     view = buildMapBoardView(state, 1280, 720, 110);
     node = view.nodes.find((entry) => entry.id === candidate.id);
-    expect(node?.intelMarkers.map((marker) => marker.fill)).toEqual(['#34d399', '#fbbf24', '#fb7185']);
+    expect(node?.intelMarkers.map((marker) => marker.fill)).toEqual(['#34d399', '#fbbf24', '#a78bfa']);
+    expect(node?.intelMarkers[2]?.subsystem).toBe('shielding');
   });
 
   it('marks synthesized strongest-lead neighbors directly on the board', () => {

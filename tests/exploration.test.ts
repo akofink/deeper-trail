@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   biomeBenefitLabel,
+  biomeRiskDescriptor,
   biomeRiskLabel,
   markNodeVisited,
   noteBiomeArrival,
@@ -34,6 +35,12 @@ describe('exploration notes', () => {
 
     expect(state.exploration.biomeKnowledge.anomaly.riskKnown).toBe(true);
     expect(biomeRiskLabel('anomaly')).toContain('shielding');
+    expect(biomeRiskDescriptor('anomaly')).toEqual({
+      markerColor: '#a78bfa',
+      preview: 'Hazard preview: sync fields and pulse shards strain shielding.',
+      shortLabel: 'shielding strain',
+      subsystem: 'shielding'
+    });
   });
 
   it('lets scanner progression preview route intel before first visit', () => {

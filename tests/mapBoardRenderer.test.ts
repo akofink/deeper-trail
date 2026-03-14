@@ -114,8 +114,8 @@ describe('mapBoardRenderer', () => {
           goal: true,
           id: 'n1',
           intelMarkers: [
-            { fill: '#34d399', radius: 3.5, xOffset: -12, yOffset: -10 },
-            { fill: '#fbbf24', radius: 3.5, xOffset: 12, yOffset: -10 }
+            { fill: '#34d399', radius: 3.5, subsystem: null, xOffset: -12, yOffset: -10 },
+            { fill: '#fbbf24', radius: 3.5, subsystem: null, xOffset: 12, yOffset: -10 }
           ],
           innerDot: true,
           outline: true,
