@@ -36,17 +36,17 @@ This is still a prototype, not a content-complete vertical slice. The near-term 
 `Later`
 - grow from the current local expedition format into larger-scale travel, stranger fabrication, and more layered puzzle structures without breaking the deterministic browser-first format
 
-See [docs/README.md](/Users/akofink/dev/repos/deeper-trail/.worktrees/docs-vision-roadmap-align/docs/README.md) for the canonical docs map and [docs/09-mvp-scope.md](/Users/akofink/dev/repos/deeper-trail/.worktrees/docs-vision-roadmap-align/docs/09-mvp-scope.md) for the fuller roadmap breakdown.
+See [docs/README.md](/Users/akofink/dev/repos/deeper-trail/docs/README.md) for the canonical docs map and [docs/09-mvp-scope.md](/Users/akofink/dev/repos/deeper-trail/docs/09-mvp-scope.md) for the fuller roadmap breakdown.
 
 ## Documentation guide
 
-- [docs/README.md](/Users/akofink/dev/repos/deeper-trail/.worktrees/docs-vision-roadmap-align/docs/README.md): reading order and doc map
-- [docs/00-vision.md](/Users/akofink/dev/repos/deeper-trail/.worktrees/docs-vision-roadmap-align/docs/00-vision.md): long-term promise and design guardrails
-- [docs/01-core-loop.md](/Users/akofink/dev/repos/deeper-trail/.worktrees/docs-vision-roadmap-align/docs/01-core-loop.md): current expedition loop and expansion path
-- [docs/09-mvp-scope.md](/Users/akofink/dev/repos/deeper-trail/.worktrees/docs-vision-roadmap-align/docs/09-mvp-scope.md): current roadmap priorities and success criteria
-- [ARCHITECTURE.md](/Users/akofink/dev/repos/deeper-trail/.worktrees/docs-vision-roadmap-align/ARCHITECTURE.md): runtime/module split and rendering guidance
-- [IMPLEMENTATION_NOTES.md](/Users/akofink/dev/repos/deeper-trail/.worktrees/docs-vision-roadmap-align/IMPLEMENTATION_NOTES.md): practical implementation guidance
-- [progress.md](/Users/akofink/dev/repos/deeper-trail/.worktrees/docs-vision-roadmap-align/progress.md): change history and recent implementation slices
+- [docs/README.md](/Users/akofink/dev/repos/deeper-trail/docs/README.md): reading order and doc map
+- [docs/00-vision.md](/Users/akofink/dev/repos/deeper-trail/docs/00-vision.md): long-term promise and design guardrails
+- [docs/01-core-loop.md](/Users/akofink/dev/repos/deeper-trail/docs/01-core-loop.md): current expedition loop and expansion path
+- [docs/09-mvp-scope.md](/Users/akofink/dev/repos/deeper-trail/docs/09-mvp-scope.md): current roadmap priorities and success criteria
+- [ARCHITECTURE.md](/Users/akofink/dev/repos/deeper-trail/ARCHITECTURE.md): runtime/module split and rendering guidance
+- [IMPLEMENTATION_NOTES.md](/Users/akofink/dev/repos/deeper-trail/IMPLEMENTATION_NOTES.md): practical implementation guidance
+- [progress.md](/Users/akofink/dev/repos/deeper-trail/progress.md): change history and recent implementation slices
 
 ## Development
 
