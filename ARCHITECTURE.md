@@ -1,73 +1,82 @@
-# ARCHITECTURE.md (top-level)
+# Architecture
 
-## Project goals
+## Architectural goals
 
-- Deterministic simulation (seeded)
-- Fast 2D rendering
-- Modular content packs
-- Clean separation: game state vs rendering
-- Easy to add new modules/biomes/puzzles
+- deterministic simulation from seeded inputs
+- browser-first static deployment with no backend dependency
+- clear separation between simulation rules, runtime assembly, and Pixi rendering
+- modular systems that can scale the journey without collapsing readability
 
-## Suggested repo layout
+## Current repo layout
 
+```text
 src/
-engine/
-rng/ # seeded RNG + utilities
-ecs/ # (optional) simple ECS
-sim/ # deterministic simulation + rules
-gen/ # world + puzzle generation
-data/ # content packs
-game/
-state/ # game state machine (menus, travel, encounter)
-ui/ # UI components
-scenes/ # Pixi scenes
-assets/
-sprites/
-audio/
-docs/
+  engine/
+    data/      # content pack types + validation
+    gen/       # deterministic graph generation
+    rng/       # seeded RNG utilities
+    sim/       # deterministic simulation rules and helpers
+  game/
+    render/    # Pixi drawing helpers and scene renderers
+    runtime/   # runtime flow, content assembly, layout, and view-model helpers
+    state/     # game state and initialization
+  main.ts      # Pixi app shell and high-level orchestration
+tests/         # engine and runtime regressions
+```
 
-## Determinism rules
+## Separation rules
 
-- All randomness goes through RNG seeded at run start
-- Rendering reads state; it does not mutate state
-- Inputs are logged for replay/debugging
+- All gameplay randomness goes through seeded RNG helpers.
+- Rendering reads state and prepared view models; it should not define core gameplay rules.
+- Deterministic rule changes belong in `src/engine/*`.
+- Runtime flow, content assembly, and scene planning belong in `src/game/runtime/*`.
+- Pixi drawing and primitive reuse belong in `src/game/render/*`.
+- `src/main.ts` should prefer orchestration over inline rule, layout, or text-assembly logic.
 
 ## Current runtime split
 
-- `engine/sim/*` owns deterministic rules for travel, vehicle wear/repair/install, biome exploration knowledge, run-objective rules, and resource changes.
-- `engine/sim/world.ts` owns node lookup / neighbor / expedition-target helpers so route-board logic is not duplicated in the runtime shell.
-- `game/runtime/*` owns runtime-facing scene state types, initial/reset state helpers, med-patch rules, derived vehicle stat helpers, deterministic run-layout/palette setup, expedition-flow bookkeeping, run-objective UI/update/visual helpers, map-scene content assembly, and HUD/card view-model helpers for the current Pixi shell.
-- `game/runtime/debugState.ts` owns the automation/debug snapshot exported through `window.render_game_to_text` so browser smokes can read stable runtime state without duplicating JSON assembly in the Pixi shell.
-- `main.ts` currently owns rendering plus input handling for the run and map scenes, but should prefer orchestrating imported helpers over growing more inline rule/config blocks.
-- Run-scene feel is intentionally partly state-driven and partly presentation-driven:
-  - State-driven: movement acceleration, jump buffering/cut, coyote time, dash cooldown, beacon range, subsystem-derived speed/jump/invulnerability.
-  - Presentation-driven: squash/stretch, facing lean, HUD panels, terrain silhouettes, biome backdrop accents, and relay/readability effects.
+- `engine/sim/*` owns deterministic rules for travel, vehicle wear/repair/install, biome exploration knowledge, run-objective rules, resource changes, share codes, and world-node lookup helpers.
+- `game/runtime/*` owns runtime-facing scene state types, initial/reset helpers, derived vehicle stats, route and notebook content assembly, HUD/card planning, debug snapshots, expedition-flow bookkeeping, and map/run scene render-plan preparation.
+- `game/render/*` owns shared Pixi primitives, frame clearing, HUD chrome, route-board drawing, run-scene world drawing, and text/reset helpers.
+- `main.ts` still owns shell bootstrap, Pixi wiring, and scene orchestration, but ongoing work should keep pulling mixed concerns out of it.
 
-## UI / rendering direction
+## Determinism rules
 
-- Favor compact visual HUD panels over long status strings.
-- Every persistent meter should be identifiable by position, label, and color, not color alone.
-- Scene composition should keep the playable band visually dense; empty vertical space should be justified by atmosphere or skyline treatment.
-- Terrain can begin as non-colliding visual structure, but should still communicate biome and movement context.
-- The map scene should read like a navigable route board, not a raw graph debug view:
-  - edges should be continuous and legible,
-  - node layout should be generated as a 3D cloud and projected back into the 2D render so rotation adds depth instead of collapsing into a flat line,
-  - selected routes should be visually singled out,
-  - route/install/travel details should live in a dedicated readable card rather than loose bottom text,
-  - action chips should be spatially separate from the detail card so the two layers do not compete.
-- Biome objectives should be authored as explicit rule variants in deterministic sim helpers:
-  - `ruin`: ordered relay links plus impact plates,
-  - `nature`: airborne relay links plus canopy-lift hold zones,
-  - `anomaly`: boost-linked relays plus sync gates,
-  - `town`: steady relay links plus service bays.
+- identical seeds and inputs must produce identical simulation outcomes
+- deterministic helpers should stay small, pure, and directly testable when possible
+- route logic, notebook consequences, and objective behavior should be assertable without booting Pixi
+- automation hooks such as `window.render_game_to_text` and `window.advanceTime(ms)` are part of the testing surface and should remain stable
 
-## Content packs
+## Rendering direction
 
-Define a schema for:
+- favor compact labeled HUD panels, chips, bars, and pips over sentence-heavy overlays
+- keep the map scene readable as a navigable route board rather than a raw debug graph
+- keep biome readability strong through terrain motifs, palette, skyline/backdrop treatment, and objective telegraphing
+- let presentation add feel and emphasis without becoming the source of simulation truth
+
+## Current scene guidance
+
+Run-scene feel is intentionally split:
+
+- state-driven: movement acceleration, jump buffering and cut, coyote time, dash cooldown, beacon range, subsystem-derived speed/jump/invulnerability, and deterministic objective state
+- presentation-driven: squash/stretch, facing lean, HUD panels, terrain silhouettes, biome backdrop accents, damage feedback, and route-readability effects
+
+Map-scene readability priorities:
+
+- continuous, legible route edges
+- clear selected-route emphasis
+- route and notebook detail in stable card regions
+- action chips that do not compete with route detail
+- generated layouts that feel spatially meaningful instead of flat debug output
+
+## Content-pack direction
+
+Longer term, content packs should define stable, versioned schemas for:
 
 - items
 - modules
 - hazards
 - puzzles
 - encounters
-  Each has stable IDs and versioning.
+
+That extensibility goal should not outrun the current need for a strong deterministic core loop.

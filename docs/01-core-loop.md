@@ -1,41 +1,77 @@
-# docs/01-core-loop.md
+# Core Loop
 
-## Minute-to-minute loop
-1. Travel to a nearby node (location, ruin, town, anomaly)
-2. Encounter a problem (terrain, system, social, puzzle)
-3. Scavenge + interpret (materials + clues)
-4. Craft/modify vehicle modules to gain new capabilities
-5. Choose route: safer/longer vs risky/shorter vs secret
-6. Progress the mystery graph (unlocks new regions/scales)
+## Current expedition loop
 
-## Macro loop (acts / scales)
-### Act I — Road
-- Bicycle, local maps, small puzzles
-- Introduce the “signal” (mystery hook)
-- Tools: basic crafting, repair, scavenging
+The current game should read as one loop, not separate prototype systems:
 
-### Act II — Frontier
-- Hybrid vehicles (bike + trailer + improvised engines)
-- Hazardous regions and factions
-- First “impossible” artifact: something that shouldn’t exist
+1. Read the route board and choose a neighboring node.
+2. Travel there through deterministic fuel and route constraints.
+3. Enter a biome-specific run with explicit local verbs and objective rules.
+4. Clear the route, collect salvage, and absorb wear or discoveries.
+5. Return to the map with new condition, upgrades, clues, and route intel.
+6. Decide whether to repair, install, press toward the signal, or detour for better leverage.
 
-### Act III — Breakthrough
-- Fabrication systems, modular frames, specialized mobility
-- The world’s logic changes; puzzles become multi-step
-- You learn to build “interfaces” to interact with anomalies
+## What each layer should contribute
 
-### Act IV — Otherworld
-- Vehicle becomes “craft” capable of crossing non-road spaces
-- Inter-system travel is introduced as 2D map abstraction
-- Alien biomes, non-human architectures, new physics constraints
+`Map scene`
+- route choice
+- risk/reward reading
+- install and repair decisions
+- notebook and clue payoff visibility
 
-### Act V — The Deeper Mystery
-- Meta-puzzle: map, language, and machine converge
-- Player choices determine which truth they uncover (multiple endings)
-- Post-ending: infinite “runs” with variant truths, new layers
+`Run scene`
+- embodied execution
+- biome-specific verbs and timing
+- hazard pressure and salvage opportunity
+- local confirmation that a route was worth taking
 
-## Player choices that matter
-- Build specialization (speed vs resilience vs stealth vs scan depth)
-- Route selection changes what puzzle fragments you see
-- Faction relationships gate technologies
-- How you interpret clues changes what “truth” you pursue
+`Notebook / mystery layer`
+- turns route clears into accumulating meaning
+- previews why one route matters more than another
+- changes the approach, payoff, or aftermath of later expeditions
+
+## Current prototype verbs
+
+- `town`: steady relay links and service-bay positioning
+- `ruin`: ordered relays and impact-plate landings
+- `nature`: airborne relay work and canopy-lift timing
+- `anomaly`: boost-linked relays and sync-gate phase timing
+
+These should keep feeling like route-specific capabilities, not recolored copies of the same task.
+
+## Expansion path
+
+### Stage 1: Local expedition
+
+This is the current focus.
+
+- one readable route board
+- repeatable biome-specific route clears
+- persistent machine wear and upgrades
+- small but real mystery arc
+
+### Stage 2: Compounding route logic
+
+Near-term expansion should deepen decisions inside the current scale before adding a larger one.
+
+- route intel that materially changes planning
+- upgrade lines that unlock or reshape route verbs
+- clue discoveries that alter approach, payoff, and aftermath
+- stronger authored consequences inside deterministic seeds
+
+### Stage 3: Broader travel layers
+
+Only after the local expedition loop is strong should the game widen outward.
+
+- larger map layers and stranger routes
+- more complex fabrication and capability grammar
+- broader mystery graph and multiple late-run truths
+
+## Decision test
+
+Any new feature in this repo should answer at least one of these clearly:
+
+- does it make route choice more meaningful?
+- does it make the machine feel more like one persistent evolving object?
+- does it add a capability, interpretation layer, or route consequence instead of only a number?
+- does it reinforce the mystery through gameplay, not only flavor text?
