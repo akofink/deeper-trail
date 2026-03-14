@@ -1,3 +1,8 @@
+- Browser shell bootstrap extraction pass:
+  - Added `src/game/runtime/browserShellBootstrap.ts` so async Pixi/render module loading, app creation, renderer callback wiring, and initial runtime draw now live in one focused bootstrap helper instead of staying inline in `src/game/runtime/browserShell.ts`.
+  - Slimmed `src/game/runtime/browserShell.ts` down to the public browser-shell export surface while keeping seed/debug helpers re-exported from the runtime controller path.
+  - Added `tests/browserShellBootstrap.test.ts` and kept the existing browser-shell import/runtime/app tests green to lock down the new bootstrap seam.
+
 - Biome-aligned objective easing pass:
   - Added deterministic subsystem-to-objective tuning in `src/game/runtime/vehicleDerivedStats.ts` so engine/frame/suspension/shielding levels now ease their matching biome verb instead of only improving broad stats.
   - Updated `src/game/runtime/serviceStops.ts`, `src/game/runtime/impactPlates.ts`, `src/game/runtime/canopyLifts.ts`, `src/game/runtime/syncGates.ts`, `src/game/runtime/runObjectiveUpdates.ts`, and `src/game/runtime/runObjectiveUi.ts` so run objective thresholds and prompt percentages follow those tuned values consistently.
