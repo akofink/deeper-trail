@@ -83,6 +83,6 @@ Use a “mystery graph”:
   - the ending now also carries a short signature-specific epilogue line so the expedition resolves as a distinct outcome, not just a distinct approach mutation,
   - finishing the goal now also unlocks two deterministic post-goal route hooks whose effect depends on the decoded source signature (for example extra salvage echoes, fuel reserves, or shield re-prime), so clue order influences follow-on play and not only the final overlay text,
   - the map route card and debug export now preview those active afterglow/legacy payouts as concrete next-route effects before travel, so the post-goal consequence reads as an immediate board-state decision instead of hidden residue,
-  - starting a fresh seeded world after completed expeditions now carries a queued set of pending legacy echoes from those decoded source signatures into the next expedition's first outbound route, so prior endings can compose into one mechanical residue instead of resetting to pure amnesia,
+  - starting a fresh seeded world after completed expeditions now carries the full queued set of unspent afterglow charges from those decoded source signatures into the next expedition's first outbound route, so prior endings can compose into one mechanical residue instead of resetting to pure amnesia,
   - the goal encounter is still deterministic and replayable: the same clue order produces the same source signature every run.
 - The current notebook is still intentionally lightweight: it is a discovery layer and route-intel aid, not yet a full branching puzzle graph.

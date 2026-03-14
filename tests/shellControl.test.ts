@@ -47,6 +47,7 @@ describe('shellControl helpers', () => {
     state.scene = 'map';
     state.expeditionComplete = true;
     state.postGoalRouteHookType = 'salvage-echo';
+    state.postGoalRouteHookCharges = 2;
     state.postGoalRouteHookNote = 'Afterglow hook: each post-goal route yields +2 salvage.';
     state.legacyCarryOvers = [];
     state.sim.notebook.entries.push(
@@ -91,6 +92,7 @@ describe('shellControl helpers', () => {
     expect(result.nextState.legacyCarryOvers).toEqual([
       {
         type: 'salvage-echo',
+        charges: 2,
         note: 'Afterglow hook: each post-goal route yields +2 salvage.',
         sourceTitle: 'Echo Salvage Orchard'
       }
@@ -102,10 +104,12 @@ describe('shellControl helpers', () => {
     completedState.scene = 'map';
     completedState.expeditionComplete = true;
     completedState.postGoalRouteHookType = 'salvage-echo';
+    completedState.postGoalRouteHookCharges = 2;
     completedState.postGoalRouteHookNote = 'Afterglow hook: each post-goal route yields +2 salvage.';
     completedState.legacyCarryOvers = [
       {
         type: 'quiet-heal',
+        charges: 1,
         note: 'Legacy echo: quiet crossing restores +1 hull on the next route.',
         sourceTitle: 'Quiet Phase Garden'
       }
@@ -152,11 +156,13 @@ describe('shellControl helpers', () => {
     expect(nextState.legacyCarryOvers).toEqual([
       {
         type: 'quiet-heal',
+        charges: 1,
         note: 'Legacy echo: quiet crossing restores +1 hull on the next route.',
         sourceTitle: 'Quiet Phase Garden'
       },
       {
         type: 'salvage-echo',
+        charges: 2,
         note: 'Afterglow hook: each post-goal route yields +2 salvage.',
         sourceTitle: 'Echo Salvage Orchard'
       }
@@ -189,10 +195,10 @@ describe('shellControl helpers', () => {
     expect(travelResult.nextState.scene).toBe('run');
     expect(travelResult.nextState.legacyCarryOvers).toEqual([]);
     expect(travelResult.nextState.health).toBe(3);
-    expect(travelResult.nextState.sim.scrap).toBe(2);
+    expect(travelResult.nextState.sim.scrap).toBe(4);
     expect(travelResult.nextState.mapMessage).toContain('Arrived at town: fuel topped up +8.');
     expect(travelResult.nextState.mapMessage).toContain(
-      'Legacy echoes Quiet Phase Garden: quiet crossing restores +1 hull. Echo Salvage Orchard: salvage echo recovered +2 scrap.'
+      'Legacy echoes Quiet Phase Garden: quiet crossing restores +1 hull. Echo Salvage Orchard: salvage echo recovered +4 scrap.'
     );
   });
 

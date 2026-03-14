@@ -397,6 +397,7 @@ describe('map scene content helper', () => {
     state.legacyCarryOvers = [
       {
         type: 'breach-fuel',
+        charges: 2,
         note: 'Legacy echo: breach reservoir restores +4 fuel on the next route.',
         sourceTitle: 'Breached Entry Core'
       }
@@ -410,11 +411,11 @@ describe('map scene content helper', () => {
       hasCompletedCurrentNode: true
     });
 
-    expect(content.routeDetail).toContain('Legacy route payout: Breached Entry Core: +4 fuel after arrival');
-    expect(content.routeDetail).toContain('Legacy echoes armed (1): Legacy echo: breach reservoir restores +4 fuel on the next route.');
-    expect(content.fieldNotes.join('\n')).toContain('LEGACY ECHOES 1x');
-    expect(content.fieldNotes.join('\n')).toContain('BREACHED ENTRY CORE');
-    expect(content.fieldNotes.join('\n')).toContain('NEXT ROUTE +4 fuel after arrival');
+    expect(content.routeDetail).toContain('Legacy route payout: Breached Entry Core: +8 fuel after arrival');
+    expect(content.routeDetail).toContain('Legacy echoes armed (2x): Legacy echo: breach reservoir restores +4 fuel on the next route. (2x)');
+    expect(content.fieldNotes.join('\n')).toContain('LEGACY ECHOES 2x');
+    expect(content.fieldNotes.join('\n')).toContain('BREACHED ENTRY CORE x2');
+    expect(content.fieldNotes.join('\n')).toContain('NEXT ROUTE +8 fuel after arrival');
     expect(content.fieldNotes.join('\n')).toContain('breach reservoir restores +4 fuel');
   });
 

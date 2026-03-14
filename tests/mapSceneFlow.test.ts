@@ -132,6 +132,7 @@ describe('map scene flow helpers', () => {
     const state = createInitialRuntimeState(720, 'map-scene-legacy-travel', [
       {
         type: 'quiet-heal',
+        charges: 1,
         note: 'Legacy echo: quiet crossing restores +1 hull on the next route.',
         sourceTitle: 'Quiet Phase Garden'
       }

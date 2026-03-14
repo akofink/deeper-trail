@@ -337,7 +337,7 @@ export function buildDebugStateSnapshot(state: RuntimeState, viewportWidth: numb
                 ? describeGoalRouteHookEffect(state.postGoalRouteHookType)
                 : null,
             legacyEchoPreview: state.legacyCarryOvers.map(
-              (carryOver) => `${carryOver.sourceTitle}: ${describeGoalRouteHookEffect(carryOver.type)}`
+              (carryOver) => `${carryOver.sourceTitle}: ${describeGoalRouteHookEffect(carryOver.type, carryOver.charges)}`
             )
           }
         : null,

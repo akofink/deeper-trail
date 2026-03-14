@@ -1,3 +1,8 @@
+- Legacy echo charge-preservation pass:
+  - Updated `src/game/runtime/runtimeState.ts` and `src/game/runtime/goalSignal.ts` so queued legacy echoes now preserve stacked unspent afterglow charges when a completed expedition rolls into a fresh seeded world, instead of collapsing all remaining residue into a single carry-over entry.
+  - Updated `src/game/runtime/mapSceneContent.ts` and `src/game/runtime/debugState.ts` so map cards, field notes, and automation snapshots preview stacked legacy payouts with their true charge counts.
+  - Expanded `tests/runtimeState.test.ts`, `tests/goalSignal.test.ts`, `tests/shellControl.test.ts`, `tests/mapSceneFlow.test.ts`, `tests/mapSceneContent.test.ts`, and `tests/debugState.test.ts`.
+
 - Browser-shell session split pass:
   - Added `src/game/runtime/browserShellSession.ts` so URL seed parsing, runtime-state ownership, and deterministic debug-hook wiring now live behind one focused browser-shell session helper instead of staying mixed into `src/game/runtime/browserShellRuntime.ts`.
   - Updated `src/game/runtime/browserShellRuntime.ts` and `src/game/runtime/browserShell.ts` to treat session/bootstrap concerns as dependencies while keeping the runtime controller focused on event-bridge and loop wiring.
