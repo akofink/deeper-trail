@@ -108,6 +108,16 @@ describe('expedition flow runtime helpers', () => {
     expect(travel.didTravel).toBe(true);
     expect(travel.usedFreeTravel).toBe(true);
     expect(state.freeTravelCharges).toBe(1);
+    expect(state.lastTravel).toEqual({
+      destinationNodeId: neighbor.nodeId,
+      fuelCost: neighbor.distance,
+      usedFreeTravel: true,
+      freeTravelChargesBefore: 1,
+      freeTravelChargesAfter: 0,
+      fuelBefore: 23,
+      fuelAfterTravel: 23,
+      arrivalNodeType: 'town'
+    });
     expect(state.sim.currentNodeId).toBe(neighbor.nodeId);
     expect(state.sim.day).toBe(2);
     expect(state.sim.fuel).toBe(31);

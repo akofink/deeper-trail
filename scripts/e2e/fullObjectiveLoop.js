@@ -417,6 +417,14 @@ async function main() {
 
     logStep("verifying post-travel state");
     const traveledState = await readState(page);
+    assert(traveledState.map.lastTravel?.usedFreeTravel, "Travel should consume the stored free-trip charge", traveledState);
+    assert(traveledState.map.lastTravel?.freeTravelChargesBefore === 1, "Travel should start with one stored free-trip charge", traveledState);
+    assert(traveledState.map.lastTravel?.freeTravelChargesAfter === 0, "Travel should spend the stored free-trip charge", traveledState);
+    assert(
+      traveledState.map.lastTravel?.fuelAfterTravel === completedState.sim.fuel,
+      "Free-trip travel should refund the route fuel cost before arrival rewards",
+      traveledState
+    );
     assert(traveledState.scene === "run", "Travel should return the runtime shell to the run scene", traveledState);
     assert(traveledState.sim.currentNodeId !== completedState.sim.currentNodeId, "Travel should move to a connected node", traveledState);
     assert(traveledState.sim.day === 2, "Travel should advance the day again", traveledState);
@@ -444,7 +452,8 @@ async function main() {
           completedNodeId: completedState.sim.currentNodeId,
           traveledNodeId: traveledState.sim.currentNodeId,
           completionMessage: completedState.map.message,
-          arrivalMessage: traveledState.map.message
+          arrivalMessage: traveledState.map.message,
+          lastTravel: traveledState.map.lastTravel
         },
         null,
         2

@@ -41,6 +41,18 @@ export interface DebugStateSnapshot {
     rotation: number;
     travelUnlockedAtCurrentNode: boolean;
     freeTravelCharges: number;
+    lastTravel:
+      | {
+          destinationNodeId: string;
+          fuelCost: number;
+          usedFreeTravel: boolean;
+          freeTravelChargesBefore: number;
+          freeTravelChargesAfter: number;
+          fuelBefore: number;
+          fuelAfterTravel: number;
+          arrivalNodeType?: string;
+        }
+      | null;
     repairCostScrap: number;
     autoLinkUnlocked: boolean;
     dashEnergy: number;
@@ -225,6 +237,18 @@ export function buildDebugStateSnapshot(state: RuntimeState, viewportWidth: numb
       rotation: Number(state.mapRotation.toFixed(2)),
       travelUnlockedAtCurrentNode: hasCompletedCurrentNode(state),
       freeTravelCharges: state.freeTravelCharges,
+      lastTravel: state.lastTravel
+        ? {
+            destinationNodeId: state.lastTravel.destinationNodeId,
+            fuelCost: state.lastTravel.fuelCost,
+            usedFreeTravel: state.lastTravel.usedFreeTravel,
+            freeTravelChargesBefore: state.lastTravel.freeTravelChargesBefore,
+            freeTravelChargesAfter: state.lastTravel.freeTravelChargesAfter,
+            fuelBefore: state.lastTravel.fuelBefore,
+            fuelAfterTravel: state.lastTravel.fuelAfterTravel,
+            arrivalNodeType: state.lastTravel.arrivalNodeType
+          }
+        : null,
       repairCostScrap: FIELD_REPAIR_SCRAP_COST,
       autoLinkUnlocked: hasBeaconAutoLink(state),
       dashEnergy: Number(state.dashEnergy.toFixed(2)),

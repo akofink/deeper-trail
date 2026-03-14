@@ -87,6 +87,14 @@ async function main() {
         page.evaluate(() => window.render_game_to_text())
       )
     );
+    assert(traveledState.map.lastTravel?.usedFreeTravel, "Travel should consume the stored free-trip charge", traveledState);
+    assert(traveledState.map.lastTravel?.freeTravelChargesBefore === 1, "Travel should start with one stored free-trip charge", traveledState);
+    assert(traveledState.map.lastTravel?.freeTravelChargesAfter === 0, "Travel should spend the stored free-trip charge", traveledState);
+    assert(
+      traveledState.map.lastTravel?.fuelAfterTravel === completedState.sim.fuel,
+      "Free-trip travel should refund the route fuel cost before arrival rewards",
+      traveledState
+    );
     assert(traveledState.scene === "run", "Travel should return to the run scene", traveledState);
     assert(traveledState.sim.currentNodeId !== completedState.sim.currentNodeId, "Travel should move to a connected node", traveledState);
     assert(traveledState.run.beacons.every((b) => !b.activated), "New run should reset relay progress", traveledState);
@@ -106,7 +114,8 @@ async function main() {
           seed: NATURE_SEED,
           completedNodeId: completedState.sim.currentNodeId,
           traveledNodeId: traveledState.sim.currentNodeId,
-          completionMessage: completedState.map.message
+          completionMessage: completedState.map.message,
+          lastTravel: traveledState.map.lastTravel
         },
         null,
         2

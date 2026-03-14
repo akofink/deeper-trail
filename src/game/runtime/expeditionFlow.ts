@@ -126,11 +126,14 @@ export function completeCurrentNodeRun(state: RuntimeState): NodeCompletionOutco
 }
 
 export function travelToNodeWithRuntimeEffects(state: RuntimeState, destinationNodeId: string): RuntimeTravelResult {
+  const fuelBefore = state.sim.fuel;
+  const freeTravelChargesBefore = state.freeTravelCharges;
   const useFreeTravelCharge = state.freeTravelCharges > 0;
   const result = travelToNode(state.sim, destinationNodeId, {
     ignoreFuelRequirement: useFreeTravelCharge
   });
   if (!result.didTravel) {
+    state.lastTravel = null;
     return {
       ...result,
       usedFreeTravel: false
@@ -144,6 +147,8 @@ export function travelToNodeWithRuntimeEffects(state: RuntimeState, destinationN
     usedFreeTravel = true;
   }
 
+  const fuelAfterTravel = state.sim.fuel;
+  const freeTravelChargesAfter = state.freeTravelCharges;
   const arrivalNodeType = currentNodeType(state.sim);
   applyArrivalRewards(state);
   const legacyCarryOverMessage = applyLegacyCarryOver(state);
@@ -151,6 +156,17 @@ export function travelToNodeWithRuntimeEffects(state: RuntimeState, destinationN
     state.mapMessage = `${state.mapMessage} ${legacyCarryOverMessage}`.trim();
     state.mapMessageTimer = 4;
   }
+
+  state.lastTravel = {
+    destinationNodeId,
+    fuelCost: result.fuelCost ?? 0,
+    usedFreeTravel,
+    freeTravelChargesBefore,
+    freeTravelChargesAfter,
+    fuelBefore,
+    fuelAfterTravel,
+    arrivalNodeType
+  };
 
   return {
     ...result,

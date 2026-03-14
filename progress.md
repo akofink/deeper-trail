@@ -1,3 +1,8 @@
+- Browser automation free-travel verification pass:
+  - Added `lastTravel` runtime/debug bookkeeping in `src/game/runtime/expeditionFlow.ts`, `src/game/runtime/runtimeState.ts`, and `src/game/runtime/debugState.ts` so automation can inspect the immediate post-travel fuel/charge state before arrival rewards mutate it.
+  - Updated browser smoke coverage in `scripts/e2e/fullObjectiveLoop.js`, `scripts/e2e/ruinSmoke.js`, `scripts/e2e/natureSmoke.js`, and `scripts/e2e/anomalySmoke.js` to assert that node completion grants a free trip, the next travel consumes that stored charge, and route fuel is refunded before arrival rewards are applied.
+  - Added regression coverage in `tests/expeditionFlow.test.ts` and `tests/debugState.test.ts`.
+
 - Legacy afterglow carry-over pass:
   - Completed expeditions now package one deterministic legacy echo from the decoded source signature into the next `N`-started seeded world instead of dropping all aftermath state at reset.
   - Added pending legacy carry-over state in `src/game/runtime/runtimeState.ts`, legacy build/consume helpers in `src/game/runtime/goalSignal.ts`, and new-world wiring in `src/game/runtime/shellControl.ts`.
