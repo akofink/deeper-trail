@@ -27,6 +27,7 @@ export interface ShellEventBridgeOptions {
 export interface ShellEventBridge {
   buildRunStepInputSnapshot: () => RunStepInputSnapshot;
   mapRotateInput: () => -1 | 0 | 1;
+  onBlur: () => void;
   onKeyDown: (code: string) => ShellKeyDispatchResult;
   onKeyUp: (code: string) => void;
   onResize: () => void;
@@ -38,6 +39,13 @@ export function createShellEventBridge(options: ShellEventBridgeOptions): ShellE
   let previousJumpPressed = false;
   let previousDashPressed = false;
   let previousMapNavigate = false;
+
+  const onBlur = (): void => {
+    pressedKeys.clear();
+    previousJumpPressed = false;
+    previousDashPressed = false;
+    previousMapNavigate = false;
+  };
 
   const mapRotateInput = (): -1 | 0 | 1 => {
     const rotateInput = (pressedKeys.has('KeyE') ? 1 : 0) - (pressedKeys.has('KeyQ') ? 1 : 0);
@@ -90,6 +98,7 @@ export function createShellEventBridge(options: ShellEventBridgeOptions): ShellE
       previousDashPressed
     }),
     mapRotateInput,
+    onBlur,
     onKeyDown,
     onKeyUp,
     onResize,

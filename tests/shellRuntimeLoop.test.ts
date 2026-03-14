@@ -5,6 +5,7 @@ import { bindShellRuntimeLoop } from '../src/game/runtime/shellRuntimeLoop';
 type Listener = (event: unknown) => void;
 
 interface MockHost {
+  blur: Listener[];
   keydown: Listener[];
   keyup: Listener[];
   resize: Listener[];
@@ -13,6 +14,7 @@ interface MockHost {
 
 function createMockHost(): MockHost {
   return {
+    blur: [],
     keydown: [],
     keyup: [],
     resize: [],
@@ -25,6 +27,7 @@ describe('shellRuntimeLoop bindings', () => {
     const host = createMockHost();
     const keyDownCodes: string[] = [];
     const keyUpCodes: string[] = [];
+    const blurCalls: number[] = [];
     const resizeCalls: number[] = [];
     const fullscreenCalls: number[] = [];
 
@@ -39,6 +42,9 @@ describe('shellRuntimeLoop bindings', () => {
       },
       {
         onAnimationFrame: () => undefined,
+        onBlur: () => {
+          blurCalls.push(1);
+        },
         onKeyDown: (code) => {
           keyDownCodes.push(code);
           return {
@@ -58,6 +64,7 @@ describe('shellRuntimeLoop bindings', () => {
       }
     );
 
+    expect(host.blur.length).toBe(1);
     expect(host.keydown.length).toBe(1);
     expect(host.keyup.length).toBe(1);
     expect(host.resize.length).toBe(1);
@@ -80,10 +87,12 @@ describe('shellRuntimeLoop bindings', () => {
       code: 'ArrowUp',
       preventDefault: () => undefined
     });
+    host.blur[0]?.({});
     host.resize[0]?.({});
 
     expect(keyDownCodes).toEqual(['Enter', 'KeyF']);
     expect(keyUpCodes).toEqual(['ArrowUp']);
+    expect(blurCalls).toEqual([1]);
     expect(preventDefaultCalls).toBe(1);
     expect(fullscreenCalls).toEqual([1]);
     expect(resizeCalls).toEqual([1]);
@@ -106,6 +115,7 @@ describe('shellRuntimeLoop bindings', () => {
         onAnimationFrame: (now) => {
           frameTimes.push(now);
         },
+        onBlur: () => undefined,
         onKeyDown: () => ({ preventDefault: false, toggleFullscreen: false }),
         onKeyUp: () => undefined,
         onResize: () => undefined,

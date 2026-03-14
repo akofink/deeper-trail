@@ -73,6 +73,7 @@ export function createBrowserShellRuntimeLoopController(
 
   bindRuntimeLoop(options.shellWindow, {
     onAnimationFrame: frameLoop.onAnimationFrame,
+    onBlur: options.shellEventBridge.onBlur,
     onKeyDown: options.shellEventBridge.onKeyDown,
     onKeyUp: options.shellEventBridge.onKeyUp,
     onResize: options.shellEventBridge.onResize,
