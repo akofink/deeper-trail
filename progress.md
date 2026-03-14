@@ -1,3 +1,8 @@
+- Route site-rack preview pass:
+  - Updated `src/game/runtime/mapSceneContent.ts` so selected route cards now preview the destination biome's currently available install offers, or explicitly report when that site rack is exhausted for the current build.
+  - Updated `src/game/runtime/debugState.ts` so automation snapshots expose the same destination-site install rack data on the selected route.
+  - Expanded `tests/mapSceneContent.test.ts` and `tests/debugState.test.ts`, and updated `docs/02-vehicles-and-upgrades.md`.
+
 - Scanner hazard-intel pass:
   - Added shared biome risk descriptors in `src/engine/sim/exploration.ts` so scanner lv.4 can describe the strained subsystem consistently instead of only exposing a generic boolean.
   - Updated `src/game/runtime/mapBoardView.ts`, `src/game/runtime/mapSceneContent.ts`, and `src/game/runtime/debugState.ts` so route-board risk markers now encode subsystem-specific hazard strain, selected-route cards show explicit hazard previews, and automation snapshots export the same preview details.

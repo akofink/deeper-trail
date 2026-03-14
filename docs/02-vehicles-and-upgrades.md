@@ -55,6 +55,7 @@ Every module should:
   - `ruin` + storage lv.2 adds +1 arrival scrap
   - `nature` + suspension lv.2 repairs 1 damaged module condition on arrival
   - `anomaly` + scanner lv.2 permanently reveals connected-route intel on arrival
+- Selected route cards and automation snapshots now also preview the destination biome's current install rack, so route planning can account for which site modules a detour would actually unlock for the present build.
 - `scanner` lv.3 enables relay auto-linking.
 - `scanner` lv.2 previews biome benefits directly on route-board nodes and can phase-lock anomaly relays during open sync windows; lv.3 adds objective-pattern markers and auto-linking; lv.4 adds subsystem-specific hazard-strain markers plus explicit route-card hazard previews.
 - `storage` lv.2 starts pulling nearby salvage pickups inward; lv.3 also increases scrap gained per pickup.
