@@ -1,3 +1,8 @@
+- Browser shell loop-controller extraction pass:
+  - Added `src/game/runtime/browserShellRuntimeLoopController.ts` so fixed-step frame-loop setup, run/map stepping callbacks, shell event binding, and fullscreen toggling now live behind one focused runtime helper instead of staying inside `src/game/runtime/browserShellRuntime.ts`.
+  - Updated `src/game/runtime/browserShellRuntime.ts` to keep seed/state/bootstrap ownership while delegating loop wiring into the extracted helper.
+  - Added `tests/browserShellRuntimeLoopController.test.ts` and refreshed `tests/browserShellRuntime.test.ts` to lock down the new delegation path plus latest-state loop/debug behavior.
+
 - First-arrival encounter preview pass:
   - Added a shared preview path in `src/game/runtime/arrivalEncounters.ts` so deterministic first-arrival encounter payoffs can be described without mutating runtime state.
   - Updated `src/game/runtime/mapSceneContent.ts` and `src/game/runtime/debugState.ts` so selected routes now preview broker caches, best-lead tune-ups, and other first-arrival route payoffs before travel.

@@ -1,13 +1,13 @@
 import { getMaxHealth } from '../../engine/sim/vehicle';
+import {
+  createBrowserShellRuntimeLoopController,
+  type BrowserShellRuntimeLoopControllerDependencies
+} from './browserShellRuntimeLoopController';
 import { buildDebugStateSnapshot } from './debugState';
-import { createFrameLoopController } from './frameLoop';
 import { stepMapScene } from './mapSceneFlow';
-import { bindShellRuntimeLoop } from './shellRuntimeLoop';
-import { createShellEventBridge, type ShellEventBridge } from './shellEventBridge';
+import { createShellEventBridge } from './shellEventBridge';
 import { stepRunState } from './runStep';
 import { createInitialRuntimeState, type RuntimeState } from './runtimeState';
-
-const FIXED_DT = 1 / 60;
 
 export interface BrowserShellWindow {
   location: Pick<Location, 'search'>;
@@ -60,13 +60,14 @@ export interface BrowserShellRuntimeOptions {
 
 export interface BrowserShellRuntimeDependencies {
   readonly attachDebugWindowHooks?: typeof attachDebugWindowHooks;
-  readonly bindShellRuntimeLoop?: typeof bindShellRuntimeLoop;
   readonly buildDebugStateSnapshot?: typeof buildDebugStateSnapshot;
+  readonly createBrowserShellRuntimeLoopController?: typeof createBrowserShellRuntimeLoopController;
   readonly createEventBridge?: typeof createShellEventBridge;
-  readonly createFrameLoopController?: typeof createFrameLoopController;
+  readonly createFrameLoopController?: BrowserShellRuntimeLoopControllerDependencies['createFrameLoopController'];
   readonly createInitialRuntimeState?: typeof createInitialRuntimeState;
   readonly createSeed?: typeof createRunSeed;
   readonly getMaxHealth?: typeof getMaxHealth;
+  readonly bindShellRuntimeLoop?: BrowserShellRuntimeLoopControllerDependencies['bindShellRuntimeLoop'];
   readonly stepMapScene?: typeof stepMapScene;
   readonly stepRunState?: typeof stepRunState;
 }
@@ -110,8 +111,8 @@ export function createBrowserShellRuntimeController(
 ): BrowserShellRuntimeController {
   const createInitialState = dependencies.createInitialRuntimeState ?? createInitialRuntimeState;
   const createEventBridge = dependencies.createEventBridge ?? createShellEventBridge;
-  const createFrameLoop = dependencies.createFrameLoopController ?? createFrameLoopController;
-  const bindRuntimeLoop = dependencies.bindShellRuntimeLoop ?? bindShellRuntimeLoop;
+  const createRuntimeLoopController =
+    dependencies.createBrowserShellRuntimeLoopController ?? createBrowserShellRuntimeLoopController;
   const runStep = dependencies.stepRunState ?? stepRunState;
   const mapStep = dependencies.stepMapScene ?? stepMapScene;
   const buildSnapshot = dependencies.buildDebugStateSnapshot ?? buildDebugStateSnapshot;
@@ -129,32 +130,28 @@ export function createBrowserShellRuntimeController(
     }
   });
 
-  const frameLoop = createFrameLoop(FIXED_DT, {
-    currentScene: () => state.scene,
-    drawMap: () => drawScene(state, options.renderMapScene),
-    drawRun: () => drawScene(state, options.renderRunScene),
-    renderFrame: () => {
-      options.app.renderer.render(options.app.stage);
+  const runtimeLoop = createRuntimeLoopController(
+    {
+      app: options.app,
+      documentHost: options.documentHost,
+      getState: () => state,
+      renderMapScene: options.renderMapScene,
+      renderRunScene: options.renderRunScene,
+      screenWidth: options.screenWidth,
+      shellEventBridge,
+      shellWindow: options.shellWindow
     },
-    stepMap: (dt) => {
-      mapStep(state, dt, shellEventBridge.mapRotateInput());
-    },
-    stepRun: buildRunStep(() => state, shellEventBridge, options.screenWidth, runStep)
-  });
-
-  bindRuntimeLoop(options.shellWindow, {
-    onAnimationFrame: frameLoop.onAnimationFrame,
-    onKeyDown: shellEventBridge.onKeyDown,
-    onKeyUp: shellEventBridge.onKeyUp,
-    onResize: shellEventBridge.onResize,
-    onToggleFullscreen: async () => {
-      await toggleFullscreen(options.app, options.documentHost);
+    {
+      bindShellRuntimeLoop: dependencies.bindShellRuntimeLoop,
+      createFrameLoopController: dependencies.createFrameLoopController,
+      stepMapScene: mapStep,
+      stepRunState: runStep
     }
-  });
+  );
 
   attachDebugHooks(options.shellWindow, {
     renderGameToText: () => JSON.stringify(buildSnapshot(state, options.screenWidth(), resolveMaxHealth(state.sim.vehicle))),
-    advanceTime: frameLoop.advanceTime
+    advanceTime: runtimeLoop.advanceTime
   });
 
   return {
@@ -163,20 +160,6 @@ export function createBrowserShellRuntimeController(
       options.app.renderer.render(options.app.stage);
     },
     getState: () => state
-  };
-}
-
-function buildRunStep(
-  getState: () => RuntimeState,
-  shellEventBridge: ShellEventBridge,
-  screenWidth: () => number,
-  runStep: typeof stepRunState
-): (dt: number) => void {
-  return (dt: number): void => {
-    const state = getState();
-    const input = shellEventBridge.buildRunStepInputSnapshot();
-    const result = runStep(state, { dt, screenWidth: screenWidth(), ...input });
-    shellEventBridge.updateRunStepInputResult(result);
   };
 }
 
@@ -191,17 +174,4 @@ function drawInitialScene(
   }
 
   renderRunScene(state);
-}
-
-function drawScene(state: RuntimeState, render: (state: RuntimeState) => void): void {
-  render(state);
-}
-
-async function toggleFullscreen(app: BrowserShellRuntimeApp, documentHost: BrowserDocumentHost): Promise<void> {
-  if (!documentHost.fullscreenElement) {
-    await app.canvas.requestFullscreen();
-    return;
-  }
-
-  await documentHost.exitFullscreen();
 }
