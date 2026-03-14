@@ -1,3 +1,8 @@
+- First-arrival encounter preview pass:
+  - Added a shared preview path in `src/game/runtime/arrivalEncounters.ts` so deterministic first-arrival encounter payoffs can be described without mutating runtime state.
+  - Updated `src/game/runtime/mapSceneContent.ts` and `src/game/runtime/debugState.ts` so selected routes now preview broker caches, best-lead tune-ups, and other first-arrival route payoffs before travel.
+  - Expanded `tests/mapSceneContent.test.ts` and `tests/debugState.test.ts`, and updated `docs/01-core-loop.md`.
+
 - Browser smoke route-planning groundwork pass:
   - Updated `src/game/runtime/debugState.ts` so `window.render_game_to_text()` now exports the seeded world graph's node ids/types plus edge distances alongside the existing automation snapshot.
   - Added `findShortestNodePath(...)` in `scripts/e2e/fullObjectiveLoop.js` so browser smoke helpers can compute deterministic shortest-leg routes from that snapshot data without reaching into gameplay internals.

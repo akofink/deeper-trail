@@ -71,6 +71,7 @@ describe('buildDebugStateSnapshot', () => {
       objectiveSummary: 'Boost-sync relays + sync gates',
       isBestLead: false,
       bestLeadArrivalRewardHint: null,
+      arrivalEncounterPreview: null,
       knowledge: {
         benefitKnown: true,
         objectiveKnown: false,
@@ -194,6 +195,12 @@ describe('buildDebugStateSnapshot', () => {
     state.sim.notebook.discoveredClues.nature = true;
     state.sim.notebook.discoveredClues.anomaly = true;
     state.sim.notebook.synthesisUnlocked = true;
+    state.sim.vehicleCondition.engine = 1;
+    state.sim.vehicleCondition.frame = 1;
+    state.sim.vehicleCondition.scanner = 1;
+    state.sim.vehicleCondition.shielding = 1;
+    state.sim.vehicleCondition.storage = 1;
+    state.sim.vehicleCondition.suspension = 1;
     state.mapSelectionIndex = findBestLeadSelection(state);
 
     const snapshot = buildDebugStateSnapshot(state, 900, getMaxHealth(state.sim.vehicle));
@@ -204,6 +211,40 @@ describe('buildDebugStateSnapshot', () => {
     expect(snapshot.map.selectedRoute?.bestLeadArrivalRewardHint).toMatch(
       /^Lead route tune-up: \+1 (engine|frame|scanner|shielding|storage|suspension) condition on first arrival, else \+1 scrap\.$/
     );
+    expect(snapshot.map.selectedRoute?.arrivalEncounterPreview).toMatch(
+      /^Signal line holds on approach: \+1 (engine|frame|scanner|shielding|storage|suspension) condition\.$/
+    );
+  });
+
+  it('exports first-arrival route encounter previews for automation checks', () => {
+    const state = createInitialRuntimeState(720, 'debug-snapshot-arrival-preview');
+    const selectedRoute = connectedNeighbors(state.sim)[0];
+    if (!selectedRoute) {
+      throw new Error('Expected a connected route');
+    }
+
+    const selectedNode = findNode(state.sim, selectedRoute.nodeId);
+    if (!selectedNode) {
+      throw new Error('Expected selected route node');
+    }
+
+    selectedNode.type = 'town';
+    state.sim.notebook.entries.push({
+      id: 'clue-ruin',
+      clueKey: 'ruin',
+      sourceNodeType: 'ruin',
+      sourceNodeId: 'n4',
+      dayDiscovered: 1,
+      title: 'Relay Masonry',
+      body: 'Ruin clue body'
+    });
+
+    const snapshot = buildDebugStateSnapshot(state, 900, getMaxHealth(state.sim.vehicle));
+    expect(snapshot.map.selectedRoute?.arrivalEncounterPreview).toBe('Surveyor broker: +1 free transfer.');
+
+    state.sim.exploration.visitedNodeIds.push(selectedRoute.nodeId);
+    const revisitedSnapshot = buildDebugStateSnapshot(state, 900, getMaxHealth(state.sim.vehicle));
+    expect(revisitedSnapshot.map.selectedRoute?.arrivalEncounterPreview).toBeNull();
   });
 
   it('merges notebook strongest-lead intel into selected-route knowledge', () => {
