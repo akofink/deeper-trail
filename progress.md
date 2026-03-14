@@ -1,3 +1,8 @@
+- Browser shell app-bootstrap extraction pass:
+  - Added `src/game/runtime/browserShellApp.ts` so Pixi application init, root/stage setup, scene-text wiring, and scene-render context assembly now live behind one focused helper instead of remaining inline in `src/game/runtime/browserShell.ts`.
+  - Updated `src/game/runtime/browserShell.ts` to consume the extracted helper while keeping runtime loop wiring, fullscreen toggling, and debug hooks local to the browser shell entry.
+  - Added `tests/browserShellApp.test.ts`.
+
 - Notebook best-lead board marker pass:
   - Updated `src/game/runtime/mapBoardView.ts` so synthesized notebook route intel now marks every currently connected strongest lead directly in the board view instead of limiting that information to the selected-route card.
   - Updated `src/game/render/mapBoardRenderer.ts` so those strongest leads render with a dedicated cyan lead ring that can coexist with existing goal/current/visited node treatments.
