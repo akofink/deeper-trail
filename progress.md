@@ -1,3 +1,11 @@
+- Scene-draw orchestration extraction pass:
+  - Added `src/game/render/sceneRenderer.ts` so run/map scene draw sequencing, render-plan construction, text measurement routing, and render-helper dispatch now live in one render-layer helper instead of remaining inline in `src/main.ts`.
+  - Updated `src/main.ts` to delegate both scene draws through the extracted helper, leaving the Pixi shell focused on bootstrap, loop wiring, and debug exports.
+  - Added `tests/sceneRenderer.test.ts` to lock down run/map orchestration order, plan-builder inputs, and the correct text-node routing for shared measurement callbacks.
+
+- TODO next:
+- Continue trimming `src/main.ts` shell ownership where it still makes sense, especially any remaining bootstrap-specific object assembly that can collapse behind a render/runtime factory without hiding control flow.
+
 - Scene text-bootstrap extraction pass:
   - Added `src/game/render/sceneTextBootstrap.ts` so shared Pixi `Text` node creation/style defaults and scene text-group wiring are owned by one render helper instead of being repeated inline in `src/main.ts`.
   - Updated `src/main.ts` to create all HUD/overlay/row/module/beacon labels through `createSceneTextNodes(...)`, reducing shell bootstrap noise while preserving existing render behavior.
