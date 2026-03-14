@@ -1,20 +1,16 @@
-import { connectedNeighbors } from '../../engine/sim/world';
+import { connectedNeighbors, currentNodeType } from '../../engine/sim/world';
+import { getInstallOffers } from '../../engine/sim/vehicle';
 import { attemptBeaconActivation } from './beaconActivation';
 import { buildLegacyCarryOver } from './goalSignal';
 import {
+  advanceMapInstallSelection,
   advanceMapSelection,
   mapSceneStatusText,
   tryFieldRepairOnMap,
   tryInstallUpgradeOnMap,
   tryTravelSelectedNode
 } from './mapSceneFlow';
-import {
-  createInitialRuntimeState,
-  groundYForCanvasHeight,
-  resetRunFromCurrentNode,
-  shiftRunSceneVertical,
-  type RuntimeState
-} from './runtimeState';
+import { createInitialRuntimeState, groundYForCanvasHeight, resetRunFromCurrentNode, shiftRunSceneVertical, type RuntimeState } from './runtimeState';
 
 export interface ShellKeyDownOptions {
   canvasHeight: number;
@@ -131,6 +127,22 @@ export function handleShellKeyDown(state: RuntimeState, code: string, options: S
 
     if (code === 'KeyC') {
       tryInstallUpgradeOnMap(state);
+      return {
+        nextState: state,
+        preventDefault: true,
+        previousMapNavigate: options.previousMapNavigate,
+        toggleFullscreen: false
+      };
+    }
+
+    if (code === 'ArrowLeft' || code === 'ArrowRight') {
+      const installOffers = getInstallOffers(state.sim, currentNodeType(state.sim));
+      state.mapInstallSelectionIndex = advanceMapInstallSelection(
+        state.mapInstallSelectionIndex ?? 0,
+        installOffers.length,
+        code === 'ArrowLeft' ? -1 : 1
+      );
+
       return {
         nextState: state,
         preventDefault: true,

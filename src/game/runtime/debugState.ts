@@ -2,7 +2,7 @@ import { notebookSignalRouteIntel } from '../../engine/sim/notebook';
 import { anomalyFacingLabel, anomalyRequiredFacing, getObjectiveSummary, getBeaconRuleForNodeType } from '../../engine/sim/runObjectives';
 import { buildSeedBuildShareCode } from '../../engine/sim/shareCode';
 import { connectedNeighbors, currentNodeType, findNode } from '../../engine/sim/world';
-import { getInstallOffer, FIELD_REPAIR_SCRAP_COST } from '../../engine/sim/vehicle';
+import { getInstallOffer, getInstallOffers, FIELD_REPAIR_SCRAP_COST } from '../../engine/sim/vehicle';
 import { visibleBiomeKnowledge } from '../../engine/sim/exploration';
 import { hasBeaconAutoLink } from './beaconActivation';
 import { hasCompletedCurrentNode } from './expeditionFlow';
@@ -56,7 +56,9 @@ export interface DebugStateSnapshot {
     repairCostScrap: number;
     autoLinkUnlocked: boolean;
     dashEnergy: number;
+    installOfferIndex: number;
     installOffer: ReturnType<typeof getInstallOffer>;
+    installOffers: ReturnType<typeof getInstallOffers>;
     connectedRoutes: ReturnType<typeof connectedNeighbors>;
     selectedRoute:
       | {
@@ -205,6 +207,8 @@ export function buildDebugStateSnapshot(state: RuntimeState, viewportWidth: numb
   const signalIntel = notebookSignalRouteIntel(state.sim, state.expeditionGoalNodeId, selectedOption?.nodeId ?? null);
   const routeKnowledge = selectedNode ? visibleBiomeKnowledge(state.sim, selectedNode.type) : null;
   const objectiveProgress = countObjectiveSupportProgress(state, activeNodeType);
+  const installOffers = getInstallOffers(state.sim, currentNodeType(state.sim));
+  const installOfferIndex = Math.max(0, Math.min(state.mapInstallSelectionIndex ?? 0, Math.max(0, installOffers.length - 1)));
 
   return {
     scene: state.scene,
@@ -252,7 +256,9 @@ export function buildDebugStateSnapshot(state: RuntimeState, viewportWidth: numb
       repairCostScrap: FIELD_REPAIR_SCRAP_COST,
       autoLinkUnlocked: hasBeaconAutoLink(state),
       dashEnergy: Number(state.dashEnergy.toFixed(2)),
-      installOffer: getInstallOffer(state.sim, currentNodeType(state.sim)),
+      installOfferIndex,
+      installOffer: getInstallOffer(state.sim, currentNodeType(state.sim), installOfferIndex),
+      installOffers,
       connectedRoutes: options,
       selectedRoute: selectedOption
         ? {

@@ -99,6 +99,7 @@ export interface RuntimeState {
   runPromptText?: string;
   runPromptTimer?: number;
   mapSelectionIndex: number;
+  mapInstallSelectionIndex?: number;
   lastTravel?:
     | {
         destinationNodeId: string;
@@ -190,6 +191,7 @@ export function createInitialRuntimeState(canvasHeight: number, seed: string, le
     runPromptText: '',
     runPromptTimer: 0,
     mapSelectionIndex: 0,
+    mapInstallSelectionIndex: 0,
     lastTravel: null,
     completedNodeIds: [],
     freeTravelCharges: 0,

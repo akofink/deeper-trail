@@ -2,7 +2,7 @@ import { asNodeTypeKey, biomeBenefitLabel, biomeRiskLabel, visibleBiomeKnowledge
 import { notebookClueProgress, notebookSignalRouteIntel } from '../../engine/sim/notebook';
 import { buildSeedBuildShareCode } from '../../engine/sim/shareCode';
 import { currentNodeType, findNode } from '../../engine/sim/world';
-import { getInstallOffer, hasAnyUpgradeableSubsystem } from '../../engine/sim/vehicle';
+import { getInstallOffer, getInstallOffers, hasAnyUpgradeableSubsystem } from '../../engine/sim/vehicle';
 import { goalSignalPrimerNote } from './goalSignal';
 import { mapNodePalette } from './runLayout';
 import type { RuntimeState } from './runtimeState';
@@ -33,7 +33,9 @@ export function buildMapSceneContent(
   options: MapSceneContentOptions
 ): MapSceneContent {
   const selectedNode = selectedNodeId ? findNode(state.sim, selectedNodeId) : null;
-  const installOffer = getInstallOffer(state.sim, currentNodeType(state.sim));
+  const installOffers = getInstallOffers(state.sim, currentNodeType(state.sim));
+  const selectedInstallIndex = Math.max(0, Math.min(state.mapInstallSelectionIndex ?? 0, Math.max(0, installOffers.length - 1)));
+  const installOffer = getInstallOffer(state.sim, currentNodeType(state.sim), selectedInstallIndex);
   const selectedNodeType = asNodeTypeKey(selectedNode?.type ?? 'town');
   const signalIntel = notebookSignalRouteIntel(state.sim, state.expeditionGoalNodeId, selectedNodeId);
   const goalPrimerNote = goalSignalPrimerNote(selectedNodeId, state);
@@ -65,7 +67,12 @@ export function buildMapSceneContent(
       : 'Select a connected route.';
 
   const installHint = installOffer
-    ? `Site: +${installOffer.subsystem} lv${installOffer.nextLevel}  cost ${installOffer.scrapCost}`
+    ? [
+        `Site ${selectedInstallIndex + 1}/${installOffers.length}: +${installOffer.subsystem} lv${installOffer.nextLevel}  cost ${installOffer.scrapCost}`,
+        installOffers.length > 1
+          ? `Alt ${installOffer.subsystem === installOffers[0]?.subsystem ? installOffers[1]?.subsystem : installOffers[0]?.subsystem} available. Left/Right cycles the rack.`
+          : 'Only one site module remains here.'
+      ].join('\n')
     : hasAnyUpgradeableSubsystem(state.sim)
       ? 'Site: no install here. Try another biome.'
       : 'Vehicle: fully maxed.';

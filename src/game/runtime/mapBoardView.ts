@@ -142,14 +142,15 @@ export function buildMapActionChips(
     chipY,
     chipHeight,
     [
-      { width: 98, minWidth: 80, color: '#60a5fa', label: 'Up/Down\nRoute', labelFill: '#64748b' },
-      { width: 88, minWidth: 72, color: '#7dd3fc', label: 'Q/E\nRotate', labelFill: '#64748b' },
-      { width: 88, minWidth: 72, color: '#fbbf24', label: 'Enter\nTravel', labelFill: '#64748b' },
-      { width: 88, minWidth: 72, color: '#34d399', label: 'B\nRepair', labelFill: '#64748b' },
-      { width: 88, minWidth: 72, color: '#94a3b8', label: 'C\nInstall', labelFill: '#64748b' },
+      { width: 92, minWidth: 72, color: '#60a5fa', label: 'Up/Down\nRoute', labelFill: '#64748b' },
+      { width: 86, minWidth: 68, color: '#38bdf8', label: 'Left/Right\nSite', labelFill: '#64748b' },
+      { width: 82, minWidth: 64, color: '#7dd3fc', label: 'Q/E\nRotate', labelFill: '#64748b' },
+      { width: 82, minWidth: 64, color: '#fbbf24', label: 'Enter\nTravel', labelFill: '#64748b' },
+      { width: 82, minWidth: 64, color: '#34d399', label: 'B\nRepair', labelFill: '#64748b' },
+      { width: 82, minWidth: 64, color: '#94a3b8', label: 'C\nInstall', labelFill: '#64748b' },
       {
-        width: 88,
-        minWidth: 72,
+        width: 82,
+        minWidth: 64,
         color: '#64748b',
         label: expeditionComplete ? 'N\nNew' : 'A\nReturn',
         labelFill: '#64748b'

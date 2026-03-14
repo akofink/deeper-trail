@@ -23,6 +23,7 @@ describe('buildDebugStateSnapshot', () => {
 
     selectedNode.type = 'anomaly';
     state.mapSelectionIndex = 0;
+    state.mapInstallSelectionIndex = 1;
     state.sim.vehicle.scanner = 2;
 
     const snapshot = buildDebugStateSnapshot(state, 900, getMaxHealth(state.sim.vehicle));
@@ -39,6 +40,8 @@ describe('buildDebugStateSnapshot', () => {
       }
     });
     expect(snapshot.sim.shareCode).toMatch(/^DT1-[A-Z0-9]+-[0-9A-Z]{6}-[0-9A-Z]{6}$/);
+    expect(snapshot.map.installOfferIndex).toBe(1);
+    expect(snapshot.map.installOffers).toHaveLength(2);
   });
 
   it('reports run objective progress for biome-specific support goals', () => {

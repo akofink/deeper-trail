@@ -110,7 +110,8 @@ describe('map scene content helper', () => {
     expect(content.routeDetail).toContain(`dist ${routeCase.weaker.distance}  fuel ${routeCase.weaker.distance}`);
     expect(content.routeDetail).toContain('Objective pattern ?');
     expect(content.routeDetail).toContain('Signal triangulation offline.');
-    expect(content.installHint.length).toBeGreaterThan(0);
+    expect(content.installHint).toContain('Site 1/2: +');
+    expect(content.installHint).toContain('Left/Right cycles the rack.');
     expect(content.scannerHint).toContain('phase-lock online');
     expect(content.scannerHint).toContain('objective scan at lv.3');
     expect(content.repairHint).toContain('repair modules');
@@ -174,6 +175,27 @@ describe('map scene content helper', () => {
     expect(content.fieldNotes.join('\n')).toContain('Ordered relays + impact plates');
     expect(content.fieldNotes.join('\n')).toContain('AFTERGLOW 2x');
     expect(content.fieldNotes.join('\n')).toContain('post-goal route yields +2 salvage');
+  });
+
+  it('shows the selected site module offer instead of collapsing installs to one implicit pick', () => {
+    const state = buildRuntimeState();
+    const currentNode = state.sim.world.nodes.find((node) => node.id === state.sim.currentNodeId);
+    if (!currentNode) {
+      throw new Error('Expected current node');
+    }
+    currentNode.type = 'town';
+    state.mapInstallSelectionIndex = 1;
+
+    const content = buildMapSceneContent(state, null, 0, {
+      canUseMedPatch: false,
+      medPatchHealAmount: 1,
+      medPatchScrapCost: 2,
+      hasAutoLinkScanner: false,
+      hasCompletedCurrentNode: false
+    });
+
+    expect(content.installHint).toContain('Site 2/2: +storage lv2  cost 2');
+    expect(content.installHint).toContain('Alt engine available.');
   });
 
   it('surfaces a pending legacy echo before the next expedition spends it', () => {
