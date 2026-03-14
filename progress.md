@@ -1,3 +1,8 @@
+- Browser shell runtime-controller extraction pass:
+  - Added `src/game/runtime/browserShellRuntime.ts` so seed resolution, runtime-state ownership, frame-loop wiring, fullscreen toggling, and debug-hook attachment now live behind one focused controller instead of staying inline in `src/game/runtime/browserShell.ts`.
+  - Slimmed `src/game/runtime/browserShell.ts` down to module loading, Pixi app creation, and delegation into the extracted runtime controller.
+  - Added `tests/browserShellRuntime.test.ts` covering URL-seeded startup, loop/debug-hook binding, initial draw behavior, and state replacement during shell-driven stepping.
+
 - Browser shell app-bootstrap extraction pass:
   - Added `src/game/runtime/browserShellApp.ts` so Pixi application init, root/stage setup, scene-text wiring, and scene-render context assembly now live behind one focused helper instead of remaining inline in `src/game/runtime/browserShell.ts`.
   - Updated `src/game/runtime/browserShell.ts` to consume the extracted helper while keeping runtime loop wiring, fullscreen toggling, and debug hooks local to the browser shell entry.
