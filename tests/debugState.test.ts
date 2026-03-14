@@ -109,6 +109,24 @@ describe('buildDebugStateSnapshot', () => {
         sourceTitle: 'Vented Bloom Channel'
       }
     ]);
+    expect(snapshot.map.selectedRoute).toMatchObject({
+      afterglowPreview: null,
+      legacyEchoPreview: ['Vented Bloom Channel: shield charge re-primed after arrival']
+    });
+  });
+
+  it('exposes active post-goal afterglow preview on the selected route', () => {
+    const state = createInitialRuntimeState(720, 'debug-snapshot-afterglow');
+    state.expeditionComplete = true;
+    state.postGoalRouteHookType = 'salvage-echo';
+    state.postGoalRouteHookCharges = 2;
+
+    const snapshot = buildDebugStateSnapshot(state, 900, getMaxHealth(state.sim.vehicle));
+
+    expect(snapshot.map.selectedRoute).toMatchObject({
+      afterglowPreview: '+2 salvage after arrival',
+      legacyEchoPreview: []
+    });
   });
 
   it('reports last-travel fuel refund details for automation checks', () => {

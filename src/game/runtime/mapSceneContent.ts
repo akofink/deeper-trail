@@ -3,7 +3,7 @@ import { notebookClueProgress, notebookSignalRouteIntel } from '../../engine/sim
 import { buildSeedBuildShareCode } from '../../engine/sim/shareCode';
 import { currentNodeType, findNode } from '../../engine/sim/world';
 import { getInstallOffer, getInstallOffers, hasAnyUpgradeableSubsystem } from '../../engine/sim/vehicle';
-import { goalSignalPrimerNote } from './goalSignal';
+import { describeGoalRouteHookEffect, goalSignalPrimerNote } from './goalSignal';
 import { mapNodePalette } from './runLayout';
 import type { RuntimeState } from './runtimeState';
 import { getObjectiveSummary } from '../../engine/sim/runObjectives';
@@ -49,6 +49,16 @@ export function buildMapSceneContent(
   const legacyCarryOvers = state.legacyCarryOvers;
   const legacyCarryOverSummary =
     legacyCarryOvers.length > 0 ? legacyCarryOvers.map((carryOver) => carryOver.note || 'carry-over route hook ready').join(' / ') : null;
+  const legacyCarryOverPreview =
+    legacyCarryOvers.length > 0
+      ? legacyCarryOvers
+          .map((carryOver) => `${carryOver.sourceTitle}: ${describeGoalRouteHookEffect(carryOver.type)}`)
+          .join(' / ')
+      : null;
+  const activeAfterglowPreview =
+    state.expeditionComplete && (state.postGoalRouteHookCharges ?? 0) > 0 && state.postGoalRouteHookType
+      ? describeGoalRouteHookEffect(state.postGoalRouteHookType)
+      : null;
 
   const routeDetail =
     selectedNode && selectedNodeId
@@ -61,8 +71,12 @@ export function buildMapSceneContent(
           selectedRouteKnowledge.objectiveKnown ? getObjectiveSummary(selectedNode.type) : 'Objective pattern ?',
           signalIntel.routeHint ?? 'Signal triangulation offline.',
           goalPrimerNote,
+          legacyCarryOverPreview ? `Legacy route payout: ${legacyCarryOverPreview}` : null,
           !state.expeditionComplete && legacyCarryOverSummary
             ? `Legacy echoes armed (${legacyCarryOvers.length}): ${legacyCarryOverSummary}`
+            : null,
+          activeAfterglowPreview
+            ? `Next route afterglow (${state.postGoalRouteHookCharges}x): ${activeAfterglowPreview}`
             : null,
           state.expeditionComplete && (state.postGoalRouteHookCharges ?? 0) > 0
             ? `Afterglow ${state.postGoalRouteHookCharges}x: ${state.postGoalRouteHookNote ?? 'follow-on route hook active'}`
@@ -117,12 +131,16 @@ export function buildMapSceneContent(
   if (state.expeditionComplete && (state.postGoalRouteHookCharges ?? 0) > 0) {
     fieldNotes.push('');
     fieldNotes.push(`AFTERGLOW ${state.postGoalRouteHookCharges}x`);
+    if (activeAfterglowPreview) {
+      fieldNotes.push(`NEXT ROUTE ${activeAfterglowPreview}`);
+    }
     fieldNotes.push(state.postGoalRouteHookNote ?? 'Decoded source aftermath remains active.');
   } else if (legacyCarryOvers.length > 0) {
     fieldNotes.push('');
     fieldNotes.push(`LEGACY ECHOES ${legacyCarryOvers.length}x`);
     legacyCarryOvers.forEach((carryOver) => {
       fieldNotes.push(carryOver.sourceTitle.toUpperCase());
+      fieldNotes.push(`NEXT ROUTE ${describeGoalRouteHookEffect(carryOver.type)}`);
       fieldNotes.push(carryOver.note || 'Decoded source aftermath is queued for the next route.');
     });
   }

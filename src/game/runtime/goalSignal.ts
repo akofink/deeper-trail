@@ -34,6 +34,15 @@ export interface GoalSignalProfile {
   postGoalRouteHookNote: string;
 }
 
+const GOAL_ROUTE_HOOK_PREVIEW = {
+  'relay-credit': '+1 free travel credit after arrival',
+  'breach-fuel': '+4 fuel after arrival',
+  'salvage-echo': '+2 salvage after arrival',
+  'quiet-heal': '+1 hull after arrival',
+  'folded-hop': '+1 free travel credit after arrival',
+  'vented-shield': 'shield charge re-primed after arrival'
+} as const satisfies Record<GoalRouteHookType, string>;
+
 export function hasGoalSignalPrimer(state: RuntimeState): boolean {
   return state.sim.notebook.synthesisUnlocked && state.sim.currentNodeId === state.expeditionGoalNodeId;
 }
@@ -381,6 +390,10 @@ function applyRouteHookEffect(state: RuntimeState, hookType: GoalRouteHookType):
     default:
       return null;
   }
+}
+
+export function describeGoalRouteHookEffect(hookType: GoalRouteHookType): string {
+  return GOAL_ROUTE_HOOK_PREVIEW[hookType];
 }
 
 export function buildLegacyCarryOvers(state: RuntimeState): LegacyCarryOver[] {

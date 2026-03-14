@@ -1,3 +1,9 @@
+- Route aftermath preview pass:
+  - Added a shared goal-hook preview helper in `src/game/runtime/goalSignal.ts` so active afterglow hooks and queued legacy echoes can describe their concrete next-route payout without applying the effect early.
+  - Updated `src/game/runtime/mapSceneContent.ts` so selected route cards now preview the exact next-route payout for active post-goal afterglow hooks and queued legacy echoes, and field notes mirror those previews alongside the existing flavor text.
+  - Updated `src/game/runtime/debugState.ts` so automation snapshots expose the same afterglow/legacy payout previews on the currently selected route.
+  - Expanded `tests/mapSceneContent.test.ts` and `tests/debugState.test.ts`, and updated `docs/06-puzzles-and-meta-mystery.md`.
+
 - Map selection normalization pass:
   - Added shared selection-clamp helpers in `src/game/runtime/mapSceneFlow.ts` so route and install indices snap back into valid bounds whenever map options shrink.
   - Opening the map from the run scene now normalizes stale route/install selections, and successful travel resets both selections for the destination node instead of carrying old indices across worlds/sites.

@@ -141,6 +141,7 @@ describe('map scene content helper', () => {
   it('builds notebook field notes and completion state for explored progress', () => {
     const state = buildRuntimeState();
     state.expeditionComplete = true;
+    state.postGoalRouteHookType = 'salvage-echo';
     state.postGoalRouteHookCharges = 2;
     state.postGoalRouteHookNote = 'Afterglow hook: each post-goal route yields +2 salvage.';
     state.sim.notebook.entries.push({
@@ -175,7 +176,27 @@ describe('map scene content helper', () => {
     expect(content.fieldNotes.join('\n')).toContain('RELAY MASONRY');
     expect(content.fieldNotes.join('\n')).toContain('Ordered relays + impact plates');
     expect(content.fieldNotes.join('\n')).toContain('AFTERGLOW 2x');
+    expect(content.fieldNotes.join('\n')).toContain('NEXT ROUTE +2 salvage after arrival');
     expect(content.fieldNotes.join('\n')).toContain('post-goal route yields +2 salvage');
+  });
+
+  it('previews the concrete next-route afterglow payout on selected routes', () => {
+    const state = buildRuntimeState();
+    state.expeditionComplete = true;
+    state.postGoalRouteHookType = 'breach-fuel';
+    state.postGoalRouteHookCharges = 2;
+    state.postGoalRouteHookNote = 'Afterglow hook: each post-goal route restores +4 fuel.';
+
+    const content = buildMapSceneContent(state, 'n1', 7, {
+      canUseMedPatch: false,
+      medPatchHealAmount: 1,
+      medPatchScrapCost: 2,
+      hasAutoLinkScanner: false,
+      hasCompletedCurrentNode: true
+    });
+
+    expect(content.routeDetail).toContain('Next route afterglow (2x): +4 fuel after arrival');
+    expect(content.routeDetail).toContain('Afterglow 2x: Afterglow hook: each post-goal route restores +4 fuel.');
   });
 
   it('shows the selected site module offer instead of collapsing installs to one implicit pick', () => {
@@ -217,9 +238,11 @@ describe('map scene content helper', () => {
       hasCompletedCurrentNode: true
     });
 
+    expect(content.routeDetail).toContain('Legacy route payout: Breached Entry Core: +4 fuel after arrival');
     expect(content.routeDetail).toContain('Legacy echoes armed (1): Legacy echo: breach reservoir restores +4 fuel on the next route.');
     expect(content.fieldNotes.join('\n')).toContain('LEGACY ECHOES 1x');
     expect(content.fieldNotes.join('\n')).toContain('BREACHED ENTRY CORE');
+    expect(content.fieldNotes.join('\n')).toContain('NEXT ROUTE +4 fuel after arrival');
     expect(content.fieldNotes.join('\n')).toContain('breach reservoir restores +4 fuel');
   });
 

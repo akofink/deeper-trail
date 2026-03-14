@@ -6,6 +6,7 @@ import { getInstallOffer, getInstallOffers, FIELD_REPAIR_SCRAP_COST } from '../.
 import { visibleBiomeKnowledge } from '../../engine/sim/exploration';
 import { hasBeaconAutoLink } from './beaconActivation';
 import { hasCompletedCurrentNode } from './expeditionFlow';
+import { describeGoalRouteHookEffect } from './goalSignal';
 import type { RuntimeState } from './runtimeState';
 
 type ObjectiveSupportKey = 'serviceStops' | 'impactPlates' | 'canopyLifts' | 'syncGates';
@@ -64,6 +65,8 @@ export interface DebugStateSnapshot {
           isGoal: boolean;
           knowledge: ReturnType<typeof visibleBiomeKnowledge>;
           signalHint: string | null;
+          afterglowPreview: string | null;
+          legacyEchoPreview: string[];
         }
       | null;
     message: string;
@@ -257,7 +260,14 @@ export function buildDebugStateSnapshot(state: RuntimeState, viewportWidth: numb
             objectiveSummary: selectedNode ? getObjectiveSummary(selectedNode.type) : null,
             isGoal: selectedOption.nodeId === state.expeditionGoalNodeId,
             knowledge: routeKnowledge ?? visibleBiomeKnowledge(state.sim, 'town'),
-            signalHint: signalIntel.routeHint
+            signalHint: signalIntel.routeHint,
+            afterglowPreview:
+              state.expeditionComplete && (state.postGoalRouteHookCharges ?? 0) > 0 && state.postGoalRouteHookType
+                ? describeGoalRouteHookEffect(state.postGoalRouteHookType)
+                : null,
+            legacyEchoPreview: state.legacyCarryOvers.map(
+              (carryOver) => `${carryOver.sourceTitle}: ${describeGoalRouteHookEffect(carryOver.type)}`
+            )
           }
         : null,
       message: state.mapMessage
