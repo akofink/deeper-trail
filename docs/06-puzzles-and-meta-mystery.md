@@ -67,7 +67,7 @@ Use a “mystery graph”:
 - Notebook progress now feeds back into route choice mechanically:
   - first clue enables signal-bearing reads on the selected route,
   - second clue adds estimated remaining leg count to the source,
-  - synthesis marks the strongest currently connected lead on the route board and decodes that lead's arrival profile before travel.
+  - synthesis marks the strongest currently connected lead directly on the route board with a dedicated lead ring and decodes that lead's arrival profile before travel.
   - that strongest synthesized lead now also previews and grants a first-arrival tune-up keyed to the destination biome's wear-target subsystem, with a scrap fallback if that module is already stable, so route choice can feed back into machine condition instead of only route text.
 - Synthesized approaches to the expedition goal now also alter the local run:
   - the map route card now previews a seed-stable source profile instead of a generic synthesis warning,
