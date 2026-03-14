@@ -20,6 +20,7 @@ function buildRuntimeState(): RuntimeState {
     mapSelectionIndex: 0,
     completedNodeIds: [],
     freeTravelCharges: 0,
+    legacyCarryOvers: [],
     dashEnergy: 1,
     dashBoost: 0.25,
     dashDirection: 1,

@@ -46,6 +46,10 @@ export function buildMapSceneContent(
     riskKnown: selectedKnowledge.riskKnown || signalIntel.revealsRisk
   };
 
+  const legacyCarryOvers = state.legacyCarryOvers;
+  const legacyCarryOverSummary =
+    legacyCarryOvers.length > 0 ? legacyCarryOvers.map((carryOver) => carryOver.note || 'carry-over route hook ready').join(' / ') : null;
+
   const routeDetail =
     selectedNode && selectedNodeId
       ? [
@@ -57,8 +61,8 @@ export function buildMapSceneContent(
           selectedRouteKnowledge.objectiveKnown ? getObjectiveSummary(selectedNode.type) : 'Objective pattern ?',
           signalIntel.routeHint ?? 'Signal triangulation offline.',
           goalPrimerNote,
-          !state.expeditionComplete && state.legacyCarryOverType
-            ? `Legacy echo armed: ${state.legacyCarryOverNote ?? 'carry-over route hook ready'}`
+          !state.expeditionComplete && legacyCarryOverSummary
+            ? `Legacy echoes armed (${legacyCarryOvers.length}): ${legacyCarryOverSummary}`
             : null,
           state.expeditionComplete && (state.postGoalRouteHookCharges ?? 0) > 0
             ? `Afterglow ${state.postGoalRouteHookCharges}x: ${state.postGoalRouteHookNote ?? 'follow-on route hook active'}`
@@ -114,10 +118,13 @@ export function buildMapSceneContent(
     fieldNotes.push('');
     fieldNotes.push(`AFTERGLOW ${state.postGoalRouteHookCharges}x`);
     fieldNotes.push(state.postGoalRouteHookNote ?? 'Decoded source aftermath remains active.');
-  } else if (state.legacyCarryOverType) {
+  } else if (legacyCarryOvers.length > 0) {
     fieldNotes.push('');
-    fieldNotes.push('LEGACY ECHO READY');
-    fieldNotes.push(state.legacyCarryOverNote ?? 'Decoded source aftermath is queued for the next route.');
+    fieldNotes.push(`LEGACY ECHOES ${legacyCarryOvers.length}x`);
+    legacyCarryOvers.forEach((carryOver) => {
+      fieldNotes.push(carryOver.sourceTitle.toUpperCase());
+      fieldNotes.push(carryOver.note || 'Decoded source aftermath is queued for the next route.');
+    });
   }
 
   return {

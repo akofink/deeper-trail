@@ -43,15 +43,21 @@ describe('runtimeState helpers', () => {
   });
 
   it('stores a pending legacy carry-over when a new expedition starts from a finished one', () => {
-    const state = createInitialRuntimeState(720, 'runtime-legacy', {
-      type: 'salvage-echo',
-      note: 'Legacy echo: salvage echo recovered +2 scrap on the next route.',
-      sourceTitle: 'Echo Salvage Orchard'
-    });
+    const state = createInitialRuntimeState(720, 'runtime-legacy', [
+      {
+        type: 'salvage-echo',
+        note: 'Legacy echo: salvage echo recovered +2 scrap on the next route.',
+        sourceTitle: 'Echo Salvage Orchard'
+      }
+    ]);
 
-    expect(state.legacyCarryOverType).toBe('salvage-echo');
-    expect(state.legacyCarryOverNote).toContain('salvage echo');
-    expect(state.legacyCarryOverSourceTitle).toBe('Echo Salvage Orchard');
+    expect(state.legacyCarryOvers).toEqual([
+      {
+        type: 'salvage-echo',
+        note: 'Legacy echo: salvage echo recovered +2 scrap on the next route.',
+        sourceTitle: 'Echo Salvage Orchard'
+      }
+    ]);
     expect(state.expeditionComplete).toBe(false);
   });
 

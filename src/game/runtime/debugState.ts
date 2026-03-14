@@ -29,13 +29,7 @@ export interface DebugStateSnapshot {
     exploration: RuntimeState['sim']['exploration'];
     notebook: RuntimeState['sim']['notebook'];
     shareCode: string;
-    legacyCarryOver:
-      | {
-          type: NonNullable<RuntimeState['legacyCarryOverType']>;
-          note: string;
-          sourceTitle: string;
-        }
-      | null;
+    legacyCarryOvers: RuntimeState['legacyCarryOvers'];
   };
   map: {
     rotation: number;
@@ -229,13 +223,7 @@ export function buildDebugStateSnapshot(state: RuntimeState, viewportWidth: numb
       exploration: state.sim.exploration,
       notebook: state.sim.notebook,
       shareCode: buildSeedBuildShareCode(state.sim),
-      legacyCarryOver: state.legacyCarryOverType
-        ? {
-            type: state.legacyCarryOverType,
-            note: state.legacyCarryOverNote ?? '',
-            sourceTitle: state.legacyCarryOverSourceTitle ?? ''
-          }
-        : null
+      legacyCarryOvers: state.legacyCarryOvers.map((carryOver) => ({ ...carryOver }))
     },
     map: {
       rotation: Number(state.mapRotation.toFixed(2)),

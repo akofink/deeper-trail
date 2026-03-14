@@ -88,9 +88,7 @@ export interface RuntimeState {
   postGoalRouteHookType?: GoalRouteHookType | null;
   postGoalRouteHookCharges?: number;
   postGoalRouteHookNote?: string;
-  legacyCarryOverType?: GoalRouteHookType | null;
-  legacyCarryOverNote?: string;
-  legacyCarryOverSourceTitle?: string;
+  legacyCarryOvers: LegacyCarryOver[];
   score: number;
   health: number;
   elapsedSeconds: number;
@@ -165,7 +163,7 @@ export function tryUseMedPatch(state: RuntimeState): MedPatchResult {
   return { didHeal: true };
 }
 
-export function createInitialRuntimeState(canvasHeight: number, seed: string, legacyCarryOver?: LegacyCarryOver): RuntimeState {
+export function createInitialRuntimeState(canvasHeight: number, seed: string, legacyCarryOvers: LegacyCarryOver[] = []): RuntimeState {
   const sim = createInitialGameState(seed);
   const groundY = groundYForCanvasHeight(canvasHeight);
   const run = buildRunLayout(groundY, currentNodeType(sim));
@@ -180,9 +178,7 @@ export function createInitialRuntimeState(canvasHeight: number, seed: string, le
     postGoalRouteHookType: null,
     postGoalRouteHookCharges: 0,
     postGoalRouteHookNote: '',
-    legacyCarryOverType: legacyCarryOver?.type ?? null,
-    legacyCarryOverNote: legacyCarryOver?.note ?? '',
-    legacyCarryOverSourceTitle: legacyCarryOver?.sourceTitle ?? '',
+    legacyCarryOvers: legacyCarryOvers.map((carryOver) => ({ ...carryOver })),
     score: 0,
     health: maxHealth,
     elapsedSeconds: 0,

@@ -92,19 +92,23 @@ describe('buildDebugStateSnapshot', () => {
   });
 
   it('exposes pending legacy carry-over state for automation and debugging', () => {
-    const state = createInitialRuntimeState(720, 'debug-snapshot-legacy', {
-      type: 'vented-shield',
-      note: 'Legacy echo: vented channel re-primes shield charge on the next route.',
-      sourceTitle: 'Vented Bloom Channel'
-    });
+    const state = createInitialRuntimeState(720, 'debug-snapshot-legacy', [
+      {
+        type: 'vented-shield',
+        note: 'Legacy echo: vented channel re-primes shield charge on the next route.',
+        sourceTitle: 'Vented Bloom Channel'
+      }
+    ]);
 
     const snapshot = buildDebugStateSnapshot(state, 900, getMaxHealth(state.sim.vehicle));
 
-    expect(snapshot.sim.legacyCarryOver).toEqual({
-      type: 'vented-shield',
-      note: 'Legacy echo: vented channel re-primes shield charge on the next route.',
-      sourceTitle: 'Vented Bloom Channel'
-    });
+    expect(snapshot.sim.legacyCarryOvers).toEqual([
+      {
+        type: 'vented-shield',
+        note: 'Legacy echo: vented channel re-primes shield charge on the next route.',
+        sourceTitle: 'Vented Bloom Channel'
+      }
+    ]);
   });
 
   it('reports last-travel fuel refund details for automation checks', () => {

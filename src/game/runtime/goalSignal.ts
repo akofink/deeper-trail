@@ -383,25 +383,28 @@ function applyRouteHookEffect(state: RuntimeState, hookType: GoalRouteHookType):
   }
 }
 
-export function buildLegacyCarryOver(state: RuntimeState): LegacyCarryOver | null {
+export function buildLegacyCarryOvers(state: RuntimeState): LegacyCarryOver[] {
+  const carryOvers = state.legacyCarryOvers.map((carryOver) => ({ ...carryOver }));
   if (!state.expeditionComplete) {
-    return null;
+    return carryOvers;
   }
 
   const profile = decodedGoalSignalProfile(state);
   const type = state.postGoalRouteHookType ?? profile?.postGoalRouteHookType ?? null;
   if (!type) {
-    return null;
+    return carryOvers;
   }
 
-  return {
+  carryOvers.push({
     type,
     note:
       state.postGoalRouteHookNote ??
       profile?.postGoalRouteHookNote ??
       'Decoded source aftermath remains active.',
     sourceTitle: profile?.endingTitle ?? 'Decoded source aftermath'
-  };
+  });
+
+  return carryOvers;
 }
 
 export function applyGoalSignalPostGoalRouteHook(state: RuntimeState): string | null {
@@ -435,17 +438,20 @@ export function applyLegacyCarryOver(state: RuntimeState): string | null {
     return null;
   }
 
-  const hookType = state.legacyCarryOverType ?? null;
-  if (!hookType) {
+  if (state.legacyCarryOvers.length === 0) {
     return null;
   }
 
-  const effectNote = applyRouteHookEffect(state, hookType);
-  const sourceTitle = state.legacyCarryOverSourceTitle ? `${state.legacyCarryOverSourceTitle}: ` : '';
+  const messages = state.legacyCarryOvers.flatMap((carryOver) => {
+    const effectNote = applyRouteHookEffect(state, carryOver.type);
+    if (!effectNote) {
+      return [];
+    }
 
-  state.legacyCarryOverType = null;
-  state.legacyCarryOverNote = '';
-  state.legacyCarryOverSourceTitle = '';
+    return [`${carryOver.sourceTitle ? `${carryOver.sourceTitle}: ` : ''}${effectNote}.`];
+  });
 
-  return effectNote ? `Legacy echo ${sourceTitle}${effectNote}.` : null;
+  state.legacyCarryOvers = [];
+
+  return messages.length > 0 ? `Legacy echoes ${messages.join(' ')}` : null;
 }

@@ -48,7 +48,7 @@ describe('shellControl helpers', () => {
     state.expeditionComplete = true;
     state.postGoalRouteHookType = 'salvage-echo';
     state.postGoalRouteHookNote = 'Afterglow hook: each post-goal route yields +2 salvage.';
-    state.legacyCarryOverType = null;
+    state.legacyCarryOvers = [];
     state.sim.notebook.entries.push(
       {
         id: 'clue-nature',
@@ -88,9 +88,13 @@ describe('shellControl helpers', () => {
     });
 
     expect(result.nextState.seed).toBe('shell-legacy-next');
-    expect(result.nextState.legacyCarryOverType).toBe('salvage-echo');
-    expect(result.nextState.legacyCarryOverNote).toContain('post-goal route yields +2 salvage');
-    expect(result.nextState.legacyCarryOverSourceTitle).toBe('Echo Salvage Orchard');
+    expect(result.nextState.legacyCarryOvers).toEqual([
+      {
+        type: 'salvage-echo',
+        note: 'Afterglow hook: each post-goal route yields +2 salvage.',
+        sourceTitle: 'Echo Salvage Orchard'
+      }
+    ]);
   });
 
   it('restarts lost runs with a fresh state and resets won runs in place', () => {

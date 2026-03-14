@@ -1,3 +1,9 @@
+- Legacy carry-over queue pass:
+  - Replaced the single pending legacy-echo fields with an ordered `legacyCarryOvers` queue in `src/game/runtime/runtimeState.ts`, and updated `src/game/runtime/goalSignal.ts` plus `src/game/runtime/shellControl.ts` so starting a new seeded world preserves any existing residue and appends the newly completed expedition's afterglow hook instead of overwriting it.
+  - Updated `src/game/runtime/mapSceneContent.ts` and `src/game/runtime/debugState.ts` so the map route card, field notes, and debug snapshot all expose queued echoes explicitly rather than only the last pending one.
+  - The next expedition now resolves every queued legacy echo together on its first successful travel, preserving deterministic order and combined effects.
+  - Expanded regression coverage in `tests/goalSignal.test.ts`, `tests/runtimeState.test.ts`, `tests/shellControl.test.ts`, `tests/mapSceneFlow.test.ts`, `tests/mapSceneContent.test.ts`, and `tests/debugState.test.ts`, and updated all manual runtime-state fixtures to include the queued carry-over field.
+
 - Shared-browser smoke timing pass:
   - Extended `scripts/e2e/fullObjectiveLoop.js` so both single-smoke and shared-browser runs now measure deterministic wall-clock durations, emit per-smoke timing lines, and print one compact suite summary after the selected replay set finishes.
   - Updated `scripts/e2e/fullObjectiveLoop.d.ts` and expanded `tests/fullObjectiveLoop.test.ts` to cover timing-summary formatting plus injected clock/log behavior without relying on real elapsed time.
@@ -42,7 +48,6 @@
 
 TODO next:
 
-- Decide whether multiple completed expeditions should eventually compose or overwrite legacy echoes once there is more than one past-ending residue to carry.
 - Continue breaking remaining orchestration concerns out of `src/main.ts` only where there is still meaningful runtime/render logic to extract; the shell is now small enough that forced extraction would risk negative abstraction.
 
 - Scene-draw orchestration extraction pass:

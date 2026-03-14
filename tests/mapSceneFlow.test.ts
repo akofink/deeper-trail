@@ -100,11 +100,13 @@ describe('map scene flow helpers', () => {
   });
 
   it('consumes a pending legacy echo on the first new-expedition travel after arrival rewards', () => {
-    const state = createInitialRuntimeState(720, 'map-scene-legacy-travel', {
-      type: 'quiet-heal',
-      note: 'Legacy echo: quiet crossing restores +1 hull on the next route.',
-      sourceTitle: 'Quiet Phase Garden'
-    });
+    const state = createInitialRuntimeState(720, 'map-scene-legacy-travel', [
+      {
+        type: 'quiet-heal',
+        note: 'Legacy echo: quiet crossing restores +1 hull on the next route.',
+        sourceTitle: 'Quiet Phase Garden'
+      }
+    ]);
     state.scene = 'map';
     state.health = 2;
 
@@ -123,10 +125,8 @@ describe('map scene flow helpers', () => {
 
     expect(state.scene).toBe('run');
     expect(state.health).toBe(3);
-    expect(state.mapMessage).toContain('Legacy echo Quiet Phase Garden: quiet crossing restores +1 hull.');
-    expect(state.legacyCarryOverType).toBeNull();
-    expect(state.legacyCarryOverNote).toBe('');
-    expect(state.legacyCarryOverSourceTitle).toBe('');
+    expect(state.mapMessage).toContain('Legacy echoes Quiet Phase Garden: quiet crossing restores +1 hull.');
+    expect(state.legacyCarryOvers).toEqual([]);
   });
 
   it('repairs damaged subsystems and falls back to a med patch when the vehicle is already repaired', () => {

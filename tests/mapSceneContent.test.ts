@@ -21,6 +21,7 @@ function buildRuntimeState(): RuntimeState {
     mapSelectionIndex: 0,
     completedNodeIds: [],
     freeTravelCharges: 0,
+    legacyCarryOvers: [],
     dashEnergy: 1,
     dashBoost: 0,
     dashDirection: 1,
@@ -200,9 +201,13 @@ describe('map scene content helper', () => {
 
   it('surfaces a pending legacy echo before the next expedition spends it', () => {
     const state = buildRuntimeState();
-    state.legacyCarryOverType = 'breach-fuel';
-    state.legacyCarryOverNote = 'Legacy echo: breach reservoir restores +4 fuel on the next route.';
-    state.legacyCarryOverSourceTitle = 'Breached Entry Core';
+    state.legacyCarryOvers = [
+      {
+        type: 'breach-fuel',
+        note: 'Legacy echo: breach reservoir restores +4 fuel on the next route.',
+        sourceTitle: 'Breached Entry Core'
+      }
+    ];
 
     const content = buildMapSceneContent(state, 'n1', 7, {
       canUseMedPatch: false,
@@ -212,8 +217,9 @@ describe('map scene content helper', () => {
       hasCompletedCurrentNode: true
     });
 
-    expect(content.routeDetail).toContain('Legacy echo armed: Legacy echo: breach reservoir restores +4 fuel on the next route.');
-    expect(content.fieldNotes.join('\n')).toContain('LEGACY ECHO READY');
+    expect(content.routeDetail).toContain('Legacy echoes armed (1): Legacy echo: breach reservoir restores +4 fuel on the next route.');
+    expect(content.fieldNotes.join('\n')).toContain('LEGACY ECHOES 1x');
+    expect(content.fieldNotes.join('\n')).toContain('BREACHED ENTRY CORE');
     expect(content.fieldNotes.join('\n')).toContain('breach reservoir restores +4 fuel');
   });
 
