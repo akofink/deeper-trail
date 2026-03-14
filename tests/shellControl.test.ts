@@ -182,6 +182,33 @@ describe('shellControl helpers', () => {
     expect(state.mapSelectionIndex).toBe(2);
   });
 
+  it('cycles site install offers with left and right on the map without using the route-nav latch', () => {
+    const state = createInitialRuntimeState(720, 'shell-map-install-nav');
+    state.scene = 'map';
+
+    const currentNode = findNode(state.sim, state.sim.currentNodeId);
+    expect(currentNode).toBeDefined();
+    if (!currentNode) {
+      throw new Error('Expected current node');
+    }
+    currentNode.type = 'town';
+
+    const nextOffer = handleShellKeyDown(state, 'ArrowRight', {
+      canvasHeight: 720,
+      createSeed: () => 'unused',
+      previousMapNavigate: false
+    });
+    expect(state.mapInstallSelectionIndex).toBe(1);
+    expect(nextOffer.previousMapNavigate).toBe(false);
+
+    handleShellKeyDown(state, 'ArrowLeft', {
+      canvasHeight: 720,
+      createSeed: () => 'unused',
+      previousMapNavigate: false
+    });
+    expect(state.mapInstallSelectionIndex).toBe(0);
+  });
+
   it('reflows run and map scenes against the new ground line during resize', () => {
     const runState = createInitialRuntimeState(720, 'shell-resize-run');
     const runHazard = runState.hazards[0];

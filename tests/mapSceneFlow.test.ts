@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { connectedNeighbors, findNode } from '../src/engine/sim/world';
-import { FIELD_REPAIR_SCRAP_COST } from '../src/engine/sim/vehicle';
+import { FIELD_REPAIR_SCRAP_COST, getInstallOffers } from '../src/engine/sim/vehicle';
 import {
+  advanceMapInstallSelection,
   advanceMapSelection,
   buildMapScannerFlags,
   mapSceneStatusText,
@@ -23,6 +24,8 @@ describe('map scene flow helpers', () => {
     expect(advanceMapSelection(0, 0, 1)).toBe(0);
     expect(advanceMapSelection(0, 3, -1)).toBe(2);
     expect(advanceMapSelection(2, 3, 1)).toBe(0);
+    expect(advanceMapInstallSelection(0, 0, 1)).toBe(0);
+    expect(advanceMapInstallSelection(0, 2, -1)).toBe(1);
   });
 
   it('travels to the selected route, resets the run, and switches back to the run scene', () => {
@@ -153,7 +156,7 @@ describe('map scene flow helpers', () => {
     expect(state.mapMessageTimer).toBe(3);
   });
 
-  it('installs node-type upgrades and exposes map scanner flags for map content builders', () => {
+  it('installs the selected site upgrade and exposes map scanner flags for map content builders', () => {
     const state = createInitialRuntimeState(720, 'map-scene-install');
     state.scene = 'map';
     state.sim.scrap = 5;
@@ -165,11 +168,13 @@ describe('map scene flow helpers', () => {
       throw new Error('Expected current node');
     }
     currentNode.type = 'town';
+    expect(getInstallOffers(state.sim, 'town').map((offer) => offer.subsystem)).toEqual(['engine', 'storage']);
+    state.mapInstallSelectionIndex = 1;
 
     tryInstallUpgradeOnMap(state);
 
-    expect(state.sim.vehicle.engine).toBe(2);
-    expect(state.mapMessage).toContain('Installed engine module Lv.2 at town site');
+    expect(state.sim.vehicle.storage).toBe(2);
+    expect(state.mapMessage).toContain('Installed storage module Lv.2 at town site');
     expect(buildMapScannerFlags(state)).toEqual({
       hasAutoLinkScanner: true,
       hasCompletedCurrentNode: false

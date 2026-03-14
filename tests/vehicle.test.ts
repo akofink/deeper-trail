@@ -6,6 +6,7 @@ import {
   damageSubsystemForNodeType,
   getFuelCapacity,
   getInstallOffer,
+  getInstallOffers,
   hasAnyUpgradeableSubsystem,
   hasAutoLinkScanner,
   repairMostDamagedSubsystem
@@ -49,13 +50,17 @@ describe('vehicle repair loop', () => {
     expect(state.scrap).toBe(FIELD_REPAIR_SCRAP_COST);
   });
 
-  it('picks the deterministic site module for the current node type', () => {
+  it('lists deterministic site module offers ordered by current level then biome priority', () => {
     const state = createInitialGameState('vehicle-install-offer');
     state.vehicle.shielding = 2;
 
+    const offers = getInstallOffers(state, 'anomaly');
     const offer = getInstallOffer(state, 'anomaly');
 
+    expect(offers).toHaveLength(2);
+    expect(offers.map((entry) => entry.subsystem)).toEqual(['scanner', 'shielding']);
     expect(offer).toEqual({
+      priorityIndex: 1,
       subsystem: 'scanner',
       currentLevel: 1,
       nextLevel: 2,
@@ -63,17 +68,17 @@ describe('vehicle repair loop', () => {
     });
   });
 
-  it('installs a module, spends scrap, and updates derived vehicle stats', () => {
+  it('installs the selected site module, spends scrap, and updates derived vehicle stats', () => {
     const state = createInitialGameState('vehicle-install');
     state.scrap = 5;
 
-    const result = installUpgradeForNodeType(state, 'town');
+    const result = installUpgradeForNodeType(state, 'town', 1);
 
     expect(result.didInstall).toBe(true);
-    expect(result.subsystem).toBe('engine');
+    expect(result.subsystem).toBe('storage');
     expect(result.nextLevel).toBe(2);
     expect(state.scrap).toBe(3);
-    expect(state.vehicle.engine).toBe(2);
+    expect(state.vehicle.storage).toBe(2);
     expect(state.fuelCapacity).toBe(getFuelCapacity(state.vehicle));
     expect(state.fuel).toBe(state.fuelCapacity);
   });

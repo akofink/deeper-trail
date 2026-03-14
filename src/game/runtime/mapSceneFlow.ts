@@ -1,5 +1,5 @@
 import { currentNodeType, connectedNeighbors } from '../../engine/sim/world';
-import { installUpgradeForNodeType, repairMostDamagedSubsystem } from '../../engine/sim/vehicle';
+import { getInstallOffers, installUpgradeForNodeType, repairMostDamagedSubsystem } from '../../engine/sim/vehicle';
 import { hasBeaconAutoLink } from './beaconActivation';
 import { applyGoalSignalPostGoalRouteHook } from './goalSignal';
 import { travelToNodeWithRuntimeEffects, hasCompletedCurrentNode } from './expeditionFlow';
@@ -14,6 +14,14 @@ import {
 } from './runtimeState';
 
 export function advanceMapSelection(currentIndex: number, optionCount: number, step: number): number {
+  if (optionCount <= 0) {
+    return 0;
+  }
+
+  return (currentIndex + step + optionCount) % optionCount;
+}
+
+export function advanceMapInstallSelection(currentIndex: number, optionCount: number, step: number): number {
   if (optionCount <= 0) {
     return 0;
   }
@@ -93,9 +101,11 @@ export function tryInstallUpgradeOnMap(state: RuntimeState): void {
   }
 
   const nodeType = currentNodeType(state.sim);
-  const result = installUpgradeForNodeType(state.sim, nodeType);
+  const result = installUpgradeForNodeType(state.sim, nodeType, state.mapInstallSelectionIndex ?? 0);
   if (result.didInstall) {
     normalizeRuntimeStateAfterVehicleChange(state);
+    const remainingOffers = getInstallOffers(state.sim, nodeType);
+    state.mapInstallSelectionIndex = Math.min(state.mapInstallSelectionIndex ?? 0, Math.max(0, remainingOffers.length - 1));
     state.mapMessage = `Installed ${result.subsystem} module Lv.${result.nextLevel} at ${nodeType} site (-${result.scrapCost} scrap).`;
   } else {
     state.mapMessage = result.reason ?? 'Install failed';

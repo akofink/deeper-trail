@@ -1,3 +1,9 @@
+- Map install-rack selection pass:
+  - Reworked `src/engine/sim/vehicle.ts` so biome sites now expose deterministic install-offer lists ordered by current subsystem level and biome priority instead of collapsing to one implicit upgrade.
+  - Added runtime/UI selection state in `src/game/runtime/runtimeState.ts`, `src/game/runtime/mapSceneFlow.ts`, `src/game/runtime/shellControl.ts`, `src/game/runtime/mapSceneContent.ts`, and `src/game/runtime/mapBoardView.ts` so Left/Right cycles site offers, `C` installs the selected module, and debug snapshots expose both the selected offer and the full rack.
+  - Expanded regression coverage in `tests/vehicle.test.ts`, `tests/mapSceneFlow.test.ts`, `tests/mapSceneContent.test.ts`, `tests/shellControl.test.ts`, `tests/debugState.test.ts`, `tests/mapBoardView.test.ts`, and `tests/mapSceneTextAssembly.test.ts`.
+  - Updated `docs/02-vehicles-and-upgrades.md`.
+
 - Shared-browser smoke session pass:
   - Updated `scripts/e2e/fullObjectiveLoop.js` so `npm run test:e2e` launches Chromium once per selected smoke run, then executes each biome replay in a fresh browser context/page inside that shared browser.
   - Kept the deterministic seed/interaction path unchanged while preserving isolation by closing each smoke context after its replay instead of relaunching the whole browser.

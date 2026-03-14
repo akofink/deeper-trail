@@ -33,6 +33,7 @@ export interface VehicleRepairResult {
 }
 
 export interface VehicleInstallOffer {
+  readonly priorityIndex: number;
   readonly subsystem: VehicleSubsystemKey;
   readonly currentLevel: number;
   readonly nextLevel: number;
@@ -96,37 +97,47 @@ function getInstallPriority(nodeType: string): VehicleSubsystemKey[] {
   return INSTALL_PRIORITY_BY_NODE_TYPE[nodeType] ?? ['engine', 'frame'];
 }
 
+function compareInstallOffers(a: VehicleInstallOffer, b: VehicleInstallOffer): number {
+  if (a.currentLevel !== b.currentLevel) {
+    return a.currentLevel - b.currentLevel;
+  }
+
+  return a.priorityIndex - b.priorityIndex;
+}
+
 export function hasAnyUpgradeableSubsystem(state: GameState): boolean {
   return VEHICLE_SUBSYSTEM_KEYS.some((subsystem) => state.vehicle[subsystem] < MAX_SUBSYSTEM_LEVEL);
 }
 
-export function getInstallOffer(state: GameState, nodeType: string): VehicleInstallOffer | null {
-  const priorities = getInstallPriority(nodeType);
+export function getInstallOffers(state: GameState, nodeType: string): VehicleInstallOffer[] {
+  return getInstallPriority(nodeType)
+    .flatMap((subsystem, priorityIndex) => {
+      const currentLevel = state.vehicle[subsystem];
+      if (currentLevel >= MAX_SUBSYSTEM_LEVEL) {
+        return [];
+      }
 
-  let selected: VehicleSubsystemKey | null = null;
-  let lowestLevel = Number.POSITIVE_INFINITY;
-  for (const subsystem of priorities) {
-    const level = state.vehicle[subsystem];
-    if (level >= MAX_SUBSYSTEM_LEVEL) {
-      continue;
-    }
-    if (level < lowestLevel) {
-      selected = subsystem;
-      lowestLevel = level;
-    }
-  }
+      return [
+        {
+          priorityIndex,
+          subsystem,
+          currentLevel,
+          nextLevel: currentLevel + 1,
+          scrapCost: currentLevel + 1
+        }
+      ];
+    })
+    .sort(compareInstallOffers);
+}
 
-  if (!selected) {
+export function getInstallOffer(state: GameState, nodeType: string, selectionIndex = 0): VehicleInstallOffer | null {
+  const offers = getInstallOffers(state, nodeType);
+  if (offers.length === 0) {
     return null;
   }
 
-  const currentLevel = state.vehicle[selected];
-  return {
-    subsystem: selected,
-    currentLevel,
-    nextLevel: currentLevel + 1,
-    scrapCost: currentLevel + 1
-  };
+  const normalizedIndex = Math.max(0, Math.min(selectionIndex, offers.length - 1));
+  return offers[normalizedIndex] ?? null;
 }
 
 export function repairMostDamagedSubsystem(state: GameState): VehicleRepairResult {
@@ -156,12 +167,13 @@ export function repairMostDamagedSubsystem(state: GameState): VehicleRepairResul
   };
 }
 
-export function installUpgradeForNodeType(state: GameState, nodeType: string): VehicleInstallResult {
-  const offer = getInstallOffer(state, nodeType);
+export function installUpgradeForNodeType(state: GameState, nodeType: string, selectionIndex = 0): VehicleInstallResult {
+  const offer = getInstallOffer(state, nodeType, selectionIndex);
   if (!offer) {
     const hasRemainingUpgrades = hasAnyUpgradeableSubsystem(state);
     return {
       didInstall: false,
+      priorityIndex: 0,
       subsystem: getInstallPriority(nodeType)[0] ?? 'engine',
       currentLevel: MAX_SUBSYSTEM_LEVEL,
       nextLevel: MAX_SUBSYSTEM_LEVEL,

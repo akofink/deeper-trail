@@ -121,7 +121,7 @@ describe('mapSceneTextAssembly', () => {
       align: 'center',
       fill: '#64748b',
       text: 'Up/Down\nRoute',
-      x: 177,
+      x: 144,
       y: 641
     });
   });

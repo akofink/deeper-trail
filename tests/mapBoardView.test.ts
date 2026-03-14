@@ -99,10 +99,11 @@ describe('mapBoardView', () => {
     const activeChips = buildMapActionChips(1280, 662, 34, false);
     const completedChips = buildMapActionChips(1280, 662, 34, true);
 
-    expect(activeChips).toHaveLength(6);
-    expect(activeChips[5]?.label).toBe('A\nReturn');
-    expect(completedChips[5]?.label).toBe('N\nNew');
-    expect(activeChips[0]?.x).toBe(346);
+    expect(activeChips).toHaveLength(7);
+    expect(activeChips[1]?.label).toBe('Left/Right\nSite');
+    expect(activeChips[6]?.label).toBe('A\nReturn');
+    expect(completedChips[6]?.label).toBe('N\nNew');
+    expect(activeChips[0]?.x).toBeGreaterThanOrEqual(20);
     expect(activeChips[0]?.y).toBe(662);
     expect(activeChips[0]?.height).toBe(34);
     expect(activeChips[0]?.labelFill).toBe('#64748b');
@@ -111,7 +112,7 @@ describe('mapBoardView', () => {
   it('compacts the centered chip row to stay within tighter map widths', () => {
     const chips = buildMapActionChips(560, 662, 34, false);
 
-    expect(chips).toHaveLength(6);
+    expect(chips).toHaveLength(7);
     expect(chips[0]?.x).toBeGreaterThanOrEqual(20);
     expect(chips[1]?.x).toBeGreaterThan(chips[0]!.x + chips[0]!.w);
     expect(chips.at(-1)!.x + chips.at(-1)!.w).toBeLessThanOrEqual(540);
