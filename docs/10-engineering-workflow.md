@@ -10,7 +10,7 @@ Enforce consistent code quality and repository hygiene while keeping iteration f
    - Type safety with TypeScript strict mode (`npm run typecheck`).
    - Linting with ESLint (`npm run lint`).
    - Test suite with Vitest (`npm run test`).
-   - Browser smoke replay for the fixed-seed full objective loop (`npm run test:e2e`).
+   - Browser smoke replay for the fixed-seed biome objective suite (`npm run test:e2e`).
    - Unified command: `npm run check`.
 2. **Phase 2: Local automation (now)**
    - Pre-commit hook: lint/format staged files and run related tests.
@@ -35,7 +35,7 @@ Enforce consistent code quality and repository hygiene while keeping iteration f
 - Update `ARCHITECTURE.md` when adding/changing foundational modules.
 - Update this workflow doc when changing quality gates or branching/worktree policy.
 - When validating browser visuals, prefer the lightest tool that answers the question: direct `google-chrome --headless --screenshot` capture is a good first pass, while Playwright remains the default for scripted interaction, state setup, or cases where headless Chrome capture is not reliable enough.
-- The committed Playwright smoke path should stay deterministic: prefer fixed seeds plus `window.render_game_to_text` / `window.advanceTime(ms)` over adding separate test-only gameplay controls.
+- The committed Playwright smoke path should stay deterministic: prefer fixed seeds plus `window.render_game_to_text` / `window.advanceTime(ms)` over adding separate test-only gameplay controls, and keep the seed/biome matrix centralized in `scripts/e2e/fullObjectiveLoop.js` so the suite has one source of truth.
 - The smoke script should prefer Playwright-managed Chromium, then fall back to common local Chrome/Chromium app installs when the managed browser is unavailable. Only force a browser binary with `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` when you need to debug a specific local browser install.
 - If Chromium cannot launch because the local Playwright browser install is missing or the current sandbox blocks browser crash-report/bootstrap setup, the smoke script may emit an explicit `[e2e] skipping browser smoke:` line instead of hanging. Treat that as an environment limitation to fix locally, not as gameplay coverage passing in CI.
 - When a session uncovers actionable follow-up work that will not be fixed immediately, add an open

@@ -3,7 +3,6 @@ import fs from "node:fs";
 import { pathToFileURL } from "node:url";
 import { chromium } from "playwright";
 
-const E2E_SEED = "e2e-1";
 const DEFAULT_VIEWPORT = { width: 1440, height: 960 };
 const INTERACT_RADIUS = 55;
 const BRAKE_DISTANCE = 140;
@@ -39,9 +38,27 @@ const PLAYWRIGHT_CACHE_EXECUTABLE_SUFFIXES = [
   path.join("chrome-win", "chrome.exe"),
   path.join("chrome-win64", "chrome.exe")
 ];
+const OBJECTIVE_LOOP_SMOKE_NAMES = ["town", "ruin", "nature", "anomaly"];
 
 export function logStep(message) {
   console.log(`[e2e] ${message}`);
+}
+
+export function parseSmokeSelection(argv = process.argv.slice(2)) {
+  let smoke = "town";
+
+  for (let index = 0; index < argv.length; index += 1) {
+    if (argv[index] === "--smoke") {
+      smoke = argv[index + 1] ?? smoke;
+      index += 1;
+    }
+  }
+
+  if (smoke !== "all" && !OBJECTIVE_LOOP_SMOKE_NAMES.includes(smoke)) {
+    throw new Error(`Unknown objective loop smoke "${smoke}". Expected one of: ${OBJECTIVE_LOOP_SMOKE_NAMES.join(", ")}, all`);
+  }
+
+  return smoke;
 }
 
 export async function withStepTimeout(step, operation, timeoutMs = PLAYWRIGHT_STEP_TIMEOUT_MS) {
@@ -350,119 +367,13 @@ async function completeTownRun(page) {
 
 async function main() {
   const executablePath = resolveExecutablePath();
-  const executableCandidates = resolveExecutablePathCandidates();
-  logStep(`launching browser smoke for seed ${E2E_SEED}`);
+  const selection = parseSmokeSelection();
   if (executablePath) {
     logStep(`preferred Chromium executable: ${executablePath}`);
   } else {
     logStep("using Playwright launch defaults");
   }
-  let browser;
-  try {
-    browser = await launchBrowserWithFallback(executableCandidates);
-  } catch (error) {
-    if (isSkippableBrowserLaunchError(error)) {
-      logStep(`skipping browser smoke: ${error instanceof Error ? error.message.split("\n")[0] : String(error)}`);
-      return;
-    }
-    throw error;
-  }
-
-  const page = await browser.newPage({ viewport: DEFAULT_VIEWPORT });
-  const consoleErrors = [];
-  page.on("console", (msg) => {
-    if (msg.type() === "error") consoleErrors.push(msg.text());
-  });
-  page.on("pageerror", (error) => {
-    consoleErrors.push(String(error));
-  });
-
-  try {
-    const distIndex = path.resolve(process.cwd(), "dist/index.html");
-    const url = pathToFileURL(distIndex);
-    url.searchParams.set("seed", E2E_SEED);
-
-    logStep("opening built client bundle");
-    await withStepTimeout("opening built client bundle", () =>
-      page.goto(url.toString(), { waitUntil: "load", timeout: PLAYWRIGHT_STEP_TIMEOUT_MS })
-    );
-    logStep("waiting for debug replay hooks");
-    await withStepTimeout("waiting for debug replay hooks", () =>
-      page.waitForFunction(() => typeof window.render_game_to_text === "function" && typeof window.advanceTime === "function", {
-        timeout: PLAYWRIGHT_STEP_TIMEOUT_MS
-      })
-    );
-    await advanceFrames(page, 10);
-
-    const initialState = await readState(page);
-    assert(initialState.scene === "run", "Smoke should start in the run scene", initialState);
-    assert(initialState.sim.seed === E2E_SEED, "Smoke run loaded the wrong seed", initialState);
-    assert(initialState.sim.currentNodeType === "town", "Smoke seed must start on a town node", initialState);
-    assert(initialState.run.serviceStops.length === 2, "Town smoke expects service-bay objectives", initialState);
-
-    logStep("running fixed-seed objective loop");
-    const completedState = await completeTownRun(page);
-    assert(completedState.scene === "map", "Node completion should return to the map scene", completedState);
-    assert(completedState.map.travelUnlockedAtCurrentNode, "Completed node should unlock outbound travel", completedState);
-    assert(completedState.map.freeTravelCharges === 1, "Completed node should grant one free travel charge", completedState);
-    assert(completedState.sim.day === 1, "Completing the first node should advance the day once", completedState);
-    assert(
-      completedState.map.message.includes("Trail complete"),
-      "Completion banner should report the trail sync message",
-      completedState
-    );
-
-    await tapKey(page, "Enter", 2);
-    await advanceFrames(page, 10);
-
-    logStep("verifying post-travel state");
-    const traveledState = await readState(page);
-    assert(traveledState.map.lastTravel?.usedFreeTravel, "Travel should consume the stored free-trip charge", traveledState);
-    assert(traveledState.map.lastTravel?.freeTravelChargesBefore === 1, "Travel should start with one stored free-trip charge", traveledState);
-    assert(traveledState.map.lastTravel?.freeTravelChargesAfter === 0, "Travel should spend the stored free-trip charge", traveledState);
-    assert(
-      traveledState.map.lastTravel?.fuelAfterTravel === completedState.sim.fuel,
-      "Free-trip travel should refund the route fuel cost before arrival rewards",
-      traveledState
-    );
-    assert(traveledState.scene === "run", "Travel should return the runtime shell to the run scene", traveledState);
-    assert(traveledState.sim.currentNodeId !== completedState.sim.currentNodeId, "Travel should move to a connected node", traveledState);
-    assert(traveledState.sim.day === 2, "Travel should advance the day again", traveledState);
-    assert(traveledState.sim.currentNodeType === "town", "Smoke route should land on the neighboring town node", traveledState);
-    assert(
-      traveledState.map.message.includes("fuel topped up"),
-      "Arrival rewards should keep the route/map message in sync after travel",
-      traveledState
-    );
-    assert(traveledState.run.beacons.every((beacon) => !beacon.activated), "New run should reset relay progress", traveledState);
-    assert(
-      traveledState.run.serviceStops.every((stop) => !stop.serviced),
-      "New run should reset service-bay progress",
-      traveledState
-    );
-
-    if (consoleErrors.length > 0) {
-      throw new Error(`Browser smoke hit console errors:\n${consoleErrors.join("\n")}`);
-    }
-
-    console.log(
-      JSON.stringify(
-        {
-          seed: E2E_SEED,
-          completedNodeId: completedState.sim.currentNodeId,
-          traveledNodeId: traveledState.sim.currentNodeId,
-          completionMessage: completedState.map.message,
-          arrivalMessage: traveledState.map.message,
-          lastTravel: traveledState.map.lastTravel
-        },
-        null,
-        2
-      )
-    );
-    logStep("browser smoke passed");
-  } finally {
-    await browser.close();
-  }
+  await runSelectedObjectiveLoopSmokes(selection);
 }
 
 // ---------------------------------------------------------------------------
@@ -845,6 +756,217 @@ export async function completeAnomalyRun(page) {
   }
 
   throw new Error(`Anomaly run smoke exceeded ${MAX_TICKS} control ticks without completing`);
+}
+
+function verifyInitialSmokeState(state, smoke) {
+  assert(state.scene === "run", `${smoke.label} should start in the run scene`, state);
+  assert(state.sim.seed === smoke.seed, `${smoke.label} loaded the wrong seed`, state);
+  assert(state.sim.currentNodeType === smoke.nodeType, `${smoke.label} seed must start on a ${smoke.nodeType} node`, state);
+  assert(
+    state.run[smoke.objectiveKey].length === 2,
+    `${smoke.label} expects ${smoke.objectiveLabel} objectives`,
+    state
+  );
+}
+
+function verifyCompletedSmokeState(state, smoke) {
+  assert(state.scene === "map", "Node completion should return to the map scene", state);
+  assert(state.map.travelUnlockedAtCurrentNode, "Completed node should unlock outbound travel", state);
+  assert(state.map.freeTravelCharges === 1, "Completed node should grant one free travel charge", state);
+  assert(
+    state.map.message.includes("Trail complete"),
+    "Completion banner should report the trail sync message",
+    state
+  );
+
+  if (smoke.nodeType === "town") {
+    assert(state.sim.day === 1, "Completing the first node should advance the day once", state);
+  }
+}
+
+function verifyTraveledSmokeState(state, smoke, completedState) {
+  assert(state.map.lastTravel?.usedFreeTravel, "Travel should consume the stored free-trip charge", state);
+  assert(state.map.lastTravel?.freeTravelChargesBefore === 1, "Travel should start with one stored free-trip charge", state);
+  assert(state.map.lastTravel?.freeTravelChargesAfter === 0, "Travel should spend the stored free-trip charge", state);
+  assert(
+    state.map.lastTravel?.fuelAfterTravel === completedState.sim.fuel,
+    "Free-trip travel should refund the route fuel cost before arrival rewards",
+    state
+  );
+  assert(state.scene === "run", "Travel should return to the run scene", state);
+  assert(state.sim.currentNodeId !== completedState.sim.currentNodeId, "Travel should move to a connected node", state);
+  assert(state.run.beacons.every((beacon) => !beacon.activated), "New run should reset relay progress", state);
+  assert(
+    state.run[smoke.objectiveKey].every((objective) => !objective[smoke.resetFlag]),
+    `New run should reset ${smoke.objectiveLabel} progress`,
+    state
+  );
+
+  if (smoke.nodeType === "town") {
+    assert(state.sim.day === 2, "Travel should advance the day again", state);
+    assert(state.sim.currentNodeType === "town", "Smoke route should land on the neighboring town node", state);
+    assert(
+      state.map.message.includes("fuel topped up"),
+      "Arrival rewards should keep the route/map message in sync after travel",
+      state
+    );
+  }
+}
+
+function summarizeSmokeResult(smoke, completedState, traveledState) {
+  return {
+    smoke: smoke.name,
+    seed: smoke.seed,
+    completedNodeId: completedState.sim.currentNodeId,
+    traveledNodeId: traveledState.sim.currentNodeId,
+    completionMessage: completedState.map.message,
+    arrivalMessage: traveledState.map.message,
+    lastTravel: traveledState.map.lastTravel
+  };
+}
+
+export const OBJECTIVE_LOOP_SMOKES = {
+  town: {
+    name: "town",
+    label: "Town smoke",
+    logLabel: "browser smoke",
+    passLabel: "browser smoke passed",
+    skipLabel: "browser smoke",
+    seed: "e2e-1",
+    nodeType: "town",
+    objectiveKey: "serviceStops",
+    objectiveLabel: "service-bay",
+    resetFlag: "serviced",
+    completeRun: completeTownRun
+  },
+  ruin: {
+    name: "ruin",
+    label: "Ruin smoke",
+    logLabel: "ruin biome browser smoke",
+    passLabel: "ruin browser smoke passed",
+    skipLabel: "ruin smoke",
+    seed: "e2e-0",
+    nodeType: "ruin",
+    objectiveKey: "impactPlates",
+    objectiveLabel: "impact-plate",
+    resetFlag: "shattered",
+    completeRun: completeRuinRun
+  },
+  nature: {
+    name: "nature",
+    label: "Nature smoke",
+    logLabel: "nature biome browser smoke",
+    passLabel: "nature browser smoke passed",
+    skipLabel: "nature smoke",
+    seed: "e2e-2",
+    nodeType: "nature",
+    objectiveKey: "canopyLifts",
+    objectiveLabel: "canopy-lift",
+    resetFlag: "charted",
+    completeRun: completeNatureRun
+  },
+  anomaly: {
+    name: "anomaly",
+    label: "Anomaly smoke",
+    logLabel: "anomaly biome browser smoke",
+    passLabel: "anomaly browser smoke passed",
+    skipLabel: "anomaly smoke",
+    seed: "e2e-3",
+    nodeType: "anomaly",
+    objectiveKey: "syncGates",
+    objectiveLabel: "sync-gate",
+    resetFlag: "stabilized",
+    completeRun: completeAnomalyRun
+  }
+};
+
+export function resolveObjectiveLoopSmoke(smokeName) {
+  const smoke = OBJECTIVE_LOOP_SMOKES[smokeName];
+  if (!smoke) {
+    throw new Error(`Unknown objective loop smoke "${smokeName}"`);
+  }
+  return smoke;
+}
+
+export async function runObjectiveLoopSmoke(smoke) {
+  const executableCandidates = resolveExecutablePathCandidates();
+  logStep(`launching ${smoke.logLabel} for seed ${smoke.seed}`);
+
+  let browser;
+  try {
+    browser = await launchBrowserWithFallback(executableCandidates);
+  } catch (error) {
+    if (isSkippableBrowserLaunchError(error)) {
+      logStep(`skipping ${smoke.skipLabel}: ${error instanceof Error ? error.message.split("\n")[0] : String(error)}`);
+      return null;
+    }
+    throw error;
+  }
+
+  const page = await browser.newPage({ viewport: DEFAULT_VIEWPORT });
+  const consoleErrors = [];
+  page.on("console", (msg) => {
+    if (msg.type() === "error") consoleErrors.push(msg.text());
+  });
+  page.on("pageerror", (error) => {
+    consoleErrors.push(String(error));
+  });
+
+  try {
+    const distIndex = path.resolve(process.cwd(), "dist/index.html");
+    const url = pathToFileURL(distIndex);
+    url.searchParams.set("seed", smoke.seed);
+
+    logStep("opening built client bundle");
+    await withStepTimeout("opening built client bundle", () =>
+      page.goto(url.toString(), { waitUntil: "load", timeout: PLAYWRIGHT_STEP_TIMEOUT_MS })
+    );
+    logStep("waiting for debug replay hooks");
+    await withStepTimeout("waiting for debug replay hooks", () =>
+      page.waitForFunction(() => typeof window.render_game_to_text === "function" && typeof window.advanceTime === "function", {
+        timeout: PLAYWRIGHT_STEP_TIMEOUT_MS
+      })
+    );
+    await advanceFrames(page, 10);
+
+    const initialState = await readState(page);
+    verifyInitialSmokeState(initialState, smoke);
+
+    logStep(`running ${smoke.name} fixed-seed objective loop`);
+    const completedState = await smoke.completeRun(page);
+    verifyCompletedSmokeState(completedState, smoke);
+
+    await tapKey(page, "Enter", 2);
+    await advanceFrames(page, 10);
+
+    const traveledState = await readState(page);
+    verifyTraveledSmokeState(traveledState, smoke, completedState);
+
+    if (consoleErrors.length > 0) {
+      throw new Error(`${smoke.label} hit console errors:\n${consoleErrors.join("\n")}`);
+    }
+
+    const summary = summarizeSmokeResult(smoke, completedState, traveledState);
+    console.log(JSON.stringify(summary, null, 2));
+    logStep(smoke.passLabel);
+    return summary;
+  } finally {
+    await browser.close();
+  }
+}
+
+export async function runSelectedObjectiveLoopSmokes(selection) {
+  const smokeNames = selection === "all" ? OBJECTIVE_LOOP_SMOKE_NAMES : [selection];
+  const results = [];
+
+  for (const smokeName of smokeNames) {
+    const result = await runObjectiveLoopSmoke(resolveObjectiveLoopSmoke(smokeName));
+    if (result) {
+      results.push(result);
+    }
+  }
+
+  return results;
 }
 
 const isEntrypoint = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;

@@ -1,3 +1,11 @@
+- Browser smoke runner consolidation pass:
+  - Refactored `scripts/e2e/fullObjectiveLoop.js` so the seed/objective/reset expectations for `town`, `ruin`, `nature`, and `anomaly` now live in one exported smoke-config table instead of being duplicated across four browser entrypoints.
+  - Added `--smoke <name>|all` CLI selection plus shared `runObjectiveLoopSmoke(...)` / `runSelectedObjectiveLoopSmokes(...)` helpers so `npm run test:e2e` now drives the whole deterministic biome suite through one script invocation.
+  - Reduced `scripts/e2e/ruinSmoke.js`, `scripts/e2e/natureSmoke.js`, and `scripts/e2e/anomalySmoke.js` to thin delegates, expanded `tests/fullObjectiveLoop.test.ts`, and updated `scripts/e2e/fullObjectiveLoop.d.ts` plus `docs/10-engineering-workflow.md`.
+
+- TODO next:
+- Decide whether the smoke suite should eventually reuse one launched browser across all seeds to cut local runtime without making failures harder to isolate.
+
 - Browser automation free-travel verification pass:
   - Added `lastTravel` runtime/debug bookkeeping in `src/game/runtime/expeditionFlow.ts`, `src/game/runtime/runtimeState.ts`, and `src/game/runtime/debugState.ts` so automation can inspect the immediate post-travel fuel/charge state before arrival rewards mutate it.
   - Updated browser smoke coverage in `scripts/e2e/fullObjectiveLoop.js`, `scripts/e2e/ruinSmoke.js`, `scripts/e2e/natureSmoke.js`, and `scripts/e2e/anomalySmoke.js` to assert that node completion grants a free trip, the next travel consumes that stored charge, and route fuel is refunded before arrival rewards are applied.

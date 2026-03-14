@@ -106,7 +106,22 @@ export interface DirectoryEntryLike {
   name: string;
 }
 
+export interface ObjectiveLoopSmokeConfig {
+  name: "town" | "ruin" | "nature" | "anomaly";
+  label: string;
+  logLabel: string;
+  passLabel: string;
+  skipLabel: string;
+  seed: string;
+  nodeType: string;
+  objectiveKey: "serviceStops" | "impactPlates" | "canopyLifts" | "syncGates";
+  objectiveLabel: string;
+  resetFlag: "serviced" | "shattered" | "charted" | "stabilized";
+  completeRun(page: Page): Promise<unknown>;
+}
+
 export function logStep(message: string): void;
+export function parseSmokeSelection(argv?: string[]): "town" | "ruin" | "nature" | "anomaly" | "all";
 export function withStepTimeout<T>(step: string, operation: () => Promise<T>, timeoutMs?: number): Promise<T>;
 export function findPlaywrightCacheExecutables(
   cacheRoot?: string,
@@ -125,3 +140,9 @@ export function assert(condition: boolean, message: string, state?: unknown): vo
 export function advanceFrames(page: Page, frames: number): Promise<void>;
 export function tapKey(page: Page, key: string, frames?: number): Promise<void>;
 export function launchBrowserWithFallback(candidatePaths: string[]): Promise<Browser>;
+export const OBJECTIVE_LOOP_SMOKES: Record<ObjectiveLoopSmokeConfig["name"], ObjectiveLoopSmokeConfig>;
+export function resolveObjectiveLoopSmoke(smokeName: ObjectiveLoopSmokeConfig["name"]): ObjectiveLoopSmokeConfig;
+export function runObjectiveLoopSmoke(smoke: ObjectiveLoopSmokeConfig): Promise<object | null>;
+export function runSelectedObjectiveLoopSmokes(
+  selection: ObjectiveLoopSmokeConfig["name"] | "all"
+): Promise<object[]>;

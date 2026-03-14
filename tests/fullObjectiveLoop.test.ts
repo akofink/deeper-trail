@@ -5,6 +5,8 @@ import {
   beaconApproachState,
   findPlaywrightCacheExecutables,
   isSkippableBrowserLaunchError,
+  parseSmokeSelection,
+  resolveObjectiveLoopSmoke,
   resolveExecutablePath,
   resolveExecutablePathCandidates,
   withStepTimeout,
@@ -25,6 +27,27 @@ describe("fullObjectiveLoop helpers", () => {
     }
 
     vi.restoreAllMocks();
+  });
+
+  it("parses smoke selection from CLI args and rejects unknown names", () => {
+    expect(parseSmokeSelection([])).toBe("town");
+    expect(parseSmokeSelection(["--smoke", "nature"])).toBe("nature");
+    expect(parseSmokeSelection(["--smoke", "all"])).toBe("all");
+    expect(() => parseSmokeSelection(["--smoke", "bogus"])).toThrow('Unknown objective loop smoke "bogus"');
+  });
+
+  it("resolves known smoke configs by name", () => {
+    expect(resolveObjectiveLoopSmoke("town")).toMatchObject({
+      name: "town",
+      seed: "e2e-1",
+      objectiveKey: "serviceStops"
+    });
+    expect(resolveObjectiveLoopSmoke("anomaly")).toMatchObject({
+      name: "anomaly",
+      seed: "e2e-3",
+      objectiveKey: "syncGates"
+    });
+    expect(() => resolveObjectiveLoopSmoke("bogus" as "town")).toThrow('Unknown objective loop smoke "bogus"');
   });
 
   it("uses only an explicit browser override path", () => {
