@@ -1,3 +1,8 @@
+- Browser-shell session split pass:
+  - Added `src/game/runtime/browserShellSession.ts` so URL seed parsing, runtime-state ownership, and deterministic debug-hook wiring now live behind one focused browser-shell session helper instead of staying mixed into `src/game/runtime/browserShellRuntime.ts`.
+  - Updated `src/game/runtime/browserShellRuntime.ts` and `src/game/runtime/browserShell.ts` to treat session/bootstrap concerns as dependencies while keeping the runtime controller focused on event-bridge and loop wiring.
+  - Replaced the old browser-shell helper test with `tests/browserShellSession.test.ts`, refreshed `tests/browserShellRuntime.test.ts`, and updated `README.md`, `ARCHITECTURE.md`, `docs/README.md`, and `IMPLEMENTATION_NOTES.md` so the docs no longer describe `src/main.ts` as the remaining shell hot spot.
+
 - Post-goal travel telemetry pass:
   - Updated `src/game/runtime/mapSceneFlow.ts` so `lastTravel.freeTravelChargesAfter` now stays aligned with the real runtime credit count after a post-goal afterglow hook mutates free-travel charges.
   - Expanded `tests/mapSceneFlow.test.ts` with a relay-credit regression that covers post-goal travel, afterglow messaging, and aligned travel telemetry.

@@ -1,19 +1,18 @@
-import { getMaxHealth } from '../../engine/sim/vehicle';
+import type { getMaxHealth } from '../../engine/sim/vehicle';
 import {
   createBrowserShellRuntimeLoopController,
   type BrowserShellRuntimeLoopControllerDependencies
 } from './browserShellRuntimeLoopController';
-import { buildDebugStateSnapshot } from './debugState';
+import {
+  attachBrowserShellRuntimeDebugHooks,
+  createBrowserShellStateController,
+  createRunSeed,
+  type BrowserShellWindow
+} from './browserShellSession';
 import { stepMapScene } from './mapSceneFlow';
 import { createShellEventBridge } from './shellEventBridge';
 import { stepRunState } from './runStep';
-import { createInitialRuntimeState, type RuntimeState } from './runtimeState';
-
-export interface BrowserShellWindow {
-  location: Pick<Location, 'search'>;
-  render_game_to_text?: () => string;
-  advanceTime?: (ms: number) => void;
-}
+import type { createInitialRuntimeState, RuntimeState } from './runtimeState';
 
 export interface BrowserShellHost extends BrowserShellWindow {
   addEventListener: Window['addEventListener'];
@@ -24,10 +23,6 @@ export interface BrowserDocumentHost {
   querySelector: Document['querySelector'];
   fullscreenElement: Document['fullscreenElement'];
   exitFullscreen: Document['exitFullscreen'];
-}
-
-export interface BrowserCryptoHost {
-  randomUUID?: () => string;
 }
 
 export interface BrowserShellRuntimeApp {
@@ -59,82 +54,49 @@ export interface BrowserShellRuntimeOptions {
 }
 
 export interface BrowserShellRuntimeDependencies {
-  readonly attachDebugWindowHooks?: typeof attachDebugWindowHooks;
-  readonly buildDebugStateSnapshot?: typeof buildDebugStateSnapshot;
+  readonly attachBrowserShellRuntimeDebugHooks?: typeof attachBrowserShellRuntimeDebugHooks;
   readonly createBrowserShellRuntimeLoopController?: typeof createBrowserShellRuntimeLoopController;
+  readonly createBrowserShellStateController?: typeof createBrowserShellStateController;
   readonly createEventBridge?: typeof createShellEventBridge;
   readonly createFrameLoopController?: BrowserShellRuntimeLoopControllerDependencies['createFrameLoopController'];
-  readonly createInitialRuntimeState?: typeof createInitialRuntimeState;
   readonly createSeed?: typeof createRunSeed;
   readonly getMaxHealth?: typeof getMaxHealth;
   readonly bindShellRuntimeLoop?: BrowserShellRuntimeLoopControllerDependencies['bindShellRuntimeLoop'];
+  readonly createInitialRuntimeState?: typeof createInitialRuntimeState;
   readonly stepMapScene?: typeof stepMapScene;
   readonly stepRunState?: typeof stepRunState;
-}
-
-export function createRunSeed(
-  cryptoHost: BrowserCryptoHost | null | undefined = globalThis.crypto,
-  now: () => number = Date.now,
-  random: () => number = Math.random
-): string {
-  if (typeof cryptoHost?.randomUUID === 'function') {
-    return cryptoHost.randomUUID().slice(0, 8);
-  }
-  return `${now().toString(36)}-${Math.floor(random() * 1679616)
-    .toString(36)
-    .padStart(4, '0')}`;
-}
-
-export function initialSeedFromSearch(search: string): string | undefined {
-  const value = new URLSearchParams(search).get('seed')?.trim();
-  return value ? value : undefined;
-}
-
-export function initialSeedFromWindow(shellWindow: BrowserShellWindow): string | undefined {
-  return initialSeedFromSearch(shellWindow.location.search);
-}
-
-export function attachDebugWindowHooks(
-  shellWindow: BrowserShellWindow,
-  hooks: {
-    renderGameToText: () => string;
-    advanceTime: (ms: number) => void;
-  }
-): void {
-  shellWindow.render_game_to_text = hooks.renderGameToText;
-  shellWindow.advanceTime = hooks.advanceTime;
 }
 
 export function createBrowserShellRuntimeController(
   options: BrowserShellRuntimeOptions,
   dependencies: BrowserShellRuntimeDependencies = {}
 ): BrowserShellRuntimeController {
-  const createInitialState = dependencies.createInitialRuntimeState ?? createInitialRuntimeState;
+  const createStateController = dependencies.createBrowserShellStateController ?? createBrowserShellStateController;
   const createEventBridge = dependencies.createEventBridge ?? createShellEventBridge;
   const createRuntimeLoopController =
     dependencies.createBrowserShellRuntimeLoopController ?? createBrowserShellRuntimeLoopController;
   const runStep = dependencies.stepRunState ?? stepRunState;
   const mapStep = dependencies.stepMapScene ?? stepMapScene;
-  const buildSnapshot = dependencies.buildDebugStateSnapshot ?? buildDebugStateSnapshot;
-  const resolveMaxHealth = dependencies.getMaxHealth ?? getMaxHealth;
-  const attachDebugHooks = dependencies.attachDebugWindowHooks ?? attachDebugWindowHooks;
+  const attachRuntimeDebugHooks =
+    dependencies.attachBrowserShellRuntimeDebugHooks ?? attachBrowserShellRuntimeDebugHooks;
   const createSeed = dependencies.createSeed ?? createRunSeed;
 
-  let state = createInitialState(options.app.screen.height, initialSeedFromWindow(options.shellWindow) ?? createSeed());
+  const stateController = createStateController(options.app.screen.height, options.shellWindow, {
+    createInitialRuntimeState: dependencies.createInitialRuntimeState,
+    createSeed
+  });
   const shellEventBridge = createEventBridge({
     createSeed,
     getCanvasHeight: options.screenHeight,
-    getState: () => state,
-    setState: (nextState) => {
-      state = nextState;
-    }
+    getState: stateController.getState,
+    setState: stateController.setState
   });
 
   const runtimeLoop = createRuntimeLoopController(
     {
       app: options.app,
       documentHost: options.documentHost,
-      getState: () => state,
+      getState: stateController.getState,
       renderMapScene: options.renderMapScene,
       renderRunScene: options.renderRunScene,
       screenWidth: options.screenWidth,
@@ -149,17 +111,16 @@ export function createBrowserShellRuntimeController(
     }
   );
 
-  attachDebugHooks(options.shellWindow, {
-    renderGameToText: () => JSON.stringify(buildSnapshot(state, options.screenWidth(), resolveMaxHealth(state.sim.vehicle))),
-    advanceTime: runtimeLoop.advanceTime
+  attachRuntimeDebugHooks(options.shellWindow, stateController, options.screenWidth, runtimeLoop.advanceTime, {
+    getMaxHealth: dependencies.getMaxHealth
   });
 
   return {
     drawInitialScene: () => {
-      drawInitialScene(state, options.renderMapScene, options.renderRunScene);
+      drawInitialScene(stateController.getState(), options.renderMapScene, options.renderRunScene);
       options.app.renderer.render(options.app.stage);
     },
-    getState: () => state
+    getState: stateController.getState
   };
 }
 

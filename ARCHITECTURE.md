@@ -18,9 +18,9 @@ src/
     sim/       # deterministic simulation rules and helpers
   game/
     render/    # Pixi drawing helpers and scene renderers
-    runtime/   # runtime flow, content assembly, layout, and view-model helpers
+    runtime/   # browser shell, runtime flow, content assembly, layout, and view-model helpers
     state/     # game state and initialization
-  main.ts      # Pixi app shell and high-level orchestration
+  main.ts      # thin browser entrypoint
 tests/         # engine and runtime regressions
 ```
 
@@ -31,14 +31,14 @@ tests/         # engine and runtime regressions
 - Deterministic rule changes belong in `src/engine/*`.
 - Runtime flow, content assembly, and scene planning belong in `src/game/runtime/*`.
 - Pixi drawing and primitive reuse belong in `src/game/render/*`.
-- `src/main.ts` should prefer orchestration over inline rule, layout, or text-assembly logic.
+- `src/main.ts` should stay thin; browser-shell orchestration belongs in focused helpers under `src/game/runtime/*`.
 
 ## Current runtime split
 
 - `engine/sim/*` owns deterministic rules for travel, vehicle wear/repair/install, biome exploration knowledge, run-objective rules, resource changes, share codes, and world-node lookup helpers.
 - `game/runtime/*` owns runtime-facing scene state types, initial/reset helpers, browser-shell bootstrap helpers, derived vehicle stats, route and notebook content assembly, HUD/card planning, debug snapshots, expedition-flow bookkeeping, and map/run scene render-plan preparation.
 - `game/render/*` owns shared Pixi primitives, frame clearing, HUD chrome, route-board drawing, run-scene world drawing, and text/reset helpers.
-- `main.ts` should stay as a thin browser entrypoint that delegates Pixi/bootstrap orchestration to runtime and render helpers.
+- `main.ts` should stay as a thin browser entrypoint that delegates Pixi/bootstrap orchestration to browser-shell runtime and render helpers.
 
 ## Determinism rules
 
