@@ -9,5 +9,5 @@ export function shouldContinueDash(dashHeld: boolean, dashBoost: number, dashEne
 export function dashEntryEnergyCost(currentSpeed: number, runSpeed: number): number {
   const safeRunSpeed = Math.max(1, runSpeed);
   const speedRatio = Math.min(1, Math.abs(currentSpeed) / safeRunSpeed);
-  return 0.08 + speedRatio * 0.2;
+  return 0.04 + speedRatio * 0.1;
 }
