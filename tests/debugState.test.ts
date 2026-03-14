@@ -84,6 +84,19 @@ describe('buildDebugStateSnapshot', () => {
       }
     });
     expect(snapshot.sim.shareCode).toMatch(/^DT1-[A-Z0-9]+-[0-9A-Z]{6}-[0-9A-Z]{6}$/);
+    expect(snapshot.sim.world.nodes).toEqual(
+      state.sim.world.nodes.map((node) => ({
+        id: node.id,
+        type: node.type
+      }))
+    );
+    expect(snapshot.sim.world.edges).toEqual(
+      state.sim.world.edges.map((edge) => ({
+        from: edge.from,
+        to: edge.to,
+        distance: edge.distance
+      }))
+    );
     expect(snapshot.map.installOfferIndex).toBe(1);
     expect(snapshot.map.installOffers).toHaveLength(2);
     expect(snapshot.map.repairMode).toBe('workshop');

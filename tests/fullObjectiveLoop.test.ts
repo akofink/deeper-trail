@@ -5,6 +5,7 @@ import type { Browser } from "playwright";
 import {
   beaconApproachState,
   buildObjectiveLoopTimingReport,
+  findShortestNodePath,
   findPlaywrightCacheExecutables,
   formatObjectiveLoopTimingSummary,
   isSkippableBrowserLaunchError,
@@ -179,6 +180,52 @@ describe("fullObjectiveLoop helpers", () => {
       )
     ).toBe(true);
     expect(isSkippableBrowserLaunchError(new Error("some other browser crash"))).toBe(false);
+  });
+
+  it("finds a deterministic shortest route through the debug snapshot graph", () => {
+    const snapshot = {
+      sim: {
+        currentNodeId: "n0",
+        world: {
+          nodes: [
+            { id: "n0", type: "town" },
+            { id: "n1", type: "ruin" },
+            { id: "n2", type: "nature" },
+            { id: "n3", type: "anomaly" },
+            { id: "n4", type: "town" }
+          ],
+          edges: [
+            { from: "n0", to: "n1", distance: 7 },
+            { from: "n1", to: "n4", distance: 6 },
+            { from: "n0", to: "n2", distance: 5 },
+            { from: "n2", to: "n3", distance: 4 },
+            { from: "n3", to: "n4", distance: 4 }
+          ]
+        }
+      }
+    };
+
+    expect(findShortestNodePath(snapshot, "n4")).toEqual(["n0", "n1", "n4"]);
+    expect(findShortestNodePath(snapshot, "n0")).toEqual(["n0"]);
+  });
+
+  it("returns null when the target node is not reachable from the debug snapshot graph", () => {
+    const snapshot = {
+      sim: {
+        currentNodeId: "n0",
+        world: {
+          nodes: [
+            { id: "n0", type: "town" },
+            { id: "n1", type: "ruin" },
+            { id: "n9", type: "anomaly" }
+          ],
+          edges: [{ from: "n0", to: "n1", distance: 7 }]
+        }
+      }
+    };
+
+    expect(findShortestNodePath(snapshot, "n9")).toBeNull();
+    expect(findShortestNodePath(snapshot, "missing")).toBeNull();
   });
 
   it("keeps creeping toward elevated beacons until the true interact radius is reached", () => {

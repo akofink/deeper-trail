@@ -37,6 +37,17 @@ export interface DebugStateSnapshot {
     exploration: RuntimeState['sim']['exploration'];
     notebook: RuntimeState['sim']['notebook'];
     shareCode: string;
+    world: {
+      nodes: Array<{
+        id: string;
+        type: string;
+      }>;
+      edges: Array<{
+        from: string;
+        to: string;
+        distance: number;
+      }>;
+    };
     legacyCarryOvers: RuntimeState['legacyCarryOvers'];
   };
   map: {
@@ -242,6 +253,17 @@ export function buildDebugStateSnapshot(state: RuntimeState, viewportWidth: numb
       exploration: state.sim.exploration,
       notebook: state.sim.notebook,
       shareCode: buildSeedBuildShareCode(state.sim),
+      world: {
+        nodes: state.sim.world.nodes.map((node) => ({
+          id: node.id,
+          type: node.type
+        })),
+        edges: state.sim.world.edges.map((edge) => ({
+          from: edge.from,
+          to: edge.to,
+          distance: edge.distance
+        }))
+      },
       legacyCarryOvers: state.legacyCarryOvers.map((carryOver) => ({ ...carryOver }))
     },
     map: {
