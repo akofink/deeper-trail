@@ -1,5 +1,10 @@
-import type { Graphics } from 'pixi.js';
-import { createBrowserShellApp, type BrowserShellAppDependencies } from './browserShellApp';
+import { createBrowserShellApp } from './browserShellApp';
+import {
+  createBrowserShellAppDependencies,
+  createBrowserShellRendererBindings,
+  loadBrowserShellRendererModules,
+  type BrowserShellRendererModules
+} from './browserShellRenderer';
 import {
   createBrowserShellRuntimeController,
   type BrowserDocumentHost,
@@ -7,56 +12,11 @@ import {
   type BrowserShellRuntimeController
 } from './browserShellRuntime';
 
-export interface BrowserShellBootstrapModules {
-  readonly Application: BrowserShellAppDependencies['Application'];
-  readonly Graphics: BrowserShellAppDependencies['Graphics'];
-  readonly Text: BrowserShellAppDependencies['Text'];
-  readonly createSceneTextNodes: BrowserShellAppDependencies['createSceneTextNodes'];
-  readonly drawMapScene: (state: Parameters<BrowserShellRuntimeOptions['renderMapScene']>[0], context: SceneRendererContext) => void;
-  readonly drawRunScene: (state: Parameters<BrowserShellRuntimeOptions['renderRunScene']>[0], context: SceneRendererContext) => void;
-}
-
-interface SceneRendererContext {
-  readonly graphics: Graphics;
-  readonly labels: BrowserShellAppResult['sceneRendererContext']['labels'];
-  readonly playerGraphics: Graphics;
-  readonly screenHeight: () => number;
-  readonly screenWidth: () => number;
-}
-
-interface BrowserShellAppResult {
-  readonly app: Awaited<ReturnType<typeof createBrowserShellApp>>['app'];
-  readonly sceneRendererContext: Awaited<ReturnType<typeof createBrowserShellApp>>['sceneRendererContext'];
-  readonly screenHeight: () => number;
-  readonly screenWidth: () => number;
-}
-
-interface BrowserShellRuntimeOptions {
-  readonly renderMapScene: Parameters<typeof createBrowserShellRuntimeController>[0]['renderMapScene'];
-  readonly renderRunScene: Parameters<typeof createBrowserShellRuntimeController>[0]['renderRunScene'];
-}
-
 export interface BrowserShellBootstrapDependencies {
   readonly createApp?: typeof createBrowserShellApp;
   readonly createRuntimeController?: typeof createBrowserShellRuntimeController;
-  readonly loadModules?: () => Promise<BrowserShellBootstrapModules>;
-}
-
-export async function loadBrowserShellModules(): Promise<BrowserShellBootstrapModules> {
-  const [{ Application, Graphics, Text }, { createSceneTextNodes }, { drawMapScene, drawRunScene }] = await Promise.all([
-    import('pixi.js'),
-    import('../render/sceneTextBootstrap'),
-    import('../render/sceneRenderer')
-  ]);
-
-  return {
-    Application: Application as BrowserShellAppDependencies['Application'],
-    createSceneTextNodes: createSceneTextNodes as BrowserShellAppDependencies['createSceneTextNodes'],
-    drawMapScene,
-    drawRunScene,
-    Graphics,
-    Text: Text as BrowserShellAppDependencies['Text']
-  };
+  readonly createRendererBindings?: typeof createBrowserShellRendererBindings;
+  readonly loadModules?: () => Promise<BrowserShellRendererModules>;
 }
 
 export async function bootstrapBrowserShell(
@@ -66,24 +26,21 @@ export async function bootstrapBrowserShell(
 ): Promise<void> {
   const createApp = dependencies.createApp ?? createBrowserShellApp;
   const createRuntimeController = dependencies.createRuntimeController ?? createBrowserShellRuntimeController;
-  const modules = await (dependencies.loadModules ?? loadBrowserShellModules)();
+  const createRendererBindings = dependencies.createRendererBindings ?? createBrowserShellRendererBindings;
+  const modules = await (dependencies.loadModules ?? loadBrowserShellRendererModules)();
 
-  const { app, sceneRendererContext, screenHeight, screenWidth } = await createApp(shellWindow, documentHost, {
-    Application: modules.Application,
-    createSceneTextNodes: modules.createSceneTextNodes,
-    Graphics: modules.Graphics,
-    Text: modules.Text
-  });
+  const { app, sceneRendererContext, screenHeight, screenWidth } = await createApp(
+    shellWindow,
+    documentHost,
+    createBrowserShellAppDependencies(modules)
+  );
+  const rendererBindings = createRendererBindings(modules, sceneRendererContext);
 
   const runtime = createRuntimeController({
     app,
     documentHost,
-    renderMapScene: (state) => {
-      modules.drawMapScene(state, sceneRendererContext);
-    },
-    renderRunScene: (state) => {
-      modules.drawRunScene(state, sceneRendererContext);
-    },
+    renderMapScene: rendererBindings.renderMapScene,
+    renderRunScene: rendererBindings.renderRunScene,
     screenHeight,
     screenWidth,
     shellWindow

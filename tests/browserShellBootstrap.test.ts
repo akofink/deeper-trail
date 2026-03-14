@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   bootstrapBrowserShell,
-  type BrowserShellBootstrapModules
 } from '../src/game/runtime/browserShellBootstrap';
 import type {
   BrowserShellAppResult,
@@ -10,6 +9,7 @@ import type {
   createBrowserShellApp
 } from '../src/game/runtime/browserShellApp';
 import type { SceneTextNodes } from '../src/game/render/sceneTextBootstrap';
+import type { BrowserShellRendererModules } from '../src/game/runtime/browserShellRenderer';
 import type {
   BrowserDocumentHost,
   BrowserShellHost,
@@ -98,21 +98,19 @@ describe('browserShellBootstrap', () => {
     });
     const createRuntimeController =
       createRuntimeControllerMock as unknown as typeof createBrowserShellRuntimeController;
-    const drawMapScene = vi.fn();
-    const drawRunScene = vi.fn();
-    const modules: BrowserShellBootstrapModules = {
+    const modules: BrowserShellRendererModules = {
       Application: class {
         constructor() {
           return app;
         }
-      } as unknown as BrowserShellBootstrapModules['Application'],
+      } as unknown as BrowserShellRendererModules['Application'],
       createSceneTextNodes: vi.fn(),
-      drawMapScene,
-      drawRunScene,
-      Graphics: class {} as BrowserShellBootstrapModules['Graphics'],
-      Text: class {} as BrowserShellBootstrapModules['Text']
+      drawMapScene: vi.fn(),
+      drawRunScene: vi.fn(),
+      Graphics: class {} as BrowserShellRendererModules['Graphics'],
+      Text: class {} as BrowserShellRendererModules['Text']
     };
-    const loadModules = vi.fn<() => Promise<BrowserShellBootstrapModules>>(async () => modules);
+    const loadModules = vi.fn<() => Promise<BrowserShellRendererModules>>(async () => modules);
 
     await bootstrapBrowserShell(shellWindow, documentHost, {
       createApp,
@@ -142,8 +140,8 @@ describe('browserShellBootstrap', () => {
     runtimeOptions.renderMapScene({ scene: 'map' } as RuntimeState);
     runtimeOptions.renderRunScene({ scene: 'run' } as RuntimeState);
 
-    expect(drawMapScene).toHaveBeenCalledWith({ scene: 'map' }, sceneRendererContext);
-    expect(drawRunScene).toHaveBeenCalledWith({ scene: 'run' }, sceneRendererContext);
+    expect(modules.drawMapScene).toHaveBeenCalledWith({ scene: 'map' }, sceneRendererContext);
+    expect(modules.drawRunScene).toHaveBeenCalledWith({ scene: 'run' }, sceneRendererContext);
     expect(drawInitialScene).toHaveBeenCalledOnce();
   });
 });
