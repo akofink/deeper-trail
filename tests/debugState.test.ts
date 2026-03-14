@@ -211,9 +211,8 @@ describe('buildDebugStateSnapshot', () => {
     expect(snapshot.map.selectedRoute?.bestLeadArrivalRewardHint).toMatch(
       /^Lead route tune-up: \+1 (engine|frame|scanner|shielding|storage|suspension) condition on first arrival, else \+1 scrap\.$/
     );
-    expect(snapshot.map.selectedRoute?.arrivalEncounterPreview).toMatch(
-      /^Signal line holds on approach: \+1 (engine|frame|scanner|shielding|storage|suspension) condition\.$/
-    );
+    expect(snapshot.map.selectedRoute?.arrivalEncounterPreview).toContain('Signal line holds on approach: +1 ');
+    expect(snapshot.map.selectedRoute?.arrivalEncounterPreview).toContain('Masonry brace trace: +1 frame condition on first ruin arrival.');
   });
 
   it('exports first-arrival route encounter previews for automation checks', () => {

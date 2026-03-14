@@ -316,6 +316,42 @@ describe('map scene content helper', () => {
     expect(revisited.routeDetail).not.toContain('First arrival:');
   });
 
+  it('previews clue-linked ruin and anomaly arrival payoffs on the selected route card', () => {
+    const state = buildRuntimeState();
+    const destination = state.sim.world.nodes.find((node) => node.id === 'n1');
+    if (!destination) {
+      throw new Error('Expected destination node');
+    }
+
+    destination.type = 'ruin';
+    state.sim.notebook.discoveredClues.ruin = true;
+    state.sim.vehicleCondition.frame = 1;
+
+    const ruinPreview = buildMapSceneContent(state, 'n1', 7, {
+      canUseMedPatch: false,
+      medPatchHealAmount: 1,
+      medPatchScrapCost: 2,
+      hasAutoLinkScanner: false,
+      hasCompletedCurrentNode: false
+    });
+
+    expect(ruinPreview.routeDetail).toContain('First arrival: Masonry brace trace: +1 frame condition on first ruin arrival.');
+
+    destination.type = 'anomaly';
+    state.sim.notebook.discoveredClues.anomaly = true;
+    state.sim.fuel = state.sim.fuelCapacity - 2;
+
+    const anomalyPreview = buildMapSceneContent(state, 'n1', 7, {
+      canUseMedPatch: false,
+      medPatchHealAmount: 1,
+      medPatchScrapCost: 2,
+      hasAutoLinkScanner: false,
+      hasCompletedCurrentNode: false
+    });
+
+    expect(anomalyPreview.routeDetail).toContain('First arrival: Carrier pocket: restore +2 fuel on first anomaly arrival.');
+  });
+
   it('surfaces a pending legacy echo before the next expedition spends it', () => {
     const state = buildRuntimeState();
     state.legacyCarryOvers = [

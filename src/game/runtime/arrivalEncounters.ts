@@ -64,6 +64,31 @@ function buildArrivalEncounterMessages(
     }
   }
 
+  if (nodeType === 'ruin' && state.sim.notebook.discoveredClues.ruin) {
+    const subsystem = getDamageSubsystemForNodeType(nodeType);
+    if (state.sim.vehicleCondition[subsystem] < MAX_SUBSYSTEM_CONDITION) {
+      if (!options.previewOnly) {
+        repairSubsystem(state.sim, subsystem, 1);
+      }
+      encounterIds.push('ruin-masonry-brace');
+      messages.push(
+        options.previewOnly
+          ? `Masonry brace trace: +1 ${subsystem} condition on first ruin arrival.`
+          : `Masonry brace trace matched the notebook: ${subsystem} condition +1.`
+      );
+    } else {
+      if (!options.previewOnly) {
+        state.sim.scrap += 1;
+      }
+      encounterIds.push('ruin-masonry-cache');
+      messages.push(
+        options.previewOnly
+          ? 'Masonry brace trace: +1 scrap cache on first ruin arrival.'
+          : 'Masonry brace trace matched the notebook: salvage cache +1 scrap.'
+      );
+    }
+  }
+
   if (nodeType === 'ruin' && state.sim.vehicle.scanner >= 2) {
     if (!options.previewOnly) {
       state.sim.scrap += 1;
@@ -108,6 +133,23 @@ function buildArrivalEncounterMessages(
     encounterIds.push('nature-shelter-trace');
     messages.push(
       options.previewOnly ? 'Shelter trace: +1 extra health.' : 'Shelter markers matched earlier field notes: recovered +1 additional health.'
+    );
+  }
+
+  if (nodeType === 'anomaly' && state.sim.notebook.discoveredClues.anomaly) {
+    const recoveredFuel = Math.min(2, state.sim.fuelCapacity - state.sim.fuel);
+    if (!options.previewOnly) {
+      state.sim.fuel += recoveredFuel;
+    }
+    encounterIds.push('anomaly-carrier-pocket');
+    messages.push(
+      options.previewOnly
+        ? recoveredFuel > 0
+          ? `Carrier pocket: restore +${recoveredFuel} fuel on first anomaly arrival.`
+          : 'Carrier pocket: fuel cells already topped off.'
+        : recoveredFuel > 0
+          ? `Carrier pocket condensed out of the phase line: restored +${recoveredFuel} fuel.`
+          : 'Carrier pocket condensed out of the phase line, but the fuel cells were already topped off.'
     );
   }
 
