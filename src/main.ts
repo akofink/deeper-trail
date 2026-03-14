@@ -1,31 +1,13 @@
 import { Application, Graphics, Text } from 'pixi.js';
 import { getMaxHealth } from './engine/sim/vehicle';
-import { biomeByNodeType } from './game/runtime/runLayout';
 import { stepMapScene } from './game/runtime/mapSceneFlow';
-import { buildMapSceneRenderPlan } from './game/runtime/mapSceneRenderPlan';
-import { buildRunSceneRenderPlan } from './game/runtime/runSceneRenderPlan';
 import { buildDebugStateSnapshot } from './game/runtime/debugState';
 import { createFrameLoopController } from './game/runtime/frameLoop';
 import { stepRunState } from './game/runtime/runStep';
 import { createShellEventBridge } from './game/runtime/shellEventBridge';
 import { bindShellRuntimeLoop } from './game/runtime/shellRuntimeLoop';
 import { createInitialRuntimeState } from './game/runtime/runtimeState';
-import { drawMapBoard } from './game/render/mapBoardRenderer';
-import { measureTextView } from './game/render/pixiText';
-import { beginSceneFrame } from './game/render/sceneFrame';
-import { measureTextCard } from './game/render/pixiPrimitives';
-import {
-  drawMapBackdrop,
-  renderRunSceneWorld,
-  drawVehicleAvatar
-} from './game/render/runSceneRenderer';
-import {
-  applyOptionalTextCard,
-  renderMapSceneCards,
-  renderSceneActionChips,
-  renderMapSceneHud,
-  renderRunSceneHud
-} from './game/render/sceneHudRenderer';
+import { drawMapScene as renderMapScene, drawRunScene as renderRunScene } from './game/render/sceneRenderer';
 import { createSceneTextNodes } from './game/render/sceneTextBootstrap';
 import './styles.css';
 
@@ -104,6 +86,32 @@ async function bootstrap(): Promise<void> {
     return Math.max(1, app.screen.height);
   }
 
+  const sceneRendererContext = {
+    graphics,
+    labels: {
+      beaconLabels,
+      celebrationOverlay,
+      chipLabels,
+      fieldNotesText,
+      hud,
+      mapLeftRowLabels,
+      mapLeftRowValues,
+      mapRightHeaderLines,
+      moduleLabels,
+      overlay,
+      panelMeta,
+      panelSeed,
+      runLeftRowLabels,
+      runLeftRowValues,
+      runRightRowLabels,
+      runRightRowValues,
+      sharedSceneTextGroups
+    },
+    playerGraphics,
+    screenHeight,
+    screenWidth
+  } as const;
+
   function stepRun(dt: number): void {
     const input = shellEventBridge.buildRunStepInputSnapshot();
     const result = stepRunState(state, { dt, screenWidth: screenWidth(), ...input });
@@ -111,85 +119,11 @@ async function bootstrap(): Promise<void> {
   }
 
   function drawRunScene(): void {
-    const w = screenWidth();
-    const h = screenHeight();
-    const cam = state.cameraX;
-    const plan = buildRunSceneRenderPlan({
-      cameraX: cam,
-      measureText: (view) => measureTextView(beaconLabels[0] ?? hud, view),
-      moduleLabelCount: moduleLabels.length,
-      screenHeight: h,
-      screenWidth: w,
-      state
-    });
-    const colors = biomeByNodeType(plan.nodeType);
-
-    beginSceneFrame(graphics, playerGraphics, [panelSeed, celebrationOverlay, fieldNotesText], sharedSceneTextGroups);
-    renderRunSceneWorld(graphics, state, plan.nodeType, colors, plan.objectiveVisuals, cam, w, h, plan.exitReady);
-
-    drawVehicleAvatar(playerGraphics, state, cam);
-
-    renderRunSceneHud(
-      graphics,
-      {
-        beaconLabels,
-        hud,
-        leftRowLabels: runLeftRowLabels,
-        leftRowValues: runLeftRowValues,
-        moduleLabels,
-        panelMeta,
-        panelSeed,
-        rightRowLabels: runRightRowLabels,
-        rightRowValues: runRightRowValues
-      },
-      plan.hudView,
-      plan.textAssembly
-    );
-
-    applyOptionalTextCard(graphics, overlay, plan.overlayCard);
-    renderSceneActionChips(graphics, chipLabels, plan.chips, plan.textAssembly.chipLabels);
+    renderRunScene(state, sceneRendererContext);
   }
 
   function drawMapScene(): void {
-    const w = screenWidth();
-    const h = screenHeight();
-    const margin = 110;
-
-    beginSceneFrame(graphics, playerGraphics, [panelSeed, fieldNotesText], sharedSceneTextGroups);
-    drawMapBackdrop(graphics, w, h);
-    const plan = buildMapSceneRenderPlan({
-      state,
-      screenWidth: w,
-      screenHeight: h,
-      boardMargin: margin,
-      moduleLabelCount: moduleLabels.length,
-      measureCard: (card) => measureTextCard(card.fill === '#0f172a' ? fieldNotesText : overlay, card),
-      measureText: (view) => measureTextView(mapLeftRowLabels[0] ?? hud, view)
-    });
-    drawMapBoard(graphics, plan.boardView);
-    renderMapSceneHud(
-      graphics,
-      {
-        hud,
-        leftRowLabels: mapLeftRowLabels,
-        leftRowValues: mapLeftRowValues,
-        moduleLabels,
-        panelMeta,
-        panelSeed,
-        rightHeaderLines: mapRightHeaderLines
-      },
-      plan.hudView,
-      plan.textAssembly
-    );
-
-    renderMapSceneCards(
-      graphics,
-      { celebrationOverlay, fieldNotesText, overlay },
-      plan.cards.views,
-      plan.cards.layout.celebrationAccents
-    );
-
-    renderSceneActionChips(graphics, chipLabels, plan.chips, plan.textAssembly.chipLabels);
+    renderMapScene(state, sceneRendererContext);
   }
 
   async function toggleFullscreen(): Promise<void> {
