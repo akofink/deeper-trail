@@ -95,6 +95,66 @@ function findBestLeadRoute(state: RuntimeState) {
   throw new Error('Expected a node with a best connected lead');
 }
 
+function configureRunLayout(state: RuntimeState, nodeType: 'town' | 'ruin' | 'nature' | 'anomaly'): void {
+  const currentNode = findNode(state.sim, state.sim.currentNodeId);
+  expect(currentNode).toBeDefined();
+  if (!currentNode) {
+    throw new Error('Expected current node');
+  }
+
+  currentNode.type = nodeType;
+  state.groundY = 500;
+  const layout = buildRunLayout(state.groundY, nodeType);
+  state.hazards = layout.hazards;
+  state.collectibles = layout.collectibles;
+  state.beacons = layout.beacons;
+  state.serviceStops = layout.serviceStops;
+  state.syncGates = layout.syncGates;
+  state.canopyLifts = layout.canopyLifts;
+  state.impactPlates = layout.impactPlates;
+  state.goalX = layout.goalX;
+}
+
+function positionPlayerAtBeacon(
+  state: RuntimeState,
+  beaconIndex: number,
+  options?: {
+    elapsedSeconds?: number;
+    facing?: -1 | 1;
+    onGround?: boolean;
+    vx?: number;
+    dashBoost?: number;
+  }
+): void {
+  const beacon = state.beacons[beaconIndex];
+  expect(beacon).toBeDefined();
+  if (!beacon) {
+    throw new Error(`Expected beacon ${beaconIndex}`);
+  }
+
+  state.player.x = beacon.x - state.player.w * 0.5;
+  state.player.y = beacon.y - state.player.h * 0.5;
+  state.player.onGround = options?.onGround ?? true;
+  state.player.vx = options?.vx ?? 0;
+  state.player.facing = options?.facing ?? 1;
+  state.dashBoost = options?.dashBoost ?? 0;
+  state.elapsedSeconds = options?.elapsedSeconds ?? 0.1;
+}
+
+function expectMapReturnAfterNodeCompletion(
+  state: RuntimeState,
+  clueKey: 'ruin' | 'nature' | 'anomaly' | null
+): void {
+  const completion = completeCurrentNodeRun(state);
+
+  expect(completion.notebookUpdate.newEntries[0]?.clueKey ?? null).toBe(clueKey);
+  expect(hasCompletedCurrentNode(state)).toBe(true);
+  expect(state.scene).toBe('map');
+  expect(state.mode).toBe('playing');
+  expect(state.freeTravelCharges).toBe(1);
+  expect(state.mapMessage).toBe('Route board unlocked. Pick a connected route and press Enter to travel.');
+}
+
 describe('expedition flow runtime helpers', () => {
   it('completes a node run, grants a free trip, and refunds one connected travel cost before arrival rewards', () => {
     const state = buildRuntimeState();
@@ -488,20 +548,154 @@ describe('expedition flow runtime helpers', () => {
     expect(state.postGoalRouteHookNote).toContain('Afterglow hook');
   });
 
+  it('covers the full town objective path before unlocking map travel', () => {
+    const state = buildRuntimeState('town-objective-path');
+    configureRunLayout(state, 'town');
+
+    state.beacons.forEach((_, index) => {
+      positionPlayerAtBeacon(state, index);
+      expect(attemptBeaconActivation(state, 'manual')).toBe(true);
+    });
+
+    const partialProgress = runObjectiveProgress(state);
+    expect(partialProgress).toEqual({
+      completed: 3,
+      total: 5,
+      beaconsRemaining: 0,
+      serviceStopsRemaining: 2,
+      syncGatesRemaining: 0,
+      canopyLiftsRemaining: 0,
+      impactPlatesRemaining: 0
+    });
+    expect(buildExitLockedMessage(partialProgress)).toBe('Exit locked: 2 service bays left.');
+
+    state.serviceStops.forEach((stop) => {
+      state.player.x = stop.x - state.player.w * 0.5;
+      state.player.y = state.groundY - state.player.h;
+      state.player.onGround = true;
+      state.player.vx = 0;
+      updateRunObjectives(state, {
+        dt: 1,
+        landedThisFrame: false,
+        landingSpeed: 0
+      });
+    });
+
+    const completionReady = runObjectiveProgress(state);
+    expect(completionReady.completed).toBe(5);
+    expect(completionReady.total).toBe(5);
+    expect(state.serviceStops.every((stop) => stop.serviced)).toBe(true);
+    expect(state.score).toBe(85);
+
+    expectMapReturnAfterNodeCompletion(state, null);
+  });
+
+  it('covers the full ruin objective path before unlocking map travel', () => {
+    const state = buildRuntimeState('ruin-objective-path');
+    configureRunLayout(state, 'ruin');
+
+    state.beacons.forEach((_, index) => {
+      positionPlayerAtBeacon(state, index);
+      expect(attemptBeaconActivation(state, 'manual')).toBe(true);
+    });
+
+    const partialProgress = runObjectiveProgress(state);
+    expect(partialProgress).toEqual({
+      completed: 3,
+      total: 5,
+      beaconsRemaining: 0,
+      serviceStopsRemaining: 0,
+      syncGatesRemaining: 0,
+      canopyLiftsRemaining: 0,
+      impactPlatesRemaining: 2
+    });
+    expect(buildExitLockedMessage(partialProgress)).toBe('Exit locked: 2 impact plates left.');
+
+    state.impactPlates.forEach((plate) => {
+      state.player.x = plate.x - state.player.w * 0.5;
+      state.player.y = state.groundY - state.player.h;
+      state.player.onGround = true;
+      updateRunObjectives(state, {
+        dt: 0.1,
+        landedThisFrame: true,
+        landingSpeed: 320
+      });
+    });
+
+    const completionReady = runObjectiveProgress(state);
+    expect(completionReady.completed).toBe(5);
+    expect(completionReady.total).toBe(5);
+    expect(state.impactPlates.every((plate) => plate.shattered)).toBe(true);
+    expect(state.score).toBe(85);
+
+    expectMapReturnAfterNodeCompletion(state, 'ruin');
+  });
+
+  it('covers the full anomaly objective path before unlocking map travel', () => {
+    const state = buildRuntimeState('anomaly-objective-path');
+    configureRunLayout(state, 'anomaly');
+    state.sim.vehicle.scanner = 2;
+
+    const beaconSyncWindows = [0.1, 0.1, 1.55] as const;
+    const requiredFacings = [1, -1, 1] as const;
+    state.beacons.forEach((beacon, index) => {
+      positionPlayerAtBeacon(state, index, {
+        elapsedSeconds: beaconSyncWindows[index],
+        facing: requiredFacings[index],
+        onGround: false,
+        vx: 280,
+        dashBoost: 0.3
+      });
+
+      updateRunObjectives(state, {
+        dt: 0.4,
+        landedThisFrame: false,
+        landingSpeed: 0
+      });
+
+      expect(beacon.scanLocked).toBe(true);
+      expect(attemptBeaconActivation(state, 'manual')).toBe(true);
+    });
+
+    const partialProgress = runObjectiveProgress(state);
+    expect(partialProgress).toEqual({
+      completed: 3,
+      total: 5,
+      beaconsRemaining: 0,
+      serviceStopsRemaining: 0,
+      syncGatesRemaining: 2,
+      canopyLiftsRemaining: 0,
+      impactPlatesRemaining: 0
+    });
+    expect(buildExitLockedMessage(partialProgress)).toBe('Exit locked: 2 sync gates left.');
+
+    state.syncGates.forEach((gate, index) => {
+      state.player.x = gate.x - state.player.w * 0.5;
+      state.player.y = gate.y - state.player.h * 0.5;
+      state.player.onGround = false;
+      state.player.vx = 280;
+      state.dashBoost = 0.3;
+      state.elapsedSeconds = index === 0 ? 0.1 : 0.2;
+
+      updateRunObjectives(state, {
+        dt: 0.1,
+        landedThisFrame: false,
+        landingSpeed: 0
+      });
+    });
+
+    const completionReady = runObjectiveProgress(state);
+    expect(completionReady.completed).toBe(5);
+    expect(completionReady.total).toBe(5);
+    expect(state.syncGates.every((gate) => gate.stabilized)).toBe(true);
+    expect(state.score).toBe(85);
+
+    expectMapReturnAfterNodeCompletion(state, 'anomaly');
+  });
+
   it('covers the full nature objective path before unlocking map travel', () => {
     const state = buildRuntimeState('nature-objective-path');
-    const currentNode = findNode(state.sim, state.sim.currentNodeId);
-    expect(currentNode).toBeDefined();
-    if (!currentNode) {
-      throw new Error('Expected current node');
-    }
-
-    currentNode.type = 'nature';
-    state.groundY = 500;
-    const layout = buildRunLayout(state.groundY, 'nature');
-    state.beacons = layout.beacons;
-    state.canopyLifts = layout.canopyLifts;
-    state.goalX = layout.goalX;
+    configureRunLayout(state, 'nature');
 
     for (const beacon of state.beacons) {
       state.player.x = beacon.x - state.player.w * 0.5;
@@ -540,15 +734,7 @@ describe('expedition flow runtime helpers', () => {
     expect(completionReady.total).toBe(5);
     expect(state.canopyLifts.every((lift) => lift.charted)).toBe(true);
     expect(state.score).toBe(85);
-
-    const completion = completeCurrentNodeRun(state);
-
-    expect(completion.notebookUpdate.newEntries[0]?.clueKey).toBe('nature');
-    expect(hasCompletedCurrentNode(state)).toBe(true);
-    expect(state.scene).toBe('map');
-    expect(state.mode).toBe('playing');
-    expect(state.freeTravelCharges).toBe(1);
-    expect(state.mapMessage).toBe('Route board unlocked. Pick a connected route and press Enter to travel.');
+    expectMapReturnAfterNodeCompletion(state, 'nature');
   });
 
   it('consumes the completion free-travel charge after finishing all nature objectives and traveling', () => {
