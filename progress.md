@@ -1,3 +1,8 @@
+- Browser-shell scene-renderer-context factory pass:
+  - Added `src/game/runtime/browserShellSceneRendererContext.ts` so browser-shell stage graphics, shared text-node allocation, and `SceneRendererContext` assembly now live behind one focused helper instead of staying embedded in `src/game/runtime/browserShellApp.ts`.
+  - Updated `src/game/runtime/browserShellApp.ts` to keep Pixi app init, DOM mount, and ticker setup local while delegating scene-renderer context creation to the new helper.
+  - Added `tests/browserShellSceneRendererContext.test.ts` and kept `tests/browserShellApp.test.ts` aligned so the browser-shell app split stays covered without booting Pixi.
+
 - Full biome expedition-flow coverage pass:
   - Expanded `tests/expeditionFlow.test.ts` so `town`, `ruin`, `nature`, and `anomaly` runs now exercise their real layout/objective helpers end-to-end before returning to the map, instead of only covering the nature path.
   - Added shared test helpers for route layout setup, biome-specific relay positioning, and post-completion map-return assertions so future route-loop regressions can be expressed without re-embedding shell logic.
