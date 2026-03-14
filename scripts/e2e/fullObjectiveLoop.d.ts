@@ -127,11 +127,19 @@ export interface ObjectiveLoopRunOptions {
   runSmoke?: (smoke: ObjectiveLoopSmokeConfig, browser: Browser) => Promise<object | null>;
   log?: (message: string) => void;
   now?: () => number;
+  timingReportPath?: string;
+  writeTimingReport?: (report: ObjectiveLoopTimingReport, outputPath: string) => void;
 }
 
 export interface ObjectiveLoopTimingEntry {
   smoke: ObjectiveLoopSmokeConfig["name"];
   durationMs: number;
+}
+
+export interface ObjectiveLoopTimingReport {
+  selection: ObjectiveLoopSmokeConfig["name"] | "all";
+  totalDurationMs: number;
+  timings: ObjectiveLoopTimingEntry[];
 }
 
 export function logStep(message: string): void;
@@ -141,6 +149,20 @@ export function formatObjectiveLoopTimingSummary(
   totalDurationMs: number
 ): string;
 export function parseSmokeSelection(argv?: string[]): "town" | "ruin" | "nature" | "anomaly" | "all";
+export function parseTimingArtifactPath(argv?: string[]): string | undefined;
+export function buildObjectiveLoopTimingReport(
+  selection: ObjectiveLoopSmokeConfig["name"] | "all",
+  timings: ObjectiveLoopTimingEntry[],
+  totalDurationMs: number
+): ObjectiveLoopTimingReport;
+export function writeObjectiveLoopTimingReport(
+  report: ObjectiveLoopTimingReport,
+  outputPath: string,
+  options?: {
+    mkdirSync?: (path: fs.PathLike, options: { recursive: true }) => void;
+    writeFileSync?: (path: fs.PathOrFileDescriptor, data: string, encoding: BufferEncoding) => void;
+  }
+): void;
 export function withStepTimeout<T>(step: string, operation: () => Promise<T>, timeoutMs?: number): Promise<T>;
 export function findPlaywrightCacheExecutables(
   cacheRoot?: string,
