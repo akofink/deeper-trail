@@ -39,17 +39,14 @@ describe('browserShellRuntime controller', () => {
     const state = createStubState();
     const renderRunScene = vi.fn();
     const renderMapScene = vi.fn();
-    const attachDebugWindowHooks = vi.fn();
+    const attachBrowserShellRuntimeDebugHooks = vi.fn();
     const createBrowserShellRuntimeLoopController = vi.fn(() => ({
       advanceTime: vi.fn()
     }));
-    const createInitialRuntimeState = vi.fn(() => state);
-    const buildDebugStateSnapshot = vi.fn(
-      (nextState: RuntimeState) =>
-        ({
-          scene: nextState.scene
-        }) as DebugStateSnapshot
-    );
+    const createBrowserShellStateController = vi.fn(() => ({
+      getState: () => state,
+      setState: vi.fn()
+    }));
 
     const runtime = createBrowserShellRuntimeController(
       {
@@ -62,22 +59,24 @@ describe('browserShellRuntime controller', () => {
         shellWindow
       },
       {
-        attachDebugWindowHooks,
-        buildDebugStateSnapshot,
+        attachBrowserShellRuntimeDebugHooks,
         createBrowserShellRuntimeLoopController,
-        createInitialRuntimeState
+        createBrowserShellStateController
       }
     );
 
-    expect(createInitialRuntimeState).toHaveBeenCalledWith(480, 'route-77');
+    expect(createBrowserShellStateController).toHaveBeenCalledWith(480, shellWindow, {
+      createInitialRuntimeState: undefined,
+      createSeed: expect.any(Function)
+    });
     expect(createBrowserShellRuntimeLoopController).toHaveBeenCalledOnce();
-    expect(attachDebugWindowHooks).toHaveBeenCalledOnce();
-
-    const hookOptions = attachDebugWindowHooks.mock.calls[0]?.[1] as {
-      advanceTime: (ms: number) => void;
-      renderGameToText: () => string;
-    };
-    expect(hookOptions.renderGameToText()).toContain('"scene":"run"');
+    expect(attachBrowserShellRuntimeDebugHooks).toHaveBeenCalledWith(
+      shellWindow,
+      expect.objectContaining({ getState: expect.any(Function) }),
+      expect.any(Function),
+      expect.any(Function),
+      { getMaxHealth: undefined }
+    );
 
     runtime.drawInitialScene();
 
@@ -107,6 +106,7 @@ describe('browserShellRuntime controller', () => {
     const mapState = createStubState('map');
     const renderRunScene = vi.fn();
     const renderMapScene = vi.fn();
+    let currentState = runState;
     const createEventBridge = vi.fn(({ setState }) => ({
       buildRunStepInputSnapshot: () => ({
         dashLeftPressed: false,
@@ -139,14 +139,14 @@ describe('browserShellRuntime controller', () => {
         shellWindow
       },
       {
-        attachDebugWindowHooks: (windowHost, hooks) => {
-          windowHost.advanceTime = hooks.advanceTime;
-          windowHost.render_game_to_text = hooks.renderGameToText;
+        attachBrowserShellRuntimeDebugHooks: (windowHost, stateController, screenWidth, advanceTime) => {
+          windowHost.advanceTime = advanceTime;
+          windowHost.render_game_to_text = () =>
+            JSON.stringify({
+              scene: stateController.getState().scene,
+              screenWidth: screenWidth()
+            } as unknown as DebugStateSnapshot);
         },
-        buildDebugStateSnapshot: ((nextState: RuntimeState) =>
-          ({
-            scene: nextState.scene
-          }) as DebugStateSnapshot),
         createBrowserShellRuntimeLoopController: ({ getState, renderMapScene: drawMapScene, shellEventBridge }) => ({
           advanceTime: () => {
             shellEventBridge.onKeyDown('KeyA');
@@ -155,6 +155,12 @@ describe('browserShellRuntime controller', () => {
           }
         }),
         createEventBridge,
+        createBrowserShellStateController: () => ({
+          getState: () => currentState,
+          setState: (nextState) => {
+            currentState = nextState;
+          }
+        }),
         createInitialRuntimeState: vi.fn(() => runState)
       }
     );

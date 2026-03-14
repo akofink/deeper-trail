@@ -26,7 +26,7 @@ Those four files should stay aligned. If one changes materially, check the other
 
 `Current focus`
 - make the expedition loop read as one coherent journey instead of adjacent prototype systems
-- keep extracting `src/main.ts` into deterministic or testable helpers
+- keep the browser shell split clean so bootstrap, runtime-session, and render helpers stay testable and isolated
 - improve payoffs, route consequences, and readability before adding much broader scope
 
 `Deferred expansion`

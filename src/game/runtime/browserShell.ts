@@ -1,13 +1,13 @@
 import {
-  type BrowserDocumentHost,
-  type BrowserShellHost,
   type BrowserCryptoHost,
   type BrowserShellWindow,
-  createRunSeed,
-  initialSeedFromSearch,
-  initialSeedFromWindow,
-  attachDebugWindowHooks
+  createRunSeed
+} from './browserShellSession';
+import {
+  type BrowserDocumentHost,
+  type BrowserShellHost
 } from './browserShellRuntime';
+import { attachDebugWindowHooks, initialSeedFromSearch, initialSeedFromWindow } from './browserShellSession';
 export { bootstrapBrowserShell } from './browserShellBootstrap';
 
 export type { BrowserCryptoHost, BrowserDocumentHost, BrowserShellHost, BrowserShellWindow };

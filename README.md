@@ -25,7 +25,7 @@ This is still a prototype, not a content-complete vertical slice. The near-term 
 
 `Now`
 - tighten the current expedition loop so travel, biome verbs, upgrades, notebook clues, and route payoffs read as one coherent run
-- continue extracting orchestration out of `src/main.ts` into testable runtime and render helpers
+- continue tightening the browser shell split so runtime/session/bootstrap concerns stay in focused helpers instead of drifting back together
 - keep map readability, HUD clarity, and deterministic simulation quality high as content grows
 
 `Next`
@@ -73,8 +73,8 @@ src/
     sim/       # deterministic simulation actions/rules
   game/
     render/    # Pixi scene rendering helpers
-    runtime/   # runtime-facing view models, flow helpers, scene plans
+    runtime/   # browser shell, runtime-facing view models, flow helpers, scene plans
     state/     # game state and initialization
-  main.ts      # Pixi app shell and high-level orchestration
+  main.ts      # thin browser entrypoint
 tests/         # unit tests for engine + runtime behavior
 ```
