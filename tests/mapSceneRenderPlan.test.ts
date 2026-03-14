@@ -62,4 +62,61 @@ describe('mapSceneRenderPlan', () => {
     expect(plan.content.completionState).toBe('COMPLETE');
     expect(plan.chips.at(-1)?.label).toBe('N\nNew');
   });
+
+  it('surfaces a structured decoded ending on the celebration card after a synthesized goal clear', () => {
+    const state = createInitialRuntimeState(720, 'map-scene-plan-goal-ending');
+    state.scene = 'map';
+    state.mode = 'won';
+    state.expeditionComplete = true;
+    state.sim.currentNodeId = state.expeditionGoalNodeId;
+    state.sim.notebook.entries.push(
+      {
+        id: 'clue-nature',
+        clueKey: 'nature',
+        sourceNodeType: 'nature',
+        sourceNodeId: 'n1',
+        dayDiscovered: 1,
+        title: 'Nature',
+        body: 'Nature'
+      },
+      {
+        id: 'clue-ruin',
+        clueKey: 'ruin',
+        sourceNodeType: 'ruin',
+        sourceNodeId: 'n2',
+        dayDiscovered: 2,
+        title: 'Ruin',
+        body: 'Ruin'
+      },
+      {
+        id: 'clue-anomaly',
+        clueKey: 'anomaly',
+        sourceNodeType: 'anomaly',
+        sourceNodeId: 'n3',
+        dayDiscovered: 3,
+        title: 'Anomaly',
+        body: 'Anomaly'
+      }
+    );
+    state.sim.notebook.synthesisUnlocked = true;
+
+    const plan = buildMapSceneRenderPlan({
+      state,
+      screenWidth: 1024,
+      screenHeight: 576,
+      boardMargin: 110,
+      moduleLabelCount: 6,
+      measureCard: (card) => ({ width: card.maxWidth - 20, height: card.text.split('\n').length * 18 }),
+      measureText: (view) => ({ width: Math.max(10, view.text.length * 6), height: 14 })
+    });
+
+    expect(plan.cards.views.celebrationCard?.text).toContain('SIGNAL SOURCE REACHED');
+    expect(plan.cards.views.celebrationCard?.text).toContain('Echo Salvage Orchard');
+    expect(plan.cards.views.celebrationCard?.text).toContain('Arrival  source cache: +2 scrap on arrival');
+    expect(plan.cards.views.celebrationCard?.text).toContain('Approach  grove/quarry braid: salvage echoes line the source path');
+    expect(plan.cards.views.celebrationCard?.text).toContain(
+      'Run assist  anomaly line: shield charge starts primed and one site objective starts stabilized'
+    );
+    expect(plan.cards.views.celebrationCard?.text).toContain('Afterglow  each post-goal route yields +2 salvage.');
+  });
 });

@@ -1,5 +1,5 @@
 import { connectedNeighbors } from '../../engine/sim/world';
-import { goalSignalEndingSummary } from './goalSignal';
+import { goalSignalCelebrationDetail } from './goalSignal';
 import { buildMapActionChips, buildMapBoardView, type MapBoardView } from './mapBoardView';
 import { buildMapSceneCardPlan, buildMapSceneCopy, type MapSceneCardPlan } from './mapSceneCards';
 import { buildMapSceneContent, type MapSceneContent } from './mapSceneContent';
@@ -55,7 +55,7 @@ export function buildMapSceneRenderPlan({
   });
 
   const copy = buildMapSceneCopy({
-    celebrationDetail: state.expeditionComplete ? goalSignalEndingSummary(state) : null,
+    celebrationDetail: state.expeditionComplete ? goalSignalCelebrationDetail(state) : null,
     expeditionComplete: state.expeditionComplete,
     installHint: content.installHint,
     mapMessage: state.mapMessage,

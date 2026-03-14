@@ -382,6 +382,33 @@ export function goalSignalPrimerNote(selectedNodeId: string | null, state: Runti
   return `Synthesis route: ${profile.primerBeaconId} pre-linked; ${profile.arrivalBonusNote}; ${profile.encounterBonusNote}; ${profile.runBonusNote}.`;
 }
 
+export function goalSignalEndingOverlayText(state: RuntimeState): string | null {
+  const profile = goalSignalProfile(state);
+  if (!profile) {
+    return null;
+  }
+
+  return [profile.endingTitle, profile.endingDiscoveryNote, profile.endingCompletionNote].join('\n');
+}
+
+export function goalSignalCelebrationDetail(state: RuntimeState): string | null {
+  const profile = goalSignalProfile(state);
+  if (!profile) {
+    return null;
+  }
+
+  return [
+    profile.endingTitle,
+    profile.endingDiscoveryNote,
+    profile.endingCompletionNote,
+    profile.endingEpilogueNote,
+    `Arrival  ${profile.arrivalBonusNote}`,
+    `Approach  ${profile.encounterBonusNote}`,
+    `Run assist  ${profile.runBonusNote}`,
+    `Afterglow  ${profile.postGoalRouteHookNote.replace(/^Afterglow hook:\s*/i, '')}`
+  ].join('\n');
+}
+
 export function goalSignalEndingSummary(state: RuntimeState): string | null {
   return goalSignalProfile(state)?.endingSummary ?? null;
 }

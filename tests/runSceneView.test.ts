@@ -115,7 +115,12 @@ describe('runSceneView', () => {
     state.sim.currentNodeId = state.expeditionGoalNodeId;
 
     expect(buildRunSceneOverlayCard(state, 900)?.text).toBe(
-      'Signal source reached.\nFolded Quarry Threshold\nPast the fold, the source is packed into impossible short distance: quarry ramps, relay teeth, and sudden adjacency.'
+      [
+        'Signal source reached.',
+        'Folded Quarry Threshold',
+        'Past the fold, the source is packed into impossible short distance: quarry ramps, relay teeth, and sudden adjacency.',
+        'The last stretch folded inward and let the source arrive early.'
+      ].join('\n')
     );
   });
 
