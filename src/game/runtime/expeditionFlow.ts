@@ -1,5 +1,6 @@
 import { asNodeTypeKey, markNodeVisited, noteBiomeArrival } from '../../engine/sim/exploration';
 import { notebookSignalRouteIntel, recordNotebookClue, type NotebookUnlockResult } from '../../engine/sim/notebook';
+import { applyArrivalSiteBonus } from '../../engine/sim/siteBonuses';
 import { travelToNode, type TravelResult } from '../../engine/sim/travel';
 import { currentNodeType, findNode } from '../../engine/sim/world';
 import { getMaxHealth } from '../../engine/sim/vehicle';
@@ -55,6 +56,7 @@ export function applyArrivalRewards(
     message = 'Anomaly pulse: scanner subsystem +1.';
   }
 
+  message += applyArrivalSiteBonus(state.sim, node.type);
   normalizeRuntimeStateAfterVehicleChange(state);
   if (node.type === 'anomaly') {
     rechargeShieldCharge(state);

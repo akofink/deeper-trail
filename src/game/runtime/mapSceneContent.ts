@@ -1,6 +1,7 @@
 import { asNodeTypeKey, biomeBenefitLabel, biomeRiskLabel, visibleBiomeKnowledge } from '../../engine/sim/exploration';
 import { notebookClueProgress, notebookSignalRouteIntel } from '../../engine/sim/notebook';
 import { buildSeedBuildShareCode } from '../../engine/sim/shareCode';
+import { arrivalSiteBonusPreview } from '../../engine/sim/siteBonuses';
 import { currentNodeType, findNode } from '../../engine/sim/world';
 import {
   getInstallOffer,
@@ -44,6 +45,7 @@ export function buildMapSceneContent(
   const selectedInstallIndex = Math.max(0, Math.min(state.mapInstallSelectionIndex ?? 0, Math.max(0, installOffers.length - 1)));
   const installOffer = getInstallOffer(state.sim, activeNodeType, selectedInstallIndex);
   const selectedNodeType = asNodeTypeKey(selectedNode?.type ?? 'town');
+  const selectedSiteBonus = selectedNode ? arrivalSiteBonusPreview(state.sim, selectedNode.type) : null;
   const signalIntel = notebookSignalRouteIntel(state.sim, state.expeditionGoalNodeId, selectedNodeId);
   const goalPrimerNote = goalSignalPrimerNote(selectedNodeId, state);
   const selectedKnowledge = visibleBiomeKnowledge(state.sim, selectedNodeType);
@@ -75,6 +77,11 @@ export function buildMapSceneContent(
           `${selectedRouteKnowledge.benefitKnown ? biomeBenefitLabel(selectedNodeType).replace(' on arrival', '') : 'benefit ?'} / ${
             selectedRouteKnowledge.riskKnown ? biomeRiskLabel(selectedNodeType).replace('Hazards strain ', '') : 'risk ?'
           }`,
+          selectedSiteBonus
+            ? `${selectedSiteBonus.active ? 'Site synergy ready' : 'Site synergy locked'}: ${selectedSiteBonus.subsystem} lv${
+                selectedSiteBonus.requiredLevel
+              } ${selectedSiteBonus.summary}.`
+            : null,
           selectedRouteKnowledge.objectiveKnown ? getObjectiveSummary(selectedNode.type) : 'Objective pattern ?',
           signalIntel.routeHint ?? 'Signal triangulation offline.',
           signalIntel.bestLeadArrivalRewardHint,

@@ -1,3 +1,8 @@
+- Biome arrival site-synergy pass:
+  - Added deterministic biome-arrival synergy helpers in `src/engine/sim/siteBonuses.ts` so route destinations now advertise and apply build-linked site effects instead of resolving to only the base biome reward.
+  - Updated `src/game/runtime/expeditionFlow.ts`, `src/game/runtime/mapSceneContent.ts`, and `src/game/runtime/debugState.ts` so arrival rewards apply those synergies and the map/debug surfaces preview whether a selected route's synergy is active or locked for the current build.
+  - Expanded `tests/expeditionFlow.test.ts`, `tests/mapSceneContent.test.ts`, and `tests/debugState.test.ts`, and updated `docs/01-core-loop.md` plus `docs/02-vehicles-and-upgrades.md`.
+
 - Town workshop repair pass:
   - Added deterministic workshop-repair helpers in `src/engine/sim/vehicle.ts`; towns now price a full integrity restore from total missing subsystem condition while other biomes keep the existing one-pip field repair.
   - Updated `src/game/runtime/mapSceneFlow.ts`, `src/game/runtime/mapSceneContent.ts`, and `src/game/runtime/debugState.ts` so map input, copy, and automation all expose whether the active repair action is a field repair or a town workshop overhaul.

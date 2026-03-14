@@ -75,6 +75,12 @@ describe('buildDebugStateSnapshot', () => {
         benefitKnown: true,
         objectiveKnown: false,
         riskKnown: false
+      },
+      siteBonusPreview: {
+        subsystem: 'scanner',
+        requiredLevel: 2,
+        active: true,
+        summary: 'reveals connected route intel on arrival'
       }
     });
     expect(snapshot.sim.shareCode).toMatch(/^DT1-[A-Z0-9]+-[0-9A-Z]{6}-[0-9A-Z]{6}$/);

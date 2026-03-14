@@ -109,6 +109,7 @@ describe('map scene content helper', () => {
     expect(content.completionState).toBe('LOCKED');
     expect(content.routeDetail).toContain('NATURE');
     expect(content.routeDetail).toContain(`dist ${routeCase.weaker.distance}  fuel ${routeCase.weaker.distance}`);
+    expect(content.routeDetail).toContain('Site synergy locked: suspension lv2 repairs 1 damaged module condition on arrival.');
     expect(content.routeDetail).toContain('Objective pattern ?');
     expect(content.routeDetail).toContain('Signal triangulation offline.');
     expect(content.installHint).toContain('Site 1/2: +');
@@ -120,6 +121,7 @@ describe('map scene content helper', () => {
     expect(content.fieldNotes.join('\n')).toContain('SIGNAL 0/3  bearing offline');
 
     state.sim.vehicle.scanner = 3;
+    state.sim.vehicle.suspension = 2;
     state.sim.notebook.discoveredClues.ruin = true;
     state.sim.notebook.discoveredClues.nature = true;
     const upgradedContent = buildMapSceneContent(state, routeCase.weaker.nodeId, routeCase.weaker.distance, {
@@ -131,6 +133,7 @@ describe('map scene content helper', () => {
     });
 
     expect(upgradedContent.routeDetail).toContain('Air relays + canopy lifts');
+    expect(upgradedContent.routeDetail).toContain('Site synergy ready: suspension lv2 repairs 1 damaged module condition on arrival.');
     expect(upgradedContent.scannerHint).toContain('objective scan');
     expect(upgradedContent.scannerHint).toContain('auto-link online');
     expect(upgradedContent.routeDetail).toContain('Signal bearing weakens.');
