@@ -1,3 +1,11 @@
+- Shared-browser smoke timing pass:
+  - Extended `scripts/e2e/fullObjectiveLoop.js` so both single-smoke and shared-browser runs now measure deterministic wall-clock durations, emit per-smoke timing lines, and print one compact suite summary after the selected replay set finishes.
+  - Updated `scripts/e2e/fullObjectiveLoop.d.ts` and expanded `tests/fullObjectiveLoop.test.ts` to cover timing-summary formatting plus injected clock/log behavior without relying on real elapsed time.
+  - Updated `docs/10-engineering-workflow.md`.
+
+- TODO next:
+- Decide whether the smoke runner should eventually persist timing history to a file or CI artifact once there is a stable baseline worth comparing against.
+
 - Map install-rack selection pass:
   - Reworked `src/engine/sim/vehicle.ts` so biome sites now expose deterministic install-offer lists ordered by current subsystem level and biome priority instead of collapsing to one implicit upgrade.
   - Added runtime/UI selection state in `src/game/runtime/runtimeState.ts`, `src/game/runtime/mapSceneFlow.ts`, `src/game/runtime/shellControl.ts`, `src/game/runtime/mapSceneContent.ts`, and `src/game/runtime/mapBoardView.ts` so Left/Right cycles site offers, `C` installs the selected module, and debug snapshots expose both the selected offer and the full rack.

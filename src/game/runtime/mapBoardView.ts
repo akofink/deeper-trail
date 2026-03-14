@@ -1,4 +1,5 @@
 import { connectedNeighbors } from '../../engine/sim/world';
+import { visibleBiomeKnowledge } from '../../engine/sim/exploration';
 import { mapNodePalette } from './runLayout';
 import type { RuntimeState } from './runtimeState';
 import { projectMapPoint } from './mapProjection';
@@ -27,15 +28,24 @@ export interface MapBoardNodeView {
   glowColor: string | null;
   glowRadius: number | null;
   goal: boolean;
+  id: string;
   innerDot: boolean;
   outline: boolean;
   paletteLabel: string;
   radius: number;
   selected: boolean;
   starRadius: number | null;
+  intelMarkers: MapBoardNodeIntelMarker[];
   visited: boolean;
   x: number;
   y: number;
+}
+
+export interface MapBoardNodeIntelMarker {
+  fill: string;
+  radius: number;
+  xOffset: number;
+  yOffset: number;
 }
 
 export interface MapBoardView {
@@ -46,6 +56,25 @@ export interface MapBoardView {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function buildNodeIntelMarkers(radius: number, nodeType: string, state: RuntimeState): MapBoardNodeIntelMarker[] {
+  const knowledge = visibleBiomeKnowledge(state.sim, nodeType);
+  const orbit = radius + 5;
+  const markerRadius = Math.max(2.5, Math.min(4.5, radius * 0.28));
+  const markers: MapBoardNodeIntelMarker[] = [];
+
+  if (knowledge.benefitKnown) {
+    markers.push({ fill: '#34d399', radius: markerRadius, xOffset: -orbit * 0.72, yOffset: -orbit * 0.68 });
+  }
+  if (knowledge.objectiveKnown) {
+    markers.push({ fill: '#fbbf24', radius: markerRadius, xOffset: orbit * 0.72, yOffset: -orbit * 0.68 });
+  }
+  if (knowledge.riskKnown) {
+    markers.push({ fill: '#fb7185', radius: markerRadius, xOffset: 0, yOffset: orbit * 0.9 });
+  }
+
+  return markers;
 }
 
 export function buildMapBoardView(
@@ -115,7 +144,9 @@ export function buildMapBoardView(
         glowColor: visited || current || selected ? (current ? '#2563eb' : palette.glow) : null,
         glowRadius: visited || current || selected ? radius + 8 : null,
         goal,
+        id: node.id,
         innerDot: visited && !current,
+        intelMarkers: buildNodeIntelMarkers(radius, node.type, state),
         outline: completed,
         paletteLabel: palette.label,
         radius,
