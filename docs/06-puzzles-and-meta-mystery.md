@@ -60,9 +60,11 @@ Use a “mystery graph”:
 - Finding all three clue families auto-adds a synthesis note so the expedition reads like a small mystery arc rather than isolated route clears.
 - First arrivals now also include a small authored beat layer:
   - scanned ruins can reveal an alignment cache for extra salvage,
+  - ruin clues can turn first ruin arrivals into a frame tune-up, with a salvage fallback once the chassis is already stable,
   - notebook-aware towns can bank a free transfer,
   - synthesized town arrivals can annotate the connected board with adjacent biome benefits, risks, and objective patterns,
   - nature clues can turn groves into stronger recovery stops,
+  - anomaly clues can condense a small fuel pocket on first anomaly arrival,
   - synthesized anomaly arrivals can stabilize a phase corridor into a free transfer.
 - Notebook progress now feeds back into route choice mechanically:
   - first clue enables signal-bearing reads on the selected route,

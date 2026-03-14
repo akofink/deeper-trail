@@ -370,6 +370,77 @@ describe('expedition flow runtime helpers', () => {
     expect(state.mapMessage).toContain('Signal line held on approach: suspension condition +1.');
   });
 
+  it('turns ruin clues into first-arrival frame tune-ups with a scrap fallback', () => {
+    const damagedState = buildRuntimeState('arrival-ruin-clue');
+    const damagedNeighbor = connectedNeighbors(damagedState.sim)[0];
+    expect(damagedNeighbor).toBeDefined();
+    if (!damagedNeighbor) {
+      throw new Error('Expected connected neighbor');
+    }
+
+    damagedState.sim.notebook.discoveredClues.ruin = true;
+    damagedState.sim.vehicleCondition.frame = 1;
+    const damagedDestination = findNode(damagedState.sim, damagedNeighbor.nodeId);
+    expect(damagedDestination).toBeDefined();
+    if (!damagedDestination) {
+      throw new Error('Expected destination node');
+    }
+    damagedDestination.type = 'ruin';
+
+    const damagedResult = travelToNodeWithRuntimeEffects(damagedState, damagedNeighbor.nodeId);
+
+    expect(damagedResult.didTravel).toBe(true);
+    expect(damagedState.sim.vehicleCondition.frame).toBe(2);
+    expect(damagedState.mapMessage).toContain('Masonry brace trace matched the notebook: frame condition +1.');
+
+    const stableState = buildRuntimeState('arrival-ruin-clue-stable');
+    const stableNeighbor = connectedNeighbors(stableState.sim)[0];
+    expect(stableNeighbor).toBeDefined();
+    if (!stableNeighbor) {
+      throw new Error('Expected connected neighbor');
+    }
+
+    stableState.sim.notebook.discoveredClues.ruin = true;
+    stableState.sim.vehicleCondition.frame = 3;
+    stableState.sim.scrap = 0;
+    const stableDestination = findNode(stableState.sim, stableNeighbor.nodeId);
+    expect(stableDestination).toBeDefined();
+    if (!stableDestination) {
+      throw new Error('Expected destination node');
+    }
+    stableDestination.type = 'ruin';
+
+    const stableResult = travelToNodeWithRuntimeEffects(stableState, stableNeighbor.nodeId);
+
+    expect(stableResult.didTravel).toBe(true);
+    expect(stableState.sim.scrap).toBe(3);
+    expect(stableState.mapMessage).toContain('Masonry brace trace matched the notebook: salvage cache +1 scrap.');
+  });
+
+  it('turns anomaly clues into first-arrival fuel recovery', () => {
+    const state = buildRuntimeState('arrival-anomaly-clue');
+    const neighbor = connectedNeighbors(state.sim)[0];
+    expect(neighbor).toBeDefined();
+    if (!neighbor) {
+      throw new Error('Expected connected neighbor');
+    }
+
+    state.sim.notebook.discoveredClues.anomaly = true;
+    state.sim.fuel = 5;
+    const destination = findNode(state.sim, neighbor.nodeId);
+    expect(destination).toBeDefined();
+    if (!destination) {
+      throw new Error('Expected destination node');
+    }
+    destination.type = 'anomaly';
+
+    const result = travelToNodeWithRuntimeEffects(state, neighbor.nodeId);
+
+    expect(result.didTravel).toBe(true);
+    expect(state.sim.fuel).toBe(result.fuelCost === undefined ? 7 : 5 - result.fuelCost + 2);
+    expect(state.mapMessage).toContain('Carrier pocket condensed out of the phase line: restored +2 fuel.');
+  });
+
   it('marks expedition-goal completions as complete before returning to the map', () => {
     const state = buildRuntimeState('expedition-goal-flow');
     state.sim.notebook.discoveredClues.ruin = true;
