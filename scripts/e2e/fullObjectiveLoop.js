@@ -183,6 +183,56 @@ export function assert(condition, message, state) {
   throw new Error(`${message}\nState snapshot:\n${debugState}`);
 }
 
+export function findShortestNodePath(state, targetNodeId) {
+  const currentNodeId = state?.sim?.currentNodeId;
+  const world = state?.sim?.world;
+  if (!currentNodeId || !targetNodeId || !world) {
+    return null;
+  }
+  if (currentNodeId === targetNodeId) {
+    return [currentNodeId];
+  }
+
+  const nodeIds = new Set(world.nodes.map((node) => node.id));
+  if (!nodeIds.has(currentNodeId) || !nodeIds.has(targetNodeId)) {
+    return null;
+  }
+
+  const adjacency = new Map();
+  for (const nodeId of nodeIds) {
+    adjacency.set(nodeId, []);
+  }
+  for (const edge of world.edges) {
+    adjacency.get(edge.from)?.push(edge.to);
+    adjacency.get(edge.to)?.push(edge.from);
+  }
+  for (const [nodeId, neighbors] of adjacency.entries()) {
+    neighbors.sort((left, right) => left.localeCompare(right));
+    adjacency.set(nodeId, neighbors);
+  }
+
+  const queue = [[currentNodeId]];
+  const visited = new Set([currentNodeId]);
+  while (queue.length > 0) {
+    const path = queue.shift();
+    const nodeId = path[path.length - 1];
+    const neighbors = adjacency.get(nodeId) ?? [];
+    for (const neighborId of neighbors) {
+      if (visited.has(neighborId)) {
+        continue;
+      }
+      const nextPath = [...path, neighborId];
+      if (neighborId === targetNodeId) {
+        return nextPath;
+      }
+      visited.add(neighborId);
+      queue.push(nextPath);
+    }
+  }
+
+  return null;
+}
+
 export function resolveExecutablePath(
   explicitPath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?.trim(),
   managedPath = chromium.executablePath(),

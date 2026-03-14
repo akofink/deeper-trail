@@ -1,3 +1,8 @@
+- Browser smoke route-planning groundwork pass:
+  - Updated `src/game/runtime/debugState.ts` so `window.render_game_to_text()` now exports the seeded world graph's node ids/types plus edge distances alongside the existing automation snapshot.
+  - Added `findShortestNodePath(...)` in `scripts/e2e/fullObjectiveLoop.js` so browser smoke helpers can compute deterministic shortest-leg routes from that snapshot data without reaching into gameplay internals.
+  - Expanded `tests/debugState.test.ts` and `tests/fullObjectiveLoop.test.ts`, and updated `docs/10-engineering-workflow.md`.
+
 - Browser shell runtime-controller extraction pass:
   - Added `src/game/runtime/browserShellRuntime.ts` so seed resolution, runtime-state ownership, frame-loop wiring, fullscreen toggling, and debug-hook attachment now live behind one focused controller instead of staying inline in `src/game/runtime/browserShell.ts`.
   - Slimmed `src/game/runtime/browserShell.ts` down to module loading, Pixi app creation, and delegation into the extracted runtime controller.

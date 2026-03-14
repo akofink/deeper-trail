@@ -101,6 +101,23 @@ export interface ImpactPlateJumpStateInput {
   };
 }
 
+export interface ObjectiveLoopGraphSnapshot {
+  sim?: {
+    currentNodeId?: string;
+    world?: {
+      nodes: Array<{
+        id: string;
+        type: string;
+      }>;
+      edges: Array<{
+        from: string;
+        to: string;
+        distance: number;
+      }>;
+    };
+  };
+}
+
 export interface DirectoryEntryLike {
   isDirectory(): boolean;
   name: string;
@@ -178,6 +195,7 @@ export function impactPlateJumpWindow(state: ImpactPlateJumpStateInput): ImpactP
 export function airborneBeaconApproachState(target: AirborneBeaconApproachTarget, state: AirborneBeaconApproachStateInput): AirborneBeaconApproachResult;
 export function syncGateApproachState(target: SyncGateApproachTarget, state: SyncGateApproachStateInput, gateIndex: number): SyncGateApproachResult;
 export function assert(condition: boolean, message: string, state?: unknown): void;
+export function findShortestNodePath(state: ObjectiveLoopGraphSnapshot, targetNodeId: string): string[] | null;
 export function advanceFrames(page: Page, frames: number): Promise<void>;
 export function tapKey(page: Page, key: string, frames?: number): Promise<void>;
 export function launchBrowserWithFallback(candidatePaths: string[]): Promise<Browser>;
