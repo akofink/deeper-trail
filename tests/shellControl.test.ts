@@ -97,6 +97,105 @@ describe('shellControl helpers', () => {
     ]);
   });
 
+  it('spends queued legacy echoes on the first outbound route after starting a fresh seeded world', () => {
+    const completedState = createInitialRuntimeState(720, 'shell-legacy-chain');
+    completedState.scene = 'map';
+    completedState.expeditionComplete = true;
+    completedState.postGoalRouteHookType = 'salvage-echo';
+    completedState.postGoalRouteHookNote = 'Afterglow hook: each post-goal route yields +2 salvage.';
+    completedState.legacyCarryOvers = [
+      {
+        type: 'quiet-heal',
+        note: 'Legacy echo: quiet crossing restores +1 hull on the next route.',
+        sourceTitle: 'Quiet Phase Garden'
+      }
+    ];
+    completedState.sim.notebook.entries.push(
+      {
+        id: 'clue-nature',
+        clueKey: 'nature',
+        sourceNodeType: 'nature',
+        sourceNodeId: 'n1',
+        dayDiscovered: 1,
+        title: 'Nature',
+        body: 'Nature'
+      },
+      {
+        id: 'clue-ruin',
+        clueKey: 'ruin',
+        sourceNodeType: 'ruin',
+        sourceNodeId: 'n2',
+        dayDiscovered: 2,
+        title: 'Ruin',
+        body: 'Ruin'
+      },
+      {
+        id: 'clue-anomaly',
+        clueKey: 'anomaly',
+        sourceNodeType: 'anomaly',
+        sourceNodeId: 'n3',
+        dayDiscovered: 3,
+        title: 'Anomaly',
+        body: 'Anomaly'
+      }
+    );
+    completedState.sim.notebook.synthesisUnlocked = true;
+    completedState.sim.currentNodeId = completedState.expeditionGoalNodeId;
+
+    const newWorldResult = handleShellKeyDown(completedState, 'KeyN', {
+      canvasHeight: 720,
+      createSeed: () => 'shell-legacy-chain-next',
+      previousMapNavigate: false
+    });
+
+    const nextState = newWorldResult.nextState;
+    expect(nextState.legacyCarryOvers).toEqual([
+      {
+        type: 'quiet-heal',
+        note: 'Legacy echo: quiet crossing restores +1 hull on the next route.',
+        sourceTitle: 'Quiet Phase Garden'
+      },
+      {
+        type: 'salvage-echo',
+        note: 'Afterglow hook: each post-goal route yields +2 salvage.',
+        sourceTitle: 'Echo Salvage Orchard'
+      }
+    ]);
+
+    nextState.scene = 'map';
+    nextState.health = 2;
+    nextState.sim.scrap = 0;
+    nextState.completedNodeIds.push(nextState.sim.currentNodeId);
+
+    const neighbor = connectedNeighbors(nextState.sim)[0];
+    expect(neighbor).toBeDefined();
+    if (!neighbor) {
+      throw new Error('Expected connected neighbor');
+    }
+
+    const destination = findNode(nextState.sim, neighbor.nodeId);
+    expect(destination).toBeDefined();
+    if (!destination) {
+      throw new Error('Expected destination node');
+    }
+    destination.type = 'town';
+
+    const travelResult = handleShellKeyDown(nextState, 'Enter', {
+      canvasHeight: 720,
+      createSeed: () => 'unused',
+      previousMapNavigate: false
+    });
+
+    expect(travelResult.nextState.scene).toBe('run');
+    expect(travelResult.nextState.legacyCarryOvers).toEqual([]);
+    expect(travelResult.nextState.health).toBe(3);
+    expect(travelResult.nextState.sim.scrap).toBe(2);
+    expect(travelResult.nextState.mapMessage).toContain('Arrived at town: fuel topped up +8.');
+    expect(travelResult.nextState.mapMessage).toContain(
+      'Legacy echoes Quiet Phase Garden: quiet crossing restores +1 hull. Echo Salvage Orchard: salvage echo recovered +2 scrap.'
+    );
+  });
+
   it('restarts lost runs with a fresh state and resets won runs in place', () => {
     const lostState = createInitialRuntimeState(720, 'shell-lost');
     lostState.mode = 'lost';
