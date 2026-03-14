@@ -58,6 +58,50 @@ export interface MapBoardView {
   selectedNodeId: string | null;
 }
 
+function signalEdgeStyle(
+  state: RuntimeState,
+  selectedNodeId: string
+): {
+  alpha: number;
+  color: string;
+  widthBoost: number;
+} | null {
+  const signalIntel = notebookSignalRouteIntel(state.sim, state.expeditionGoalNodeId, selectedNodeId);
+  if (!signalIntel.routeHint) {
+    return null;
+  }
+
+  if (signalIntel.isBestLead) {
+    return {
+      alpha: 0.86,
+      color: '#22d3ee',
+      widthBoost: 1.2
+    };
+  }
+
+  if (signalIntel.routeHint.includes('strengthens')) {
+    return {
+      alpha: 0.8,
+      color: '#22c55e',
+      widthBoost: 0.85
+    };
+  }
+
+  if (signalIntel.routeHint.includes('weakens')) {
+    return {
+      alpha: 0.72,
+      color: '#fb7185',
+      widthBoost: 0.4
+    };
+  }
+
+  return {
+    alpha: 0.74,
+    color: '#f8fafc',
+    widthBoost: 0.55
+  };
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
@@ -102,6 +146,7 @@ export function buildMapBoardView(
   const selectedOption = options[state.mapSelectionIndex] ?? null;
   const selectedNodeId = selectedOption?.nodeId ?? null;
   const nodeById = new Map(state.sim.world.nodes.map((node) => [node.id, node] as const));
+  const signalEdgeStyles = new Map(options.map((option) => [option.nodeId, signalEdgeStyle(state, option.nodeId)] as const));
   const bestLeadNodeIds = new Set(
     options
       .filter((option) => notebookSignalRouteIntel(state.sim, state.expeditionGoalNodeId, option.nodeId).isBestLead)
@@ -118,19 +163,23 @@ export function buildMapBoardView(
     const isSelected =
       (edge.from === state.sim.currentNodeId && edge.to === selectedNodeId) ||
       (edge.to === state.sim.currentNodeId && edge.from === selectedNodeId);
+    const neighborNodeId =
+      edge.from === state.sim.currentNodeId ? edge.to : edge.to === state.sim.currentNodeId ? edge.from : null;
+    const signalStyle = neighborNodeId ? signalEdgeStyles.get(neighborNodeId) ?? null : null;
     const depthAlpha = clamp(0.52 + (fromPoint.depth + toPoint.depth) * 0.00035, 0.34, 0.78);
     const kindWidthBoost = edge.kind === 'spine' ? 1.1 : edge.kind === 'crosslink' ? 0.35 : 0;
     const kindAlphaBoost = edge.kind === 'spine' ? 0.16 : edge.kind === 'crosslink' ? -0.08 : 0;
     const edgeColor = edge.kind === 'spine' ? '#cbd5e1' : edge.kind === 'crosslink' ? '#64748b' : '#7dd3fc';
+    const styledEdge = !isSelected && signalStyle;
 
     return [
       {
-        alpha: isSelected ? 0.95 : clamp(depthAlpha + kindAlphaBoost, 0.28, 0.88),
-        color: isSelected ? '#f59e0b' : edgeColor,
+        alpha: isSelected ? 0.95 : styledEdge ? Math.max(clamp(depthAlpha + kindAlphaBoost, 0.28, 0.88), signalStyle.alpha) : clamp(depthAlpha + kindAlphaBoost, 0.28, 0.88),
+        color: isSelected ? '#f59e0b' : styledEdge ? signalStyle.color : edgeColor,
         from: fromPoint,
         isSelected,
         to: toPoint,
-        width: isSelected ? baseWidth + 1.5 : baseWidth + kindWidthBoost
+        width: isSelected ? baseWidth + 1.5 : baseWidth + kindWidthBoost + (styledEdge ? signalStyle.widthBoost : 0)
       }
     ];
   });

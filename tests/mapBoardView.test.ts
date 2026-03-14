@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { notebookSignalRouteIntel } from '../src/engine/sim/notebook';
-import { connectedNeighbors } from '../src/engine/sim/world';
+import { connectedNeighbors, shortestLegCountBetweenNodes } from '../src/engine/sim/world';
 import { buildMapActionChips, buildMapBoardView } from '../src/game/runtime/mapBoardView';
 import type { RuntimeState } from '../src/game/runtime/runtimeState';
 import { createInitialGameState } from '../src/game/state/gameState';
@@ -56,6 +56,53 @@ function buildRuntimeState(): RuntimeState {
     hazards: [],
     sim
   };
+}
+
+function findRouteComparisonCase(state: RuntimeState) {
+  for (const node of state.sim.world.nodes) {
+    const currentLegs = shortestLegCountBetweenNodes(state.sim, node.id, state.expeditionGoalNodeId);
+    if (currentLegs === null || currentLegs === 0) {
+      continue;
+    }
+
+    state.sim.currentNodeId = node.id;
+    const neighbors = connectedNeighbors(state.sim)
+      .map((neighbor) => ({
+        ...neighbor,
+        legs: shortestLegCountBetweenNodes(state.sim, neighbor.nodeId, state.expeditionGoalNodeId)
+      }))
+      .filter((neighbor): neighbor is { nodeId: string; distance: number; legs: number } => neighbor.legs !== null);
+
+    const stronger = neighbors.find((neighbor) => neighbor.legs < currentLegs) ?? null;
+    const holding = neighbors.find((neighbor) => neighbor.legs === currentLegs) ?? null;
+    const weaker = neighbors.find((neighbor) => neighbor.legs > currentLegs) ?? null;
+    const best = neighbors.reduce<typeof neighbors[number] | null>(
+      (selected, neighbor) => (selected === null || neighbor.legs < selected.legs ? neighbor : selected),
+      null
+    );
+
+    if (stronger && holding && weaker && best) {
+      return { best, currentNodeId: node.id, holding, stronger, weaker };
+    }
+  }
+
+  throw new Error('Expected a node with stronger, holding, and weaker connected routes');
+}
+
+function findEdge(view: ReturnType<typeof buildMapBoardView>, fromId: string, toId: string) {
+  const fromNode = view.nodes.find((node) => node.id === fromId);
+  const toNode = view.nodes.find((node) => node.id === toId);
+  if (!fromNode || !toNode) {
+    throw new Error(`Expected nodes ${fromId} and ${toId}`);
+  }
+
+  return (
+    view.edges.find(
+      (edge) =>
+        (edge.from.x === fromNode.x && edge.from.y === fromNode.y && edge.to.x === toNode.x && edge.to.y === toNode.y) ||
+        (edge.from.x === toNode.x && edge.from.y === toNode.y && edge.to.x === fromNode.x && edge.to.y === fromNode.y)
+    ) ?? null
+  );
 }
 
 describe('mapBoardView', () => {
@@ -148,6 +195,40 @@ describe('mapBoardView', () => {
     expect(expectedBestLeadNodeIds.length).toBeGreaterThan(0);
     expect(bestLeadNodes.map((node) => node.id).sort()).toEqual([...expectedBestLeadNodeIds].sort());
     expect(bestLeadNodes.every((node) => node.bestLeadRadius !== null && node.bestLeadRadius > node.radius)).toBe(true);
+  });
+
+  it('writes notebook signal-strength intel onto connected route edges before selection', () => {
+    const state = buildRuntimeState();
+    const routeCase = findRouteComparisonCase(state);
+    state.sim.currentNodeId = routeCase.currentNodeId;
+    state.sim.notebook.discoveredClues.ruin = true;
+    const strongerSelectionIndex = connectedNeighbors(state.sim).findIndex((neighbor) => neighbor.nodeId === routeCase.holding.nodeId);
+    state.mapSelectionIndex = strongerSelectionIndex >= 0 ? strongerSelectionIndex : 0;
+
+    let view = buildMapBoardView(state, 1280, 720, 110);
+    let strongerEdge = findEdge(view, routeCase.currentNodeId, routeCase.stronger.nodeId);
+    let weakerEdge = findEdge(view, routeCase.currentNodeId, routeCase.weaker.nodeId);
+
+    expect(strongerEdge?.color).toBe('#22c55e');
+    expect(weakerEdge?.color).toBe('#fb7185');
+    expect(strongerEdge && weakerEdge ? strongerEdge.width > weakerEdge.width : false).toBe(true);
+
+    const weakerSelectionIndex = connectedNeighbors(state.sim).findIndex((neighbor) => neighbor.nodeId === routeCase.stronger.nodeId);
+    state.mapSelectionIndex = weakerSelectionIndex >= 0 ? weakerSelectionIndex : 0;
+    view = buildMapBoardView(state, 1280, 720, 110);
+    const holdingEdge = findEdge(view, routeCase.currentNodeId, routeCase.holding.nodeId);
+
+    expect(holdingEdge?.color).toBe('#f8fafc');
+
+    state.sim.notebook.discoveredClues.nature = true;
+    state.sim.notebook.discoveredClues.anomaly = true;
+    state.sim.notebook.synthesisUnlocked = true;
+    state.mapSelectionIndex = strongerSelectionIndex >= 0 ? strongerSelectionIndex : 0;
+    view = buildMapBoardView(state, 1280, 720, 110);
+    const bestLeadEdge = findEdge(view, routeCase.currentNodeId, routeCase.best.nodeId);
+
+    expect(bestLeadEdge?.color).toBe('#22d3ee');
+    expect(bestLeadEdge?.alpha).toBeGreaterThanOrEqual(0.86);
   });
 
   it('switches the final chip label when the expedition is complete', () => {

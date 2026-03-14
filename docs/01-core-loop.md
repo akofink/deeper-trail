@@ -15,6 +15,7 @@ The current game should read as one loop, not separate prototype systems:
 
 `Map scene`
 - route choice
+- notebook signal-bearing emphasis directly on connected route edges, not only in side-card text
 - route cost previews that reflect pending free-travel credits
 - risk/reward reading
 - first-arrival encounter payoff previews
