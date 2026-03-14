@@ -1,3 +1,8 @@
+- Browser smoke timing artifact pass:
+  - Extended `scripts/e2e/fullObjectiveLoop.js` with an optional `--timings-out <path>` flag so the consolidated biome smoke runner can persist its existing per-smoke timing data and suite total as a JSON artifact without changing the default CLI flow.
+  - Added JSON report helpers plus coverage in `tests/fullObjectiveLoop.test.ts` for CLI parsing, stable report payload construction, directory creation/file output, and the shared-browser suite path that now writes the artifact only when requested.
+  - Updated `docs/10-engineering-workflow.md`.
+
 - Route aftermath preview pass:
   - Added a shared goal-hook preview helper in `src/game/runtime/goalSignal.ts` so active afterglow hooks and queued legacy echoes can describe their concrete next-route payout without applying the effect early.
   - Updated `src/game/runtime/mapSceneContent.ts` so selected route cards now preview the exact next-route payout for active post-goal afterglow hooks and queued legacy echoes, and field notes mirror those previews alongside the existing flavor text.

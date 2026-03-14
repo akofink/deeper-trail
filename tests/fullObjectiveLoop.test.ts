@@ -4,9 +4,11 @@ import type { Browser } from "playwright";
 
 import {
   beaconApproachState,
+  buildObjectiveLoopTimingReport,
   findPlaywrightCacheExecutables,
   formatObjectiveLoopTimingSummary,
   isSkippableBrowserLaunchError,
+  parseTimingArtifactPath,
   parseSmokeSelection,
   resolveObjectiveLoopSmoke,
   runObjectiveLoopSmoke,
@@ -17,7 +19,8 @@ import {
   isPhaseWindowOpen,
   impactPlateJumpWindow,
   airborneBeaconApproachState,
-  syncGateApproachState
+  syncGateApproachState,
+  writeObjectiveLoopTimingReport
 } from "../scripts/e2e/fullObjectiveLoop.js";
 
 const ORIGINAL_EXECUTABLE_PATH = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
@@ -38,6 +41,14 @@ describe("fullObjectiveLoop helpers", () => {
     expect(parseSmokeSelection(["--smoke", "nature"])).toBe("nature");
     expect(parseSmokeSelection(["--smoke", "all"])).toBe("all");
     expect(() => parseSmokeSelection(["--smoke", "bogus"])).toThrow('Unknown objective loop smoke "bogus"');
+  });
+
+  it("parses an optional timing artifact path from CLI args", () => {
+    expect(parseTimingArtifactPath([])).toBeUndefined();
+    expect(parseTimingArtifactPath(["--timings-out", "artifacts/objective-loop.json"])).toBe(
+      "artifacts/objective-loop.json"
+    );
+    expect(() => parseTimingArtifactPath(["--timings-out"])).toThrow('Missing path after "--timings-out"');
   });
 
   it("resolves known smoke configs by name", () => {
@@ -76,6 +87,48 @@ describe("fullObjectiveLoop helpers", () => {
         2055
       )
     ).toBe("objective loop timing (all): town 840ms, ruin 1.22s | total 2.06s");
+  });
+
+  it("builds a stable JSON-ready timing report payload", () => {
+    expect(
+      buildObjectiveLoopTimingReport(
+        "all",
+        [
+          { smoke: "town", durationMs: 840 },
+          { smoke: "ruin", durationMs: 1215 }
+        ],
+        2055
+      )
+    ).toEqual({
+      selection: "all",
+      totalDurationMs: 2055,
+      timings: [
+        { smoke: "town", durationMs: 840 },
+        { smoke: "ruin", durationMs: 1215 }
+      ]
+    });
+  });
+
+  it("writes the timing report JSON and creates the output directory", () => {
+    const mkdirSync = vi.fn();
+    const writeFileSync = vi.fn();
+
+    writeObjectiveLoopTimingReport(
+      {
+        selection: "all",
+        totalDurationMs: 2055,
+        timings: [{ smoke: "town", durationMs: 840 }]
+      },
+      "artifacts/objective-loop.json",
+      { mkdirSync, writeFileSync }
+    );
+
+    expect(mkdirSync).toHaveBeenCalledWith("artifacts", { recursive: true });
+    expect(writeFileSync).toHaveBeenCalledWith(
+      "artifacts/objective-loop.json",
+      '{\n  "selection": "all",\n  "totalDurationMs": 2055,\n  "timings": [\n    {\n      "smoke": "town",\n      "durationMs": 840\n    }\n  ]\n}\n',
+      "utf8"
+    );
   });
 
   it("falls back to common local Chromium installs", () => {
@@ -249,6 +302,7 @@ describe("fullObjectiveLoop helpers", () => {
     const launchBrowser = vi.fn<(candidatePaths: string[]) => Promise<Browser>>(async () => browser);
     const runSmoke = vi.fn(async (smoke: { name: string }, calledBrowser: Browser) => ({ smoke: smoke.name, browser: calledBrowser }));
     const log = vi.fn();
+    const writeTimingReport = vi.fn();
     const now = vi
       .fn<() => number>()
       .mockReturnValueOnce(1000)
@@ -267,7 +321,9 @@ describe("fullObjectiveLoop helpers", () => {
       launchBrowser,
       runSmoke,
       log,
-      now
+      now,
+      timingReportPath: "artifacts/objective-loop.json",
+      writeTimingReport
     });
 
     expect(launchBrowser).toHaveBeenCalledTimes(1);
@@ -285,13 +341,27 @@ describe("fullObjectiveLoop helpers", () => {
       { smoke: "anomaly", browser }
     ]);
     expect((browser.close as unknown as ReturnType<typeof vi.fn>)).toHaveBeenCalledTimes(1);
+    expect(writeTimingReport).toHaveBeenCalledWith(
+      {
+        selection: "all",
+        totalDurationMs: 1600,
+        timings: [
+          { smoke: "town", durationMs: 400 },
+          { smoke: "ruin", durationMs: 600 },
+          { smoke: "nature", durationMs: 0 },
+          { smoke: "anomaly", durationMs: 0 }
+        ]
+      },
+      "artifacts/objective-loop.json"
+    );
     expect(log.mock.calls.map(([message]) => message)).toEqual([
       "launching shared browser smoke session for town:e2e-1, ruin:e2e-0, nature:e2e-2, anomaly:e2e-3",
       "town timing 400ms",
       "ruin timing 600ms",
       "nature timing 0ms",
       "anomaly timing 0ms",
-      "objective loop timing (all): town 400ms, ruin 600ms, nature 0ms, anomaly 0ms | total 1.60s"
+      "objective loop timing (all): town 400ms, ruin 600ms, nature 0ms, anomaly 0ms | total 1.60s",
+      "objective loop timing report written to artifacts/objective-loop.json"
     ]);
   });
 
@@ -328,14 +398,18 @@ describe("fullObjectiveLoop helpers", () => {
       );
     });
     const runSmoke = vi.fn();
+    const writeTimingReport = vi.fn();
 
     const results = await runSelectedObjectiveLoopSmokes("all", {
       candidatePaths: ["/tmp/chromium"],
       launchBrowser,
-      runSmoke
+      runSmoke,
+      timingReportPath: "artifacts/objective-loop.json",
+      writeTimingReport
     });
 
     expect(results).toEqual([]);
     expect(runSmoke).not.toHaveBeenCalled();
+    expect(writeTimingReport).not.toHaveBeenCalled();
   });
 });
