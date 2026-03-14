@@ -10,7 +10,7 @@ import {
   missingVehicleConditionPoints,
   WORKSHOP_REPAIR_COST_PER_POINT
 } from '../../engine/sim/vehicle';
-import { visibleBiomeKnowledge } from '../../engine/sim/exploration';
+import { visibleBiomeKnowledge, visibleBiomeKnowledgeWithSignalIntel } from '../../engine/sim/exploration';
 import { hasBeaconAutoLink } from './beaconActivation';
 import { hasCompletedCurrentNode } from './expeditionFlow';
 import { describeGoalRouteHookEffect } from './goalSignal';
@@ -213,7 +213,7 @@ export function buildDebugStateSnapshot(state: RuntimeState, viewportWidth: numb
   const visibleMaxX = state.cameraX + viewportWidth;
   const activeNodeType = currentNode?.type ?? 'town';
   const signalIntel = notebookSignalRouteIntel(state.sim, state.expeditionGoalNodeId, selectedOption?.nodeId ?? null);
-  const routeKnowledge = selectedNode ? visibleBiomeKnowledge(state.sim, selectedNode.type) : null;
+  const routeKnowledge = selectedNode ? visibleBiomeKnowledgeWithSignalIntel(state.sim, selectedNode.type, signalIntel) : null;
   const objectiveProgress = countObjectiveSupportProgress(state, activeNodeType);
   const installOffers = getInstallOffers(state.sim, currentNodeType(state.sim));
   const installOfferIndex = Math.max(0, Math.min(state.mapInstallSelectionIndex ?? 0, Math.max(0, installOffers.length - 1)));

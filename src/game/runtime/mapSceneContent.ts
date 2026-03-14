@@ -1,4 +1,10 @@
-import { asNodeTypeKey, biomeBenefitLabel, biomeRiskLabel, visibleBiomeKnowledge } from '../../engine/sim/exploration';
+import {
+  asNodeTypeKey,
+  biomeBenefitLabel,
+  biomeRiskLabel,
+  visibleBiomeKnowledge,
+  visibleBiomeKnowledgeWithSignalIntel
+} from '../../engine/sim/exploration';
 import { notebookClueProgress, notebookSignalRouteIntel } from '../../engine/sim/notebook';
 import { buildSeedBuildShareCode } from '../../engine/sim/shareCode';
 import { arrivalSiteBonusPreview } from '../../engine/sim/siteBonuses';
@@ -48,12 +54,7 @@ export function buildMapSceneContent(
   const selectedSiteBonus = selectedNode ? arrivalSiteBonusPreview(state.sim, selectedNode.type) : null;
   const signalIntel = notebookSignalRouteIntel(state.sim, state.expeditionGoalNodeId, selectedNodeId);
   const goalPrimerNote = goalSignalPrimerNote(selectedNodeId, state);
-  const selectedKnowledge = visibleBiomeKnowledge(state.sim, selectedNodeType);
-  const selectedRouteKnowledge = {
-    benefitKnown: selectedKnowledge.benefitKnown || signalIntel.revealsBenefit,
-    objectiveKnown: selectedKnowledge.objectiveKnown || signalIntel.revealsObjective,
-    riskKnown: selectedKnowledge.riskKnown || signalIntel.revealsRisk
-  };
+  const selectedRouteKnowledge = visibleBiomeKnowledgeWithSignalIntel(state.sim, selectedNodeType, signalIntel);
 
   const legacyCarryOvers = state.legacyCarryOvers;
   const legacyCarryOverSummary =
