@@ -285,6 +285,18 @@ describe('shellControl helpers', () => {
     expect(state.mapSelectionIndex).toBe(2);
   });
 
+  it('keeps the route-nav latch armed while another vertical arrow remains held', () => {
+    const heldOppositeArrow = handleShellKeyUp('ArrowUp', true, {
+      hasHeldMapNavigationKey: true
+    });
+    expect(heldOppositeArrow.previousMapNavigate).toBe(true);
+
+    const fullyReleased = handleShellKeyUp('ArrowDown', heldOppositeArrow.previousMapNavigate, {
+      hasHeldMapNavigationKey: false
+    });
+    expect(fullyReleased.previousMapNavigate).toBe(false);
+  });
+
   it('cycles site install offers with left and right on the map without using the route-nav latch', () => {
     const state = createInitialRuntimeState(720, 'shell-map-install-nav');
     state.scene = 'map';

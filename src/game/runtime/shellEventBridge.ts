@@ -70,7 +70,9 @@ export function createShellEventBridge(options: ShellEventBridgeOptions): ShellE
 
   const onKeyUp = (code: string): void => {
     pressedKeys.delete(code);
-    previousMapNavigate = handleShellKeyUp(code, previousMapNavigate).previousMapNavigate;
+    previousMapNavigate = handleShellKeyUp(code, previousMapNavigate, {
+      hasHeldMapNavigationKey: pressedKeys.has('ArrowUp') || pressedKeys.has('ArrowDown')
+    }).previousMapNavigate;
   };
 
   const onResize = (): void => {
