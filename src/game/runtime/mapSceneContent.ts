@@ -70,6 +70,7 @@ export function buildMapSceneContent(
           }`,
           selectedRouteKnowledge.objectiveKnown ? getObjectiveSummary(selectedNode.type) : 'Objective pattern ?',
           signalIntel.routeHint ?? 'Signal triangulation offline.',
+          signalIntel.bestLeadArrivalRewardHint,
           goalPrimerNote,
           legacyCarryOverPreview ? `Legacy route payout: ${legacyCarryOverPreview}` : null,
           !state.expeditionComplete && legacyCarryOverSummary

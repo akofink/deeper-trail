@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { connectedNeighbors, expeditionGoalNodeId, findNode } from '../src/engine/sim/world';
+import { connectedNeighbors, expeditionGoalNodeId, findNode, shortestLegCountBetweenNodes } from '../src/engine/sim/world';
 import { attemptBeaconActivation } from '../src/game/runtime/beaconActivation';
 import { buildExitLockedMessage } from '../src/game/runtime/runCompletion';
 import { buildRunLayout } from '../src/game/runtime/runLayout';
@@ -65,6 +65,34 @@ function buildRuntimeState(seed = 'expedition-flow'): RuntimeState {
     hazards: [],
     sim
   };
+}
+
+function findBestLeadRoute(state: RuntimeState) {
+  for (const node of state.sim.world.nodes) {
+    const currentLegs = shortestLegCountBetweenNodes(state.sim, node.id, state.expeditionGoalNodeId);
+    if (currentLegs === null || currentLegs === 0) {
+      continue;
+    }
+
+    state.sim.currentNodeId = node.id;
+    const neighbors = connectedNeighbors(state.sim)
+      .map((neighbor) => ({
+        ...neighbor,
+        legs: shortestLegCountBetweenNodes(state.sim, neighbor.nodeId, state.expeditionGoalNodeId)
+      }))
+      .filter((neighbor): neighbor is { nodeId: string; distance: number; legs: number } => neighbor.legs !== null);
+
+    const best = neighbors.reduce<typeof neighbors[number] | null>(
+      (selected, neighbor) => (selected === null || neighbor.legs < selected.legs ? neighbor : selected),
+      null
+    );
+
+    if (best) {
+      return { best, currentNodeId: node.id };
+    }
+  }
+
+  throw new Error('Expected a node with a best connected lead');
 }
 
 describe('expedition flow runtime helpers', () => {
@@ -259,6 +287,30 @@ describe('expedition flow runtime helpers', () => {
     expect(state.mapMessage).toContain('synthesis notes');
     expect(state.sim.exploration.biomeKnowledge.ruin.objectiveKnown).toBe(true);
     expect(state.sim.exploration.biomeKnowledge.ruin.riskKnown).toBe(true);
+  });
+
+  it('turns the strongest synthesized lead into a first-arrival module tune-up', () => {
+    const state = buildRuntimeState('arrival-best-lead');
+    const routeCase = findBestLeadRoute(state);
+    state.sim.currentNodeId = routeCase.currentNodeId;
+    state.sim.notebook.discoveredClues.ruin = true;
+    state.sim.notebook.discoveredClues.nature = true;
+    state.sim.notebook.discoveredClues.anomaly = true;
+    state.sim.notebook.synthesisUnlocked = true;
+    state.sim.vehicleCondition.suspension = 1;
+
+    const destination = findNode(state.sim, routeCase.best.nodeId);
+    expect(destination).toBeDefined();
+    if (!destination) {
+      throw new Error('Expected best-lead destination node');
+    }
+    destination.type = 'nature';
+
+    const result = travelToNodeWithRuntimeEffects(state, routeCase.best.nodeId);
+
+    expect(result.didTravel).toBe(true);
+    expect(state.sim.vehicleCondition.suspension).toBe(2);
+    expect(state.mapMessage).toContain('Signal line held on approach: suspension condition +1.');
   });
 
   it('marks expedition-goal completions as complete before returning to the map', () => {

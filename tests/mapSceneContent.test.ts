@@ -297,6 +297,7 @@ describe('map scene content helper', () => {
     expect(strongestLead.routeDetail).toContain('Air relays + canopy lifts');
     expect(strongestLead.routeDetail).toContain('suspension');
     expect(strongestLead.routeDetail).toContain('Best current lead.');
+    expect(strongestLead.routeDetail).toContain('Lead route tune-up: +1 suspension condition on first arrival, else +1 scrap.');
 
     const weakerLead = buildMapSceneContent(state, routeCase.weaker.nodeId, routeCase.weaker.distance, {
       canUseMedPatch: false,
@@ -309,6 +310,7 @@ describe('map scene content helper', () => {
     expect(weakerLead.routeDetail).toContain('benefit ? / risk ?');
     expect(weakerLead.routeDetail).toContain('Objective pattern ?');
     expect(weakerLead.routeDetail).not.toContain('Best current lead.');
+    expect(weakerLead.routeDetail).not.toContain('Lead route tune-up:');
   });
 
   it('warns synthesized goal routes that the source approach starts with a pre-linked relay', () => {

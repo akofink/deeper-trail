@@ -65,6 +65,8 @@ export interface DebugStateSnapshot {
           isGoal: boolean;
           knowledge: ReturnType<typeof visibleBiomeKnowledge>;
           signalHint: string | null;
+          isBestLead: boolean;
+          bestLeadArrivalRewardHint: string | null;
           afterglowPreview: string | null;
           legacyEchoPreview: string[];
         }
@@ -261,6 +263,8 @@ export function buildDebugStateSnapshot(state: RuntimeState, viewportWidth: numb
             isGoal: selectedOption.nodeId === state.expeditionGoalNodeId,
             knowledge: routeKnowledge ?? visibleBiomeKnowledge(state.sim, 'town'),
             signalHint: signalIntel.routeHint,
+            isBestLead: signalIntel.isBestLead,
+            bestLeadArrivalRewardHint: signalIntel.bestLeadArrivalRewardHint,
             afterglowPreview:
               state.expeditionComplete && (state.postGoalRouteHookCharges ?? 0) > 0 && state.postGoalRouteHookType
                 ? describeGoalRouteHookEffect(state.postGoalRouteHookType)

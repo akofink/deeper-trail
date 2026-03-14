@@ -1,6 +1,6 @@
 import { revealBiomeIntel } from '../../engine/sim/exploration';
 import { connectedNeighbors, findNode } from '../../engine/sim/world';
-import { getMaxHealth } from '../../engine/sim/vehicle';
+import { getDamageSubsystemForNodeType, getMaxHealth, MAX_SUBSYSTEM_CONDITION, repairSubsystem } from '../../engine/sim/vehicle';
 import type { NodeTypeKey } from '../state/gameState';
 import type { RuntimeState } from './runtimeState';
 
@@ -28,7 +28,10 @@ function revealConnectedBiomeIntel(state: RuntimeState): string[] {
 export function resolveArrivalEncounter(
   state: RuntimeState,
   nodeType: NodeTypeKey,
-  firstVisit: boolean
+  firstVisit: boolean,
+  options: {
+    arrivedViaBestLeadRoute?: boolean;
+  } = {}
 ): ArrivalEncounterOutcome {
   if (!firstVisit) {
     return {
@@ -37,30 +40,38 @@ export function resolveArrivalEncounter(
     };
   }
 
+  const encounterIds: string[] = [];
+  const messages: string[] = [];
+
+  if (options.arrivedViaBestLeadRoute && state.sim.notebook.synthesisUnlocked) {
+    const subsystem = getDamageSubsystemForNodeType(nodeType);
+    if (state.sim.vehicleCondition[subsystem] < MAX_SUBSYSTEM_CONDITION) {
+      repairSubsystem(state.sim, subsystem, 1);
+      encounterIds.push('signal-route-tune-up');
+      messages.push(` Signal line held on approach: ${subsystem} condition +1.`);
+    } else {
+      state.sim.scrap += 1;
+      encounterIds.push('signal-route-cache');
+      messages.push(' Signal line held on approach: cached route salvage +1 scrap.');
+    }
+  }
+
   if (nodeType === 'ruin' && state.sim.vehicle.scanner >= 2) {
     state.sim.scrap += 1;
-    return {
-      id: 'ruin-alignment-cache',
-      message: ' Scanner traced a buried relay seam: alignment cache +1 scrap.'
-    };
+    encounterIds.push('ruin-alignment-cache');
+    messages.push(' Scanner traced a buried relay seam: alignment cache +1 scrap.');
   }
 
   if (nodeType === 'town' && state.sim.notebook.synthesisUnlocked) {
     state.freeTravelCharges += 1;
     const revealedTypes = revealConnectedBiomeIntel(state);
     const routeLabel = revealedTypes.length > 0 ? ` charted ${revealedTypes.join('/')} routes and` : '';
-    return {
-      id: 'town-surveyor-synthesis',
-      message: ` Surveyor broker synced your synthesis notes:${routeLabel} banked +1 free transfer.`
-    };
-  }
-
-  if (nodeType === 'town' && state.sim.notebook.entries.length > 0) {
+    encounterIds.push('town-surveyor-synthesis');
+    messages.push(` Surveyor broker synced your synthesis notes:${routeLabel} banked +1 free transfer.`);
+  } else if (nodeType === 'town' && state.sim.notebook.entries.length > 0) {
     state.freeTravelCharges += 1;
-    return {
-      id: 'town-surveyor-broker',
-      message: ' Surveyor broker cross-checked the notebook and charted +1 free transfer.'
-    };
+    encounterIds.push('town-surveyor-broker');
+    messages.push(' Surveyor broker cross-checked the notebook and charted +1 free transfer.');
   }
 
   if (
@@ -69,22 +80,18 @@ export function resolveArrivalEncounter(
     state.health < getMaxHealth(state.sim.vehicle)
   ) {
     state.health = Math.min(getMaxHealth(state.sim.vehicle), state.health + 1);
-    return {
-      id: 'nature-shelter-trace',
-      message: ' Shelter markers matched earlier field notes: recovered +1 additional health.'
-    };
+    encounterIds.push('nature-shelter-trace');
+    messages.push(' Shelter markers matched earlier field notes: recovered +1 additional health.');
   }
 
   if (nodeType === 'anomaly' && state.sim.notebook.synthesisUnlocked && state.sim.vehicle.shielding >= 2) {
     state.freeTravelCharges += 1;
-    return {
-      id: 'anomaly-phase-corridor',
-      message: ' Phase corridor locked to your synthesis notes: +1 free transfer banked.'
-    };
+    encounterIds.push('anomaly-phase-corridor');
+    messages.push(' Phase corridor locked to your synthesis notes: +1 free transfer banked.');
   }
 
   return {
-    id: null,
-    message: ''
+    id: encounterIds.length > 0 ? encounterIds.join('+') : null,
+    message: messages.join('')
   };
 }
