@@ -56,7 +56,7 @@ Every module should:
   - `nature` + suspension lv.2 repairs 1 damaged module condition on arrival
   - `anomaly` + scanner lv.2 permanently reveals connected-route intel on arrival
 - `scanner` lv.3 enables relay auto-linking.
-- `scanner` lv.2 previews biome benefits directly on route-board nodes and can phase-lock anomaly relays during open sync windows; lv.3 adds objective-pattern markers and auto-linking; lv.4 adds hazard-strain markers as well.
+- `scanner` lv.2 previews biome benefits directly on route-board nodes and can phase-lock anomaly relays during open sync windows; lv.3 adds objective-pattern markers and auto-linking; lv.4 adds subsystem-specific hazard-strain markers plus explicit route-card hazard previews.
 - `storage` lv.2 starts pulling nearby salvage pickups inward; lv.3 also increases scrap gained per pickup.
 - `shielding` lv.2 grants one rechargeable shielded hit each run.
 - Biome-aligned subsystems now also ease their matching run objective in deterministic ways:

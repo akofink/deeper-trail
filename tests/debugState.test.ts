@@ -77,6 +77,7 @@ describe('buildDebugStateSnapshot', () => {
         objectiveKnown: false,
         riskKnown: false
       },
+      riskPreview: null,
       siteBonusPreview: {
         subsystem: 'scanner',
         requiredLevel: 2,
@@ -277,6 +278,38 @@ describe('buildDebugStateSnapshot', () => {
       }
     });
     expect(snapshot.map.selectedRoute?.objectiveSummary).toBeTruthy();
+    expect(snapshot.map.selectedRoute?.riskPreview).not.toBeNull();
+    expect(snapshot.map.selectedRoute?.riskPreview?.label).toMatch(/strain$/);
+    expect(snapshot.map.selectedRoute?.riskPreview?.preview).toContain('Hazard preview:');
+  });
+
+  it('exports explicit biome hazard previews when route risk intel is known', () => {
+    const state = createInitialRuntimeState(720, 'debug-snapshot-risk-preview');
+    const selectedRoute = connectedNeighbors(state.sim)[0];
+    if (!selectedRoute) {
+      throw new Error('Expected a connected route');
+    }
+
+    const selectedNode = findNode(state.sim, selectedRoute.nodeId);
+    if (!selectedNode) {
+      throw new Error('Expected selected node');
+    }
+
+    selectedNode.type = 'nature';
+    state.sim.vehicle.scanner = 4;
+
+    const snapshot = buildDebugStateSnapshot(state, 900, getMaxHealth(state.sim.vehicle));
+
+    expect(snapshot.map.selectedRoute).toMatchObject({
+      knowledge: {
+        riskKnown: true
+      },
+      riskPreview: {
+        label: 'suspension strain',
+        preview: 'Hazard preview: gust shear and uneven canopies strain suspension.',
+        subsystem: 'suspension'
+      }
+    });
   });
 
   it('reports last-travel fuel refund details for automation checks', () => {

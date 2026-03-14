@@ -10,7 +10,7 @@ import {
   missingVehicleConditionPoints,
   WORKSHOP_REPAIR_COST_PER_POINT
 } from '../../engine/sim/vehicle';
-import { asNodeTypeKey, visibleBiomeKnowledge, visibleBiomeKnowledgeWithSignalIntel } from '../../engine/sim/exploration';
+import { asNodeTypeKey, biomeRiskDescriptor, visibleBiomeKnowledge, visibleBiomeKnowledgeWithSignalIntel } from '../../engine/sim/exploration';
 import { hasBeaconAutoLink } from './beaconActivation';
 import { hasCompletedCurrentNode } from './expeditionFlow';
 import { describeGoalRouteHookEffect } from './goalSignal';
@@ -84,6 +84,11 @@ export interface DebugStateSnapshot {
           objectiveSummary: string | null;
           isGoal: boolean;
           knowledge: ReturnType<typeof visibleBiomeKnowledge>;
+          riskPreview: {
+            label: string;
+            preview: string;
+            subsystem: string;
+          } | null;
           siteBonusPreview: ReturnType<typeof arrivalSiteBonusPreview> | null;
           signalHint: string | null;
           isBestLead: boolean;
@@ -227,6 +232,8 @@ export function buildDebugStateSnapshot(state: RuntimeState, viewportWidth: numb
   const activeNodeType = currentNode?.type ?? 'town';
   const signalIntel = notebookSignalRouteIntel(state.sim, state.expeditionGoalNodeId, selectedOption?.nodeId ?? null);
   const routeKnowledge = selectedNode ? visibleBiomeKnowledgeWithSignalIntel(state.sim, selectedNode.type, signalIntel) : null;
+  const routeRiskPreview =
+    selectedNode && routeKnowledge?.riskKnown ? biomeRiskDescriptor(asNodeTypeKey(selectedNode.type)) : null;
   const arrivalEncounterPreview =
     selectedNode && selectedOption
       ? previewArrivalEncounter(state, asNodeTypeKey(selectedNode.type), !state.sim.exploration.visitedNodeIds.includes(selectedOption.nodeId), {
@@ -307,6 +314,13 @@ export function buildDebugStateSnapshot(state: RuntimeState, viewportWidth: numb
             objectiveSummary: selectedNode ? getObjectiveSummary(selectedNode.type) : null,
             isGoal: selectedOption.nodeId === state.expeditionGoalNodeId,
             knowledge: routeKnowledge ?? visibleBiomeKnowledge(state.sim, 'town'),
+            riskPreview: routeRiskPreview
+              ? {
+                  label: routeRiskPreview.shortLabel,
+                  preview: routeRiskPreview.preview,
+                  subsystem: routeRiskPreview.subsystem
+                }
+              : null,
             siteBonusPreview: selectedNode ? arrivalSiteBonusPreview(state.sim, selectedNode.type) : null,
             signalHint: signalIntel.routeHint,
             isBestLead: signalIntel.isBestLead,

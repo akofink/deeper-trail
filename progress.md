@@ -1,3 +1,8 @@
+- Scanner hazard-intel pass:
+  - Added shared biome risk descriptors in `src/engine/sim/exploration.ts` so scanner lv.4 can describe the strained subsystem consistently instead of only exposing a generic boolean.
+  - Updated `src/game/runtime/mapBoardView.ts`, `src/game/runtime/mapSceneContent.ts`, and `src/game/runtime/debugState.ts` so route-board risk markers now encode subsystem-specific hazard strain, selected-route cards show explicit hazard previews, and automation snapshots export the same preview details.
+  - Expanded `tests/exploration.test.ts`, `tests/mapBoardView.test.ts`, `tests/mapBoardRenderer.test.ts`, `tests/mapSceneContent.test.ts`, and `tests/debugState.test.ts`, and updated `docs/02-vehicles-and-upgrades.md`.
+
 - Browser shell bootstrap extraction pass:
   - Added `src/game/runtime/browserShellBootstrap.ts` so async Pixi/render module loading, app creation, renderer callback wiring, and initial runtime draw now live in one focused bootstrap helper instead of staying inline in `src/game/runtime/browserShell.ts`.
   - Slimmed `src/game/runtime/browserShell.ts` down to the public browser-shell export surface while keeping seed/debug helpers re-exported from the runtime controller path.
