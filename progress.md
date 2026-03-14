@@ -1,3 +1,11 @@
+- Shared-browser smoke session pass:
+  - Updated `scripts/e2e/fullObjectiveLoop.js` so `npm run test:e2e` launches Chromium once per selected smoke run, then executes each biome replay in a fresh browser context/page inside that shared browser.
+  - Kept the deterministic seed/interaction path unchanged while preserving isolation by closing each smoke context after its replay instead of relaunching the whole browser.
+  - Expanded `tests/fullObjectiveLoop.test.ts`, updated `scripts/e2e/fullObjectiveLoop.d.ts`, and documented the shared-browser isolation rule in `docs/10-engineering-workflow.md`.
+
+- TODO next:
+- Decide whether the shared-browser smoke session should collect per-smoke timing output so slow biome regressions are easier to spot without re-running the suite verbosely.
+
 - Browser smoke runner consolidation pass:
   - Refactored `scripts/e2e/fullObjectiveLoop.js` so the seed/objective/reset expectations for `town`, `ruin`, `nature`, and `anomaly` now live in one exported smoke-config table instead of being duplicated across four browser entrypoints.
   - Added `--smoke <name>|all` CLI selection plus shared `runObjectiveLoopSmoke(...)` / `runSelectedObjectiveLoopSmokes(...)` helpers so `npm run test:e2e` now drives the whole deterministic biome suite through one script invocation.

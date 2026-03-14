@@ -193,6 +193,18 @@ export async function launchBrowserWithFallback(candidatePaths) {
   throw new Error(`Unable to launch browser smoke with any detected Chromium executable:\n${errors.join("\n")}`);
 }
 
+async function tryLaunchObjectiveLoopBrowser(candidatePaths, skipLabel, launchBrowser = launchBrowserWithFallback) {
+  try {
+    return await launchBrowser(candidatePaths);
+  } catch (error) {
+    if (isSkippableBrowserLaunchError(error)) {
+      logStep(`skipping ${skipLabel}: ${error instanceof Error ? error.message.split("\n")[0] : String(error)}`);
+      return null;
+    }
+    throw error;
+  }
+}
+
 async function readState(page) {
   return withStepTimeout("reading runtime state", () =>
     page.evaluate(() => {
@@ -888,22 +900,9 @@ export function resolveObjectiveLoopSmoke(smokeName) {
   return smoke;
 }
 
-export async function runObjectiveLoopSmoke(smoke) {
-  const executableCandidates = resolveExecutablePathCandidates();
-  logStep(`launching ${smoke.logLabel} for seed ${smoke.seed}`);
-
-  let browser;
-  try {
-    browser = await launchBrowserWithFallback(executableCandidates);
-  } catch (error) {
-    if (isSkippableBrowserLaunchError(error)) {
-      logStep(`skipping ${smoke.skipLabel}: ${error instanceof Error ? error.message.split("\n")[0] : String(error)}`);
-      return null;
-    }
-    throw error;
-  }
-
-  const page = await browser.newPage({ viewport: DEFAULT_VIEWPORT });
+async function runObjectiveLoopSmokeInBrowser(smoke, browser) {
+  const context = await browser.newContext({ viewport: DEFAULT_VIEWPORT });
+  const page = await context.newPage();
   const consoleErrors = [];
   page.on("console", (msg) => {
     if (msg.type() === "error") consoleErrors.push(msg.text());
@@ -951,22 +950,63 @@ export async function runObjectiveLoopSmoke(smoke) {
     logStep(smoke.passLabel);
     return summary;
   } finally {
-    await browser.close();
+    await context.close();
   }
 }
 
-export async function runSelectedObjectiveLoopSmokes(selection) {
-  const smokeNames = selection === "all" ? OBJECTIVE_LOOP_SMOKE_NAMES : [selection];
-  const results = [];
-
-  for (const smokeName of smokeNames) {
-    const result = await runObjectiveLoopSmoke(resolveObjectiveLoopSmoke(smokeName));
-    if (result) {
-      results.push(result);
-    }
+export async function runObjectiveLoopSmoke(
+  smoke,
+  { browser, candidatePaths = resolveExecutablePathCandidates(), launchBrowser = launchBrowserWithFallback, runSmoke = runObjectiveLoopSmokeInBrowser } = {}
+) {
+  if (browser) {
+    return runSmoke(smoke, browser);
   }
 
-  return results;
+  logStep(`launching ${smoke.logLabel} for seed ${smoke.seed}`);
+  const ownedBrowser = await tryLaunchObjectiveLoopBrowser(candidatePaths, smoke.skipLabel, launchBrowser);
+  if (!ownedBrowser) {
+    return null;
+  }
+
+  try {
+    return await runSmoke(smoke, ownedBrowser);
+  } finally {
+    await ownedBrowser.close();
+  }
+}
+
+export async function runSelectedObjectiveLoopSmokes(
+  selection,
+  { candidatePaths = resolveExecutablePathCandidates(), launchBrowser = launchBrowserWithFallback, runSmoke = runObjectiveLoopSmokeInBrowser } = {}
+) {
+  const smokeNames = selection === "all" ? OBJECTIVE_LOOP_SMOKE_NAMES : [selection];
+  const results = [];
+  const selectedSmokes = smokeNames.map((smokeName) => resolveObjectiveLoopSmoke(smokeName));
+
+  if (selectedSmokes.length === 0) {
+    return results;
+  }
+
+  logStep(
+    `launching shared browser smoke session for ${selectedSmokes.map((smoke) => `${smoke.name}:${smoke.seed}`).join(", ")}`
+  );
+  const browser = await tryLaunchObjectiveLoopBrowser(candidatePaths, `${selection} browser smoke`, launchBrowser);
+  if (!browser) {
+    return results;
+  }
+
+  try {
+    for (const smoke of selectedSmokes) {
+      const result = await runSmoke(smoke, browser);
+      if (result) {
+        results.push(result);
+      }
+    }
+
+    return results;
+  } finally {
+    await browser.close();
+  }
 }
 
 const isEntrypoint = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
