@@ -90,6 +90,7 @@ export interface DebugStateSnapshot {
             subsystem: string;
           } | null;
           siteBonusPreview: ReturnType<typeof arrivalSiteBonusPreview> | null;
+          siteInstallOffers: ReturnType<typeof getInstallOffers>;
           signalHint: string | null;
           isBestLead: boolean;
           bestLeadArrivalRewardHint: string | null;
@@ -322,6 +323,7 @@ export function buildDebugStateSnapshot(state: RuntimeState, viewportWidth: numb
                 }
               : null,
             siteBonusPreview: selectedNode ? arrivalSiteBonusPreview(state.sim, selectedNode.type) : null,
+            siteInstallOffers: selectedNode ? getInstallOffers(state.sim, selectedNode.type) : [],
             signalHint: signalIntel.routeHint,
             isBestLead: signalIntel.isBestLead,
             bestLeadArrivalRewardHint: signalIntel.bestLeadArrivalRewardHint,

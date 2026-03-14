@@ -83,7 +83,23 @@ describe('buildDebugStateSnapshot', () => {
         requiredLevel: 2,
         active: true,
         summary: 'reveals connected route intel on arrival'
-      }
+      },
+      siteInstallOffers: [
+        {
+          priorityIndex: 0,
+          subsystem: 'shielding',
+          currentLevel: 1,
+          nextLevel: 2,
+          scrapCost: 2
+        },
+        {
+          priorityIndex: 1,
+          subsystem: 'scanner',
+          currentLevel: 2,
+          nextLevel: 3,
+          scrapCost: 3
+        }
+      ]
     });
     expect(snapshot.sim.shareCode).toMatch(/^DT1-[A-Z0-9]+-[0-9A-Z]{6}-[0-9A-Z]{6}$/);
     expect(snapshot.sim.world.nodes).toEqual(
@@ -310,6 +326,27 @@ describe('buildDebugStateSnapshot', () => {
         subsystem: 'suspension'
       }
     });
+  });
+
+  it('exports when a selected route biome has no remaining site installs for the current build', () => {
+    const state = createInitialRuntimeState(720, 'debug-snapshot-empty-site-rack');
+    const selectedRoute = connectedNeighbors(state.sim)[0];
+    if (!selectedRoute) {
+      throw new Error('Expected a connected route');
+    }
+
+    const selectedNode = findNode(state.sim, selectedRoute.nodeId);
+    if (!selectedNode) {
+      throw new Error('Expected selected node');
+    }
+
+    selectedNode.type = 'ruin';
+    state.sim.vehicle.frame = 4;
+    state.sim.vehicle.scanner = 4;
+
+    const snapshot = buildDebugStateSnapshot(state, 900, getMaxHealth(state.sim.vehicle));
+
+    expect(snapshot.map.selectedRoute?.siteInstallOffers).toEqual([]);
   });
 
   it('reports last-travel fuel refund details for automation checks', () => {
