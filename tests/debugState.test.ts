@@ -193,6 +193,39 @@ describe('buildDebugStateSnapshot', () => {
     );
   });
 
+  it('merges notebook strongest-lead intel into selected-route knowledge', () => {
+    const state = createInitialRuntimeState(720, 'debug-snapshot-lead-knowledge');
+    state.sim.notebook.discoveredClues.ruin = true;
+    state.sim.notebook.discoveredClues.nature = true;
+    state.sim.notebook.discoveredClues.anomaly = true;
+    state.sim.notebook.synthesisUnlocked = true;
+    state.sim.vehicle.scanner = 1;
+    state.mapSelectionIndex = findBestLeadSelection(state);
+
+    const selectedRoute = connectedNeighbors(state.sim)[state.mapSelectionIndex];
+    if (!selectedRoute) {
+      throw new Error('Expected a strongest connected lead');
+    }
+
+    const selectedNode = findNode(state.sim, selectedRoute.nodeId);
+    if (!selectedNode) {
+      throw new Error('Expected selected node');
+    }
+
+    const snapshot = buildDebugStateSnapshot(state, 900, getMaxHealth(state.sim.vehicle));
+
+    expect(snapshot.map.selectedRoute).toMatchObject({
+      nodeId: selectedRoute.nodeId,
+      isBestLead: true,
+      knowledge: {
+        benefitKnown: true,
+        objectiveKnown: true,
+        riskKnown: true
+      }
+    });
+    expect(snapshot.map.selectedRoute?.objectiveSummary).toBeTruthy();
+  });
+
   it('reports last-travel fuel refund details for automation checks', () => {
     const state = createInitialRuntimeState(720, 'debug-snapshot-last-travel');
 

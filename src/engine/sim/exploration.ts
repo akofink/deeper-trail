@@ -7,6 +7,12 @@ export interface VisibleBiomeKnowledge {
   riskKnown: boolean;
 }
 
+export interface RouteSignalIntelKnowledge {
+  revealsBenefit: boolean;
+  revealsObjective: boolean;
+  revealsRisk: boolean;
+}
+
 export function biomeBenefitLabel(nodeType: NodeTypeKey): string {
   if (nodeType === 'town') return 'Fuel cache: +8 fuel on arrival';
   if (nodeType === 'ruin') return 'Salvage site: +2 scrap on arrival';
@@ -58,5 +64,19 @@ export function visibleBiomeKnowledge(state: GameState, nodeType: string): Visib
     benefitKnown: learned.benefitKnown || scannerLevel >= 2,
     objectiveKnown: learned.objectiveKnown || scannerLevel >= 3,
     riskKnown: learned.riskKnown || scannerLevel >= 4
+  };
+}
+
+export function visibleBiomeKnowledgeWithSignalIntel(
+  state: GameState,
+  nodeType: string,
+  signalIntel: RouteSignalIntelKnowledge
+): VisibleBiomeKnowledge {
+  const learned = visibleBiomeKnowledge(state, nodeType);
+
+  return {
+    benefitKnown: learned.benefitKnown || signalIntel.revealsBenefit,
+    objectiveKnown: learned.objectiveKnown || signalIntel.revealsObjective,
+    riskKnown: learned.riskKnown || signalIntel.revealsRisk
   };
 }

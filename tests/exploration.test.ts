@@ -6,7 +6,8 @@ import {
   noteBiomeArrival,
   noteBiomeHazard,
   revealBiomeIntel,
-  visibleBiomeKnowledge
+  visibleBiomeKnowledge,
+  visibleBiomeKnowledgeWithSignalIntel
 } from '../src/engine/sim/exploration';
 import { createInitialGameState } from '../src/game/state/gameState';
 
@@ -84,6 +85,22 @@ describe('exploration notes', () => {
     revealBiomeIntel(state, 'ruin');
 
     expect(visibleBiomeKnowledge(state, 'ruin')).toEqual({
+      benefitKnown: true,
+      objectiveKnown: true,
+      riskKnown: true
+    });
+  });
+
+  it('merges notebook route intel with learned and scanner-visible biome knowledge', () => {
+    const state = createInitialGameState('exploration-signal-intel');
+
+    expect(
+      visibleBiomeKnowledgeWithSignalIntel(state, 'anomaly', {
+        revealsBenefit: true,
+        revealsObjective: true,
+        revealsRisk: true
+      })
+    ).toEqual({
       benefitKnown: true,
       objectiveKnown: true,
       riskKnown: true
