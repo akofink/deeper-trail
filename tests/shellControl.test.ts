@@ -213,6 +213,31 @@ describe('shellControl helpers', () => {
     expect(state.mapInstallSelectionIndex).toBe(0);
   });
 
+  it('normalizes stale route and install selections when opening the map scene', () => {
+    const state = createInitialRuntimeState(720, 'shell-map-normalize');
+    state.scene = 'run';
+    state.mapSelectionIndex = 99;
+    state.mapInstallSelectionIndex = 99;
+
+    const currentNode = findNode(state.sim, state.sim.currentNodeId);
+    expect(currentNode).toBeDefined();
+    if (!currentNode) {
+      throw new Error('Expected current node');
+    }
+    currentNode.type = 'anomaly';
+
+    const result = handleShellKeyDown(state, 'KeyA', {
+      canvasHeight: 720,
+      createSeed: () => 'unused',
+      previousMapNavigate: false
+    });
+
+    expect(result.nextState.scene).toBe('map');
+    expect(result.nextState.mapSelectionIndex).toBe(connectedNeighbors(state.sim).length - 1);
+    expect(result.nextState.mapInstallSelectionIndex).toBe(1);
+    expect(result.nextState.mapMessage).toBe('Choose a connected route and press Enter to travel.');
+  });
+
   it('reflows run and map scenes against the new ground line during resize', () => {
     const runState = createInitialRuntimeState(720, 'shell-resize-run');
     const runHazard = runState.hazards[0];

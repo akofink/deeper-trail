@@ -1,3 +1,9 @@
+- Map selection normalization pass:
+  - Added shared selection-clamp helpers in `src/game/runtime/mapSceneFlow.ts` so route and install indices snap back into valid bounds whenever map options shrink.
+  - Opening the map from the run scene now normalizes stale route/install selections, and successful travel resets both selections for the destination node instead of carrying old indices across worlds/sites.
+  - Install actions now reuse the same normalization path after an upgrade changes the remaining site rack.
+  - Expanded regression coverage in `tests/mapSceneFlow.test.ts` and `tests/shellControl.test.ts`.
+
 - Legacy carry-over queue pass:
   - Replaced the single pending legacy-echo fields with an ordered `legacyCarryOvers` queue in `src/game/runtime/runtimeState.ts`, and updated `src/game/runtime/goalSignal.ts` plus `src/game/runtime/shellControl.ts` so starting a new seeded world preserves any existing residue and appends the newly completed expedition's afterglow hook instead of overwriting it.
   - Updated `src/game/runtime/mapSceneContent.ts` and `src/game/runtime/debugState.ts` so the map route card, field notes, and debug snapshot all expose queued echoes explicitly rather than only the last pending one.

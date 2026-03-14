@@ -6,6 +6,7 @@ import {
   advanceMapInstallSelection,
   advanceMapSelection,
   mapSceneStatusText,
+  normalizeMapSelections,
   tryFieldRepairOnMap,
   tryInstallUpgradeOnMap,
   tryTravelSelectedNode
@@ -56,6 +57,9 @@ export function handleShellKeyDown(state: RuntimeState, code: string, options: S
 
   if (code === 'KeyA') {
     state.scene = state.scene === 'run' ? 'map' : 'run';
+    if (state.scene === 'map') {
+      normalizeMapSelections(state);
+    }
     state.mapMessage = mapSceneStatusText(state);
     state.mapMessageTimer = 3;
     return {
