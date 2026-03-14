@@ -92,6 +92,20 @@ export function parseTimingArtifactPath(argv = process.argv.slice(2)) {
   return undefined;
 }
 
+export function parseTimingHistoryPath(argv = process.argv.slice(2)) {
+  for (let index = 0; index < argv.length; index += 1) {
+    if (argv[index] === "--timing-history-out") {
+      const value = argv[index + 1]?.trim();
+      if (!value) {
+        throw new Error('Missing path after "--timing-history-out"');
+      }
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
 export function buildObjectiveLoopTimingReport(selection, timings, totalDurationMs) {
   return {
     selection,
@@ -114,6 +128,42 @@ export function writeObjectiveLoopTimingReport(
   const outputDir = path.dirname(outputPath);
   mkdirSync(outputDir, { recursive: true });
   writeFileSync(outputPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+}
+
+export function buildObjectiveLoopTimingHistoryEntry(report, recordedAt) {
+  return {
+    recordedAt,
+    selection: report.selection,
+    totalDurationMs: report.totalDurationMs,
+    timings: report.timings.map((timing) => ({
+      smoke: timing.smoke,
+      durationMs: timing.durationMs
+    }))
+  };
+}
+
+export function appendObjectiveLoopTimingHistory(
+  report,
+  outputPath,
+  recordedAt = new Date().toISOString(),
+  {
+    existsSync = fs.existsSync,
+    readFileSync = fs.readFileSync,
+    mkdirSync = fs.mkdirSync,
+    writeFileSync = fs.writeFileSync
+  } = {}
+) {
+  const outputDir = path.dirname(outputPath);
+  let history = [];
+
+  if (existsSync(outputPath)) {
+    const existing = JSON.parse(readFileSync(outputPath, "utf8"));
+    history = Array.isArray(existing?.history) ? existing.history : [];
+  }
+
+  history.push(buildObjectiveLoopTimingHistoryEntry(report, recordedAt));
+  mkdirSync(outputDir, { recursive: true });
+  writeFileSync(outputPath, `${JSON.stringify({ history }, null, 2)}\n`, "utf8");
 }
 
 export async function withStepTimeout(step, operation, timeoutMs = PLAYWRIGHT_STEP_TIMEOUT_MS) {
@@ -486,13 +536,15 @@ async function main() {
   const executablePath = resolveExecutablePath();
   const selection = parseSmokeSelection();
   const timingReportPath = parseTimingArtifactPath();
+  const timingHistoryPath = parseTimingHistoryPath();
   if (executablePath) {
     logStep(`preferred Chromium executable: ${executablePath}`);
   } else {
     logStep("using Playwright launch defaults");
   }
   await runSelectedObjectiveLoopSmokes(selection, {
-    timingReportPath
+    timingReportPath,
+    timingHistoryPath
   });
 }
 
@@ -1105,7 +1157,10 @@ export async function runSelectedObjectiveLoopSmokes(
     log = logStep,
     now = () => Date.now(),
     timingReportPath,
-    writeTimingReport = writeObjectiveLoopTimingReport
+    timingHistoryPath,
+    writeTimingReport = writeObjectiveLoopTimingReport,
+    appendTimingHistory = appendObjectiveLoopTimingHistory,
+    timestamp = () => new Date().toISOString()
   } = {}
 ) {
   const smokeNames = selection === "all" ? OBJECTIVE_LOOP_SMOKE_NAMES : [selection];
@@ -1142,10 +1197,15 @@ export async function runSelectedObjectiveLoopSmokes(
     }
 
     const totalDurationMs = Math.max(0, now() - suiteStartedAt);
+    const timingReport = buildObjectiveLoopTimingReport(selection, timings, totalDurationMs);
     log(formatObjectiveLoopTimingSummary(selection, timings, totalDurationMs));
     if (timingReportPath) {
-      writeTimingReport(buildObjectiveLoopTimingReport(selection, timings, totalDurationMs), timingReportPath);
+      writeTimingReport(timingReport, timingReportPath);
       log(`objective loop timing report written to ${timingReportPath}`);
+    }
+    if (timingHistoryPath) {
+      appendTimingHistory(timingReport, timingHistoryPath, timestamp());
+      log(`objective loop timing history appended to ${timingHistoryPath}`);
     }
     return results;
   } finally {

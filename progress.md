@@ -1,3 +1,8 @@
+- Browser-smoke timing-history pass:
+  - Updated `scripts/e2e/fullObjectiveLoop.js` so the deterministic biome smoke runner can now parse `--timing-history-out <path>.json`, append timestamped timing samples, and log when a durable history file is updated in addition to the existing one-shot `--timings-out` artifact output.
+  - Expanded `tests/fullObjectiveLoop.test.ts` and `scripts/e2e/fullObjectiveLoop.d.ts` to cover CLI parsing, history-entry shaping, append semantics, and history-writer integration without launching Chromium.
+  - Updated `docs/10-engineering-workflow.md` and `IMPLEMENTATION_NOTES.md` so the workflow docs describe when to use one-shot timing artifacts versus appended timing history.
+
 - Map-board arrival-encounter marker pass:
   - Updated `src/game/runtime/mapBoardView.ts` so connected unvisited routes now add a dedicated intel marker when their deterministic first-arrival encounter preview has a real payoff, including best-lead route variants that reuse the existing signal intel.
   - Expanded `tests/mapBoardView.test.ts` so the board view now asserts the encounter marker appears only while that route remains unvisited, preserving the route-card preview as the detailed readout while surfacing the opportunity directly on the board.

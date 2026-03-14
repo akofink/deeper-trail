@@ -3,13 +3,16 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Browser } from "playwright";
 
 import {
+  appendObjectiveLoopTimingHistory,
   beaconApproachState,
+  buildObjectiveLoopTimingHistoryEntry,
   buildObjectiveLoopTimingReport,
   findShortestNodePath,
   findPlaywrightCacheExecutables,
   formatObjectiveLoopTimingSummary,
   isSkippableBrowserLaunchError,
   parseTimingArtifactPath,
+  parseTimingHistoryPath,
   parseSmokeSelection,
   resolveObjectiveLoopSmoke,
   runObjectiveLoopSmoke,
@@ -50,6 +53,16 @@ describe("fullObjectiveLoop helpers", () => {
       "artifacts/objective-loop.json"
     );
     expect(() => parseTimingArtifactPath(["--timings-out"])).toThrow('Missing path after "--timings-out"');
+  });
+
+  it("parses an optional timing history path from CLI args", () => {
+    expect(parseTimingHistoryPath([])).toBeUndefined();
+    expect(parseTimingHistoryPath(["--timing-history-out", "artifacts/objective-loop-history.json"])).toBe(
+      "artifacts/objective-loop-history.json"
+    );
+    expect(() => parseTimingHistoryPath(["--timing-history-out"])).toThrow(
+      'Missing path after "--timing-history-out"'
+    );
   });
 
   it("resolves known smoke configs by name", () => {
@@ -110,6 +123,24 @@ describe("fullObjectiveLoop helpers", () => {
     });
   });
 
+  it("builds a stable timing history entry from a report and timestamp", () => {
+    expect(
+      buildObjectiveLoopTimingHistoryEntry(
+        {
+          selection: "all",
+          totalDurationMs: 2055,
+          timings: [{ smoke: "town", durationMs: 840 }]
+        },
+        "2026-03-14T12:00:00.000Z"
+      )
+    ).toEqual({
+      recordedAt: "2026-03-14T12:00:00.000Z",
+      selection: "all",
+      totalDurationMs: 2055,
+      timings: [{ smoke: "town", durationMs: 840 }]
+    });
+  });
+
   it("writes the timing report JSON and creates the output directory", () => {
     const mkdirSync = vi.fn();
     const writeFileSync = vi.fn();
@@ -130,6 +161,55 @@ describe("fullObjectiveLoop helpers", () => {
       '{\n  "selection": "all",\n  "totalDurationMs": 2055,\n  "timings": [\n    {\n      "smoke": "town",\n      "durationMs": 840\n    }\n  ]\n}\n',
       "utf8"
     );
+  });
+
+  it("appends timing history entries and preserves earlier samples", () => {
+    const existsSync = vi.fn<typeof fs.existsSync>().mockReturnValueOnce(false).mockReturnValueOnce(true);
+    const readFileSync = vi.fn(() =>
+      JSON.stringify({
+        history: [
+          {
+            recordedAt: "2026-03-14T12:00:00.000Z",
+            selection: "town",
+            totalDurationMs: 840,
+            timings: [{ smoke: "town", durationMs: 840 }]
+          }
+        ]
+      })
+    );
+    const mkdirSync = vi.fn();
+    const writeFileSync = vi.fn();
+    const report = {
+      selection: "all" as const,
+      totalDurationMs: 2055,
+      timings: [{ smoke: "town" as const, durationMs: 840 }]
+    };
+
+    appendObjectiveLoopTimingHistory(report, "artifacts/objective-loop-history.json", "2026-03-14T12:00:00.000Z", {
+      existsSync: existsSync as typeof fs.existsSync,
+      readFileSync: readFileSync as unknown as typeof fs.readFileSync,
+      mkdirSync,
+      writeFileSync
+    });
+
+    appendObjectiveLoopTimingHistory(report, "artifacts/objective-loop-history.json", "2026-03-15T12:00:00.000Z", {
+      existsSync: existsSync as typeof fs.existsSync,
+      readFileSync: readFileSync as unknown as typeof fs.readFileSync,
+      mkdirSync,
+      writeFileSync
+    });
+
+    expect(mkdirSync).toHaveBeenCalledWith("artifacts", { recursive: true });
+    expect(writeFileSync.mock.calls[0]).toEqual([
+      "artifacts/objective-loop-history.json",
+      '{\n  "history": [\n    {\n      "recordedAt": "2026-03-14T12:00:00.000Z",\n      "selection": "all",\n      "totalDurationMs": 2055,\n      "timings": [\n        {\n          "smoke": "town",\n          "durationMs": 840\n        }\n      ]\n    }\n  ]\n}\n',
+      "utf8"
+    ]);
+    expect(writeFileSync.mock.calls[1]).toEqual([
+      "artifacts/objective-loop-history.json",
+      '{\n  "history": [\n    {\n      "recordedAt": "2026-03-14T12:00:00.000Z",\n      "selection": "town",\n      "totalDurationMs": 840,\n      "timings": [\n        {\n          "smoke": "town",\n          "durationMs": 840\n        }\n      ]\n    },\n    {\n      "recordedAt": "2026-03-15T12:00:00.000Z",\n      "selection": "all",\n      "totalDurationMs": 2055,\n      "timings": [\n        {\n          "smoke": "town",\n          "durationMs": 840\n        }\n      ]\n    }\n  ]\n}\n',
+      "utf8"
+    ]);
   });
 
   it("falls back to common local Chromium installs", () => {
@@ -350,6 +430,7 @@ describe("fullObjectiveLoop helpers", () => {
     const runSmoke = vi.fn(async (smoke: { name: string }, calledBrowser: Browser) => ({ smoke: smoke.name, browser: calledBrowser }));
     const log = vi.fn();
     const writeTimingReport = vi.fn();
+    const appendTimingHistory = vi.fn();
     const now = vi
       .fn<() => number>()
       .mockReturnValueOnce(1000)
@@ -370,7 +451,10 @@ describe("fullObjectiveLoop helpers", () => {
       log,
       now,
       timingReportPath: "artifacts/objective-loop.json",
-      writeTimingReport
+      timingHistoryPath: "artifacts/objective-loop-history.json",
+      writeTimingReport,
+      appendTimingHistory,
+      timestamp: () => "2026-03-14T12:00:00.000Z"
     });
 
     expect(launchBrowser).toHaveBeenCalledTimes(1);
@@ -401,6 +485,20 @@ describe("fullObjectiveLoop helpers", () => {
       },
       "artifacts/objective-loop.json"
     );
+    expect(appendTimingHistory).toHaveBeenCalledWith(
+      {
+        selection: "all",
+        totalDurationMs: 1600,
+        timings: [
+          { smoke: "town", durationMs: 400 },
+          { smoke: "ruin", durationMs: 600 },
+          { smoke: "nature", durationMs: 0 },
+          { smoke: "anomaly", durationMs: 0 }
+        ]
+      },
+      "artifacts/objective-loop-history.json",
+      "2026-03-14T12:00:00.000Z"
+    );
     expect(log.mock.calls.map(([message]) => message)).toEqual([
       "launching shared browser smoke session for town:e2e-1, ruin:e2e-0, nature:e2e-2, anomaly:e2e-3",
       "town timing 400ms",
@@ -408,7 +506,8 @@ describe("fullObjectiveLoop helpers", () => {
       "nature timing 0ms",
       "anomaly timing 0ms",
       "objective loop timing (all): town 400ms, ruin 600ms, nature 0ms, anomaly 0ms | total 1.60s",
-      "objective loop timing report written to artifacts/objective-loop.json"
+      "objective loop timing report written to artifacts/objective-loop.json",
+      "objective loop timing history appended to artifacts/objective-loop-history.json"
     ]);
   });
 
@@ -446,17 +545,21 @@ describe("fullObjectiveLoop helpers", () => {
     });
     const runSmoke = vi.fn();
     const writeTimingReport = vi.fn();
+    const appendTimingHistory = vi.fn();
 
     const results = await runSelectedObjectiveLoopSmokes("all", {
       candidatePaths: ["/tmp/chromium"],
       launchBrowser,
       runSmoke,
       timingReportPath: "artifacts/objective-loop.json",
-      writeTimingReport
+      timingHistoryPath: "artifacts/objective-loop-history.json",
+      writeTimingReport,
+      appendTimingHistory
     });
 
     expect(results).toEqual([]);
     expect(runSmoke).not.toHaveBeenCalled();
     expect(writeTimingReport).not.toHaveBeenCalled();
+    expect(appendTimingHistory).not.toHaveBeenCalled();
   });
 });

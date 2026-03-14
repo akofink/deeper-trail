@@ -145,7 +145,14 @@ export interface ObjectiveLoopRunOptions {
   log?: (message: string) => void;
   now?: () => number;
   timingReportPath?: string;
+  timingHistoryPath?: string;
   writeTimingReport?: (report: ObjectiveLoopTimingReport, outputPath: string) => void;
+  appendTimingHistory?: (
+    report: ObjectiveLoopTimingReport,
+    outputPath: string,
+    recordedAt: string
+  ) => void;
+  timestamp?: () => string;
 }
 
 export interface ObjectiveLoopTimingEntry {
@@ -159,6 +166,14 @@ export interface ObjectiveLoopTimingReport {
   timings: ObjectiveLoopTimingEntry[];
 }
 
+export interface ObjectiveLoopTimingHistoryEntry extends ObjectiveLoopTimingReport {
+  recordedAt: string;
+}
+
+export interface ObjectiveLoopTimingHistoryFile {
+  history: ObjectiveLoopTimingHistoryEntry[];
+}
+
 export function logStep(message: string): void;
 export function formatObjectiveLoopTimingSummary(
   selection: ObjectiveLoopSmokeConfig["name"] | "all",
@@ -167,6 +182,7 @@ export function formatObjectiveLoopTimingSummary(
 ): string;
 export function parseSmokeSelection(argv?: string[]): "town" | "ruin" | "nature" | "anomaly" | "all";
 export function parseTimingArtifactPath(argv?: string[]): string | undefined;
+export function parseTimingHistoryPath(argv?: string[]): string | undefined;
 export function buildObjectiveLoopTimingReport(
   selection: ObjectiveLoopSmokeConfig["name"] | "all",
   timings: ObjectiveLoopTimingEntry[],
@@ -176,6 +192,21 @@ export function writeObjectiveLoopTimingReport(
   report: ObjectiveLoopTimingReport,
   outputPath: string,
   options?: {
+    mkdirSync?: (path: fs.PathLike, options: { recursive: true }) => void;
+    writeFileSync?: (path: fs.PathOrFileDescriptor, data: string, encoding: BufferEncoding) => void;
+  }
+): void;
+export function buildObjectiveLoopTimingHistoryEntry(
+  report: ObjectiveLoopTimingReport,
+  recordedAt: string
+): ObjectiveLoopTimingHistoryEntry;
+export function appendObjectiveLoopTimingHistory(
+  report: ObjectiveLoopTimingReport,
+  outputPath: string,
+  recordedAt?: string,
+  options?: {
+    existsSync?: (path: fs.PathLike) => boolean;
+    readFileSync?: (path: fs.PathOrFileDescriptor, encoding: BufferEncoding) => string;
     mkdirSync?: (path: fs.PathLike, options: { recursive: true }) => void;
     writeFileSync?: (path: fs.PathOrFileDescriptor, data: string, encoding: BufferEncoding) => void;
   }
