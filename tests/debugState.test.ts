@@ -50,6 +50,14 @@ describe('buildDebugStateSnapshot', () => {
     }
 
     selectedNode.type = 'anomaly';
+    const currentNode = findNode(state.sim, state.sim.currentNodeId);
+    expect(currentNode).toBeDefined();
+    if (!currentNode) {
+      throw new Error('Expected current node');
+    }
+    currentNode.type = 'town';
+    state.sim.vehicleCondition.engine = 1;
+    state.sim.vehicleCondition.frame = 2;
     state.mapSelectionIndex = 0;
     state.mapInstallSelectionIndex = 1;
     state.sim.vehicle.scanner = 2;
@@ -72,6 +80,8 @@ describe('buildDebugStateSnapshot', () => {
     expect(snapshot.sim.shareCode).toMatch(/^DT1-[A-Z0-9]+-[0-9A-Z]{6}-[0-9A-Z]{6}$/);
     expect(snapshot.map.installOfferIndex).toBe(1);
     expect(snapshot.map.installOffers).toHaveLength(2);
+    expect(snapshot.map.repairMode).toBe('workshop');
+    expect(snapshot.map.repairCostScrap).toBe(3);
   });
 
   it('reports run objective progress for biome-specific support goals', () => {

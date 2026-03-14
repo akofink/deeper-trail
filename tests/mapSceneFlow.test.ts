@@ -133,16 +133,34 @@ describe('map scene flow helpers', () => {
     expect(state.legacyCarryOvers).toEqual([]);
   });
 
-  it('repairs damaged subsystems and falls back to a med patch when the vehicle is already repaired', () => {
+  it('uses field repairs off-town, uses workshop overhauls in town, and falls back to a med patch when pristine', () => {
     const state = createInitialRuntimeState(720, 'map-scene-repair');
     state.scene = 'map';
-    state.sim.scrap = FIELD_REPAIR_SCRAP_COST + MEDPATCH_SCRAP_COST + 1;
+    state.sim.scrap = FIELD_REPAIR_SCRAP_COST + MEDPATCH_SCRAP_COST + 3;
     state.sim.vehicleCondition.engine = 1;
+    state.sim.vehicleCondition.frame = 2;
+
+    const currentNode = findNode(state.sim, state.sim.currentNodeId);
+    expect(currentNode).toBeDefined();
+    if (!currentNode) {
+      throw new Error('Expected current node');
+    }
+    currentNode.type = 'ruin';
 
     tryFieldRepairOnMap(state);
 
     expect(state.sim.vehicleCondition.engine).toBe(2);
+    expect(state.sim.vehicleCondition.frame).toBe(2);
     expect(state.mapMessage).toContain('engine restored to 2/3');
+    expect(state.mapMessageTimer).toBe(3);
+
+    currentNode.type = 'town';
+
+    tryFieldRepairOnMap(state);
+
+    expect(state.sim.vehicleCondition.engine).toBe(3);
+    expect(state.sim.vehicleCondition.frame).toBe(3);
+    expect(state.mapMessage).toBe('Workshop overhaul: restored 2 condition points to full integrity (-2 scrap).');
     expect(state.mapMessageTimer).toBe(3);
 
     state.health -= MEDPATCH_HEAL_AMOUNT;

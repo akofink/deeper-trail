@@ -8,6 +8,7 @@ import {
 
 export const MAX_SUBSYSTEM_CONDITION = 3;
 export const FIELD_REPAIR_SCRAP_COST = 1;
+export const WORKSHOP_REPAIR_COST_PER_POINT = 1;
 export const MAX_SUBSYSTEM_LEVEL = 4;
 
 const DAMAGE_PRIORITY_BY_NODE_TYPE: Record<string, VehicleSubsystemKey> = {
@@ -29,6 +30,7 @@ export interface VehicleRepairResult {
   readonly repairedSubsystem?: VehicleSubsystemKey;
   readonly scrapCost?: number;
   readonly newCondition?: number;
+  readonly repairedConditionPoints?: number;
   readonly reason?: string;
 }
 
@@ -47,6 +49,10 @@ export interface VehicleInstallResult extends VehicleInstallOffer {
 
 function clampCondition(value: number): number {
   return Math.max(0, Math.min(MAX_SUBSYSTEM_CONDITION, value));
+}
+
+export function missingVehicleConditionPoints(condition: VehicleCondition): number {
+  return VEHICLE_SUBSYSTEM_KEYS.reduce((total, subsystem) => total + (MAX_SUBSYSTEM_CONDITION - condition[subsystem]), 0);
 }
 
 export function getMaxHealth(vehicle: VehicleSubsystems): number {
@@ -170,7 +176,41 @@ export function repairMostDamagedSubsystem(state: GameState): VehicleRepairResul
     didRepair: true,
     repairedSubsystem: subsystem,
     scrapCost: FIELD_REPAIR_SCRAP_COST,
-    newCondition: state.vehicleCondition[subsystem]
+    newCondition: state.vehicleCondition[subsystem],
+    repairedConditionPoints: 1
+  };
+}
+
+export function repairVehicleAtWorkshop(state: GameState): VehicleRepairResult {
+  const missingPoints = missingVehicleConditionPoints(state.vehicleCondition);
+  const scrapCost = missingPoints * WORKSHOP_REPAIR_COST_PER_POINT;
+
+  if (missingPoints <= 0) {
+    return {
+      didRepair: false,
+      reason: 'Vehicle is already at full workshop condition'
+    };
+  }
+
+  if (state.scrap < scrapCost) {
+    return {
+      didRepair: false,
+      reason: `Need ${scrapCost} scrap for a workshop overhaul`
+    };
+  }
+
+  const subsystem = getMostDamagedSubsystem(state.vehicleCondition) ?? undefined;
+  state.scrap -= scrapCost;
+  for (const key of VEHICLE_SUBSYSTEM_KEYS) {
+    state.vehicleCondition[key] = MAX_SUBSYSTEM_CONDITION;
+  }
+
+  return {
+    didRepair: true,
+    repairedSubsystem: subsystem,
+    scrapCost,
+    newCondition: subsystem ? state.vehicleCondition[subsystem] : MAX_SUBSYSTEM_CONDITION,
+    repairedConditionPoints: missingPoints
   };
 }
 

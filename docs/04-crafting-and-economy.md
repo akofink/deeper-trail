@@ -31,3 +31,8 @@ Damage creates tension:
 - Temporary field repair (cheap, imperfect)
 - Proper workshop repair (restores integrity)
 - “Scars” remain as narrative (optional cosmetic persistence)
+
+## Current prototype hook
+- Non-town map nodes still use a cheap field repair that restores one damaged subsystem pip.
+- `town` nodes now act as workshops: the map repair action restores all missing subsystem condition at a scrap cost equal to total missing integrity.
+- If the vehicle is already mechanically pristine, the same map action still falls through to the existing med-patch hull heal when available.

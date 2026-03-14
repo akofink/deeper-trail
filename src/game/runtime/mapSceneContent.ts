@@ -2,7 +2,13 @@ import { asNodeTypeKey, biomeBenefitLabel, biomeRiskLabel, visibleBiomeKnowledge
 import { notebookClueProgress, notebookSignalRouteIntel } from '../../engine/sim/notebook';
 import { buildSeedBuildShareCode } from '../../engine/sim/shareCode';
 import { currentNodeType, findNode } from '../../engine/sim/world';
-import { getInstallOffer, getInstallOffers, hasAnyUpgradeableSubsystem } from '../../engine/sim/vehicle';
+import {
+  getInstallOffer,
+  getInstallOffers,
+  hasAnyUpgradeableSubsystem,
+  missingVehicleConditionPoints,
+  WORKSHOP_REPAIR_COST_PER_POINT
+} from '../../engine/sim/vehicle';
 import { describeGoalRouteHookEffect, goalSignalPrimerNote } from './goalSignal';
 import { mapNodePalette } from './runLayout';
 import type { RuntimeState } from './runtimeState';
@@ -33,9 +39,10 @@ export function buildMapSceneContent(
   options: MapSceneContentOptions
 ): MapSceneContent {
   const selectedNode = selectedNodeId ? findNode(state.sim, selectedNodeId) : null;
+  const activeNodeType = currentNodeType(state.sim);
   const installOffers = getInstallOffers(state.sim, currentNodeType(state.sim));
   const selectedInstallIndex = Math.max(0, Math.min(state.mapInstallSelectionIndex ?? 0, Math.max(0, installOffers.length - 1)));
-  const installOffer = getInstallOffer(state.sim, currentNodeType(state.sim), selectedInstallIndex);
+  const installOffer = getInstallOffer(state.sim, activeNodeType, selectedInstallIndex);
   const selectedNodeType = asNodeTypeKey(selectedNode?.type ?? 'town');
   const signalIntel = notebookSignalRouteIntel(state.sim, state.expeditionGoalNodeId, selectedNodeId);
   const goalPrimerNote = goalSignalPrimerNote(selectedNodeId, state);
@@ -102,9 +109,17 @@ export function buildMapSceneContent(
       ? `Scanner lv.${state.sim.vehicle.scanner}: route preview online${state.sim.vehicle.scanner >= 3 ? ', objective scan online' : ', objective scan at lv.3'}; phase-lock online${state.sim.vehicle.scanner >= 4 ? ', hazard preview online.' : ', hazard preview at lv.4.'}`
       : `Scanner lv.${state.sim.vehicle.scanner}: route preview + phase-lock at lv.2, objective scan + auto-link at lv.3.`;
 
-  const repairHint = options.canUseMedPatch
-    ? `B: +${options.medPatchHealAmount} HP for ${options.medPatchScrapCost} scrap.`
-    : 'B: repair modules, then patch HP.';
+  const workshopRepairCost = missingVehicleConditionPoints(state.sim.vehicleCondition) * WORKSHOP_REPAIR_COST_PER_POINT;
+  const repairHint =
+    activeNodeType === 'town'
+      ? workshopRepairCost > 0
+        ? `B: town workshop restores all module integrity for ${workshopRepairCost} scrap.`
+        : options.canUseMedPatch
+          ? `B: +${options.medPatchHealAmount} HP med patch for ${options.medPatchScrapCost} scrap.`
+          : 'B: workshop is idle; hull patch only when damaged.'
+      : options.canUseMedPatch
+        ? `B: +${options.medPatchHealAmount} HP for ${options.medPatchScrapCost} scrap.`
+        : 'B: repair modules, then patch HP.';
 
   const notebookProgress = notebookClueProgress(state.sim);
   const fieldNotes = ['KNOWN BIOMES'];

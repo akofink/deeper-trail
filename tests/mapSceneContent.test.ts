@@ -220,6 +220,42 @@ describe('map scene content helper', () => {
     expect(content.installHint).toContain('Alt engine available.');
   });
 
+  it('shows workshop repair pricing in towns and med-patch fallback when the workshop is idle', () => {
+    const state = buildRuntimeState();
+    const currentNode = state.sim.world.nodes.find((node) => node.id === state.sim.currentNodeId);
+    if (!currentNode) {
+      throw new Error('Expected current node');
+    }
+
+    currentNode.type = 'town';
+    state.sim.vehicleCondition.engine = 1;
+    state.sim.vehicleCondition.frame = 2;
+
+    const damagedContent = buildMapSceneContent(state, null, 0, {
+      canUseMedPatch: false,
+      medPatchHealAmount: 1,
+      medPatchScrapCost: 2,
+      hasAutoLinkScanner: false,
+      hasCompletedCurrentNode: false
+    });
+
+    expect(damagedContent.repairHint).toBe('B: town workshop restores all module integrity for 3 scrap.');
+
+    state.sim.vehicleCondition.engine = 3;
+    state.sim.vehicleCondition.frame = 3;
+    state.health = 2;
+
+    const pristineContent = buildMapSceneContent(state, null, 0, {
+      canUseMedPatch: true,
+      medPatchHealAmount: 1,
+      medPatchScrapCost: 2,
+      hasAutoLinkScanner: false,
+      hasCompletedCurrentNode: false
+    });
+
+    expect(pristineContent.repairHint).toBe('B: +1 HP med patch for 2 scrap.');
+  });
+
   it('surfaces a pending legacy echo before the next expedition spends it', () => {
     const state = buildRuntimeState();
     state.legacyCarryOvers = [

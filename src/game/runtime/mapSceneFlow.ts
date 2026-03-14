@@ -1,5 +1,10 @@
 import { currentNodeType, connectedNeighbors } from '../../engine/sim/world';
-import { getInstallOffers, installUpgradeForNodeType, repairMostDamagedSubsystem } from '../../engine/sim/vehicle';
+import {
+  getInstallOffers,
+  installUpgradeForNodeType,
+  repairMostDamagedSubsystem,
+  repairVehicleAtWorkshop
+} from '../../engine/sim/vehicle';
 import { hasBeaconAutoLink } from './beaconActivation';
 import { applyGoalSignalPostGoalRouteHook } from './goalSignal';
 import { travelToNodeWithRuntimeEffects, hasCompletedCurrentNode } from './expeditionFlow';
@@ -106,11 +111,14 @@ export function tryFieldRepairOnMap(state: RuntimeState): void {
     return;
   }
 
-  const result = repairMostDamagedSubsystem(state.sim);
+  const atWorkshop = currentNodeType(state.sim) === 'town';
+  const result = atWorkshop ? repairVehicleAtWorkshop(state.sim) : repairMostDamagedSubsystem(state.sim);
   if (result.didRepair) {
     normalizeRuntimeStateAfterVehicleChange(state);
-    state.mapMessage = `Fabricated repair kit: ${result.repairedSubsystem} restored to ${result.newCondition}/3 (-${result.scrapCost} scrap).`;
-  } else if (result.reason?.includes('full field condition')) {
+    state.mapMessage = atWorkshop
+      ? `Workshop overhaul: restored ${result.repairedConditionPoints ?? 0} condition points to full integrity (-${result.scrapCost} scrap).`
+      : `Fabricated repair kit: ${result.repairedSubsystem} restored to ${result.newCondition}/3 (-${result.scrapCost} scrap).`;
+  } else if (result.reason?.includes('full field condition') || result.reason?.includes('full workshop condition')) {
     const medPatch = tryUseMedPatch(state);
     state.mapMessage = medPatch.didHeal
       ? `Applied med patch: +${MEDPATCH_HEAL_AMOUNT} HP (-${MEDPATCH_SCRAP_COST} scrap).`

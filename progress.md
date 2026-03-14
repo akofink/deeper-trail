@@ -1,3 +1,8 @@
+- Town workshop repair pass:
+  - Added deterministic workshop-repair helpers in `src/engine/sim/vehicle.ts`; towns now price a full integrity restore from total missing subsystem condition while other biomes keep the existing one-pip field repair.
+  - Updated `src/game/runtime/mapSceneFlow.ts`, `src/game/runtime/mapSceneContent.ts`, and `src/game/runtime/debugState.ts` so map input, copy, and automation all expose whether the active repair action is a field repair or a town workshop overhaul.
+  - Expanded `tests/vehicle.test.ts`, `tests/mapSceneFlow.test.ts`, `tests/mapSceneContent.test.ts`, and `tests/debugState.test.ts`, and updated `docs/04-crafting-and-economy.md`.
+
 - Browser smoke timing artifact pass:
   - Extended `scripts/e2e/fullObjectiveLoop.js` with an optional `--timings-out <path>` flag so the consolidated biome smoke runner can persist its existing per-smoke timing data and suite total as a JSON artifact without changing the default CLI flow.
   - Added JSON report helpers plus coverage in `tests/fullObjectiveLoop.test.ts` for CLI parsing, stable report payload construction, directory creation/file output, and the shared-browser suite path that now writes the artifact only when requested.

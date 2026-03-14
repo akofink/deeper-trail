@@ -2,7 +2,13 @@ import { notebookSignalRouteIntel } from '../../engine/sim/notebook';
 import { anomalyFacingLabel, anomalyRequiredFacing, getObjectiveSummary, getBeaconRuleForNodeType } from '../../engine/sim/runObjectives';
 import { buildSeedBuildShareCode } from '../../engine/sim/shareCode';
 import { connectedNeighbors, currentNodeType, findNode } from '../../engine/sim/world';
-import { getInstallOffer, getInstallOffers, FIELD_REPAIR_SCRAP_COST } from '../../engine/sim/vehicle';
+import {
+  getInstallOffer,
+  getInstallOffers,
+  FIELD_REPAIR_SCRAP_COST,
+  missingVehicleConditionPoints,
+  WORKSHOP_REPAIR_COST_PER_POINT
+} from '../../engine/sim/vehicle';
 import { visibleBiomeKnowledge } from '../../engine/sim/exploration';
 import { hasBeaconAutoLink } from './beaconActivation';
 import { hasCompletedCurrentNode } from './expeditionFlow';
@@ -48,6 +54,7 @@ export interface DebugStateSnapshot {
           arrivalNodeType?: string;
         }
       | null;
+    repairMode: 'field' | 'workshop';
     repairCostScrap: number;
     autoLinkUnlocked: boolean;
     dashEnergy: number;
@@ -208,6 +215,11 @@ export function buildDebugStateSnapshot(state: RuntimeState, viewportWidth: numb
   const objectiveProgress = countObjectiveSupportProgress(state, activeNodeType);
   const installOffers = getInstallOffers(state.sim, currentNodeType(state.sim));
   const installOfferIndex = Math.max(0, Math.min(state.mapInstallSelectionIndex ?? 0, Math.max(0, installOffers.length - 1)));
+  const repairMode = activeNodeType === 'town' ? 'workshop' : 'field';
+  const repairCostScrap =
+    repairMode === 'workshop'
+      ? missingVehicleConditionPoints(state.sim.vehicleCondition) * WORKSHOP_REPAIR_COST_PER_POINT
+      : FIELD_REPAIR_SCRAP_COST;
 
   return {
     scene: state.scene,
@@ -246,7 +258,8 @@ export function buildDebugStateSnapshot(state: RuntimeState, viewportWidth: numb
             arrivalNodeType: state.lastTravel.arrivalNodeType
           }
         : null,
-      repairCostScrap: FIELD_REPAIR_SCRAP_COST,
+      repairMode,
+      repairCostScrap,
       autoLinkUnlocked: hasBeaconAutoLink(state),
       dashEnergy: Number(state.dashEnergy.toFixed(2)),
       installOfferIndex,

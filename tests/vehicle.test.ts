@@ -9,7 +9,9 @@ import {
   getInstallOffers,
   hasAnyUpgradeableSubsystem,
   hasAutoLinkScanner,
-  repairMostDamagedSubsystem
+  missingVehicleConditionPoints,
+  repairMostDamagedSubsystem,
+  repairVehicleAtWorkshop
 } from '../src/engine/sim/vehicle';
 import { installUpgradeForNodeType } from '../src/engine/sim/vehicle';
 import { createInitialGameState } from '../src/game/state/gameState';
@@ -48,6 +50,49 @@ describe('vehicle repair loop', () => {
     expect(result.didRepair).toBe(false);
     expect(result.reason).toContain('full field condition');
     expect(state.scrap).toBe(FIELD_REPAIR_SCRAP_COST);
+  });
+
+  it('counts missing condition points and fully restores them at workshops', () => {
+    const state = createInitialGameState('vehicle-workshop-repair');
+    state.vehicleCondition.engine = 1;
+    state.vehicleCondition.frame = 2;
+    state.vehicleCondition.storage = 2;
+    state.scrap = 4;
+
+    expect(missingVehicleConditionPoints(state.vehicleCondition)).toBe(4);
+
+    const result = repairVehicleAtWorkshop(state);
+
+    expect(result).toMatchObject({
+      didRepair: true,
+      repairedSubsystem: 'engine',
+      scrapCost: 4,
+      newCondition: 3,
+      repairedConditionPoints: 4
+    });
+    expect(state.scrap).toBe(0);
+    expect(state.vehicleCondition).toEqual({
+      frame: 3,
+      engine: 3,
+      scanner: 3,
+      suspension: 3,
+      storage: 3,
+      shielding: 3
+    });
+  });
+
+  it('rejects workshop overhauls when scrap is below the full restore cost', () => {
+    const state = createInitialGameState('vehicle-workshop-insufficient');
+    state.vehicleCondition.engine = 1;
+    state.vehicleCondition.frame = 2;
+    state.scrap = 2;
+
+    const result = repairVehicleAtWorkshop(state);
+
+    expect(result.didRepair).toBe(false);
+    expect(result.reason).toBe('Need 3 scrap for a workshop overhaul');
+    expect(state.scrap).toBe(2);
+    expect(state.vehicleCondition.engine).toBe(1);
   });
 
   it('lists deterministic site module offers ordered by current level then biome priority', () => {
