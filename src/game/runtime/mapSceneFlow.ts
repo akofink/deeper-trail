@@ -13,6 +13,14 @@ import {
   type RuntimeState
 } from './runtimeState';
 
+function clampSelectionIndex(currentIndex: number, optionCount: number): number {
+  if (optionCount <= 0) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(currentIndex, optionCount - 1));
+}
+
 export function advanceMapSelection(currentIndex: number, optionCount: number, step: number): number {
   if (optionCount <= 0) {
     return 0;
@@ -27,6 +35,22 @@ export function advanceMapInstallSelection(currentIndex: number, optionCount: nu
   }
 
   return (currentIndex + step + optionCount) % optionCount;
+}
+
+export function normalizeMapSelectionIndex(state: RuntimeState): void {
+  state.mapSelectionIndex = clampSelectionIndex(state.mapSelectionIndex, connectedNeighbors(state.sim).length);
+}
+
+export function normalizeMapInstallSelectionIndex(state: RuntimeState): void {
+  state.mapInstallSelectionIndex = clampSelectionIndex(
+    state.mapInstallSelectionIndex ?? 0,
+    getInstallOffers(state.sim, currentNodeType(state.sim)).length
+  );
+}
+
+export function normalizeMapSelections(state: RuntimeState): void {
+  normalizeMapSelectionIndex(state);
+  normalizeMapInstallSelectionIndex(state);
 }
 
 export function tryTravelSelectedNode(state: RuntimeState): void {
@@ -70,6 +94,9 @@ export function tryTravelSelectedNode(state: RuntimeState): void {
     }
   }
 
+  state.mapSelectionIndex = 0;
+  state.mapInstallSelectionIndex = 0;
+  normalizeMapSelections(state);
   resetRunFromCurrentNode(state);
   state.scene = 'run';
 }
@@ -104,8 +131,7 @@ export function tryInstallUpgradeOnMap(state: RuntimeState): void {
   const result = installUpgradeForNodeType(state.sim, nodeType, state.mapInstallSelectionIndex ?? 0);
   if (result.didInstall) {
     normalizeRuntimeStateAfterVehicleChange(state);
-    const remainingOffers = getInstallOffers(state.sim, nodeType);
-    state.mapInstallSelectionIndex = Math.min(state.mapInstallSelectionIndex ?? 0, Math.max(0, remainingOffers.length - 1));
+    normalizeMapInstallSelectionIndex(state);
     state.mapMessage = `Installed ${result.subsystem} module Lv.${result.nextLevel} at ${nodeType} site (-${result.scrapCost} scrap).`;
   } else {
     state.mapMessage = result.reason ?? 'Install failed';

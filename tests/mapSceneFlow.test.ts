@@ -7,6 +7,8 @@ import {
   advanceMapSelection,
   buildMapScannerFlags,
   mapSceneStatusText,
+  normalizeMapInstallSelectionIndex,
+  normalizeMapSelectionIndex,
   stepMapScene,
   tryFieldRepairOnMap,
   tryInstallUpgradeOnMap,
@@ -53,6 +55,8 @@ describe('map scene flow helpers', () => {
     expect(state.player.x).not.toBe(420);
     expect(state.player.vx).toBe(0);
     expect(state.sim.currentNodeId).toBe(options[0]?.nodeId);
+    expect(state.mapSelectionIndex).toBe(0);
+    expect(state.mapInstallSelectionIndex).toBe(0);
   });
 
   it('blocks travel until the current node run has been completed', () => {
@@ -179,6 +183,26 @@ describe('map scene flow helpers', () => {
       hasAutoLinkScanner: true,
       hasCompletedCurrentNode: false
     });
+  });
+
+  it('clamps stale map selection indices back into the current route and site ranges', () => {
+    const state = createInitialRuntimeState(720, 'map-scene-normalize');
+    state.scene = 'map';
+    state.mapSelectionIndex = 99;
+    state.mapInstallSelectionIndex = 99;
+
+    const currentNode = findNode(state.sim, state.sim.currentNodeId);
+    expect(currentNode).toBeDefined();
+    if (!currentNode) {
+      throw new Error('Expected current node');
+    }
+    currentNode.type = 'anomaly';
+
+    normalizeMapSelectionIndex(state);
+    normalizeMapInstallSelectionIndex(state);
+
+    expect(state.mapSelectionIndex).toBe(connectedNeighbors(state.sim).length - 1);
+    expect(state.mapInstallSelectionIndex).toBe(getInstallOffers(state.sim, 'anomaly').length - 1);
   });
 
   it('ticks map timers, advances rotation, and returns the map-enter message only while on the map', () => {
