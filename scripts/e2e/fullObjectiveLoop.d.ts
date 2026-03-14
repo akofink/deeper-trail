@@ -120,6 +120,13 @@ export interface ObjectiveLoopSmokeConfig {
   completeRun(page: Page): Promise<unknown>;
 }
 
+export interface ObjectiveLoopRunOptions {
+  browser?: Browser;
+  candidatePaths?: string[];
+  launchBrowser?: (candidatePaths: string[]) => Promise<Browser>;
+  runSmoke?: (smoke: ObjectiveLoopSmokeConfig, browser: Browser) => Promise<object | null>;
+}
+
 export function logStep(message: string): void;
 export function parseSmokeSelection(argv?: string[]): "town" | "ruin" | "nature" | "anomaly" | "all";
 export function withStepTimeout<T>(step: string, operation: () => Promise<T>, timeoutMs?: number): Promise<T>;
@@ -142,7 +149,8 @@ export function tapKey(page: Page, key: string, frames?: number): Promise<void>;
 export function launchBrowserWithFallback(candidatePaths: string[]): Promise<Browser>;
 export const OBJECTIVE_LOOP_SMOKES: Record<ObjectiveLoopSmokeConfig["name"], ObjectiveLoopSmokeConfig>;
 export function resolveObjectiveLoopSmoke(smokeName: ObjectiveLoopSmokeConfig["name"]): ObjectiveLoopSmokeConfig;
-export function runObjectiveLoopSmoke(smoke: ObjectiveLoopSmokeConfig): Promise<object | null>;
+export function runObjectiveLoopSmoke(smoke: ObjectiveLoopSmokeConfig, options?: ObjectiveLoopRunOptions): Promise<object | null>;
 export function runSelectedObjectiveLoopSmokes(
-  selection: ObjectiveLoopSmokeConfig["name"] | "all"
+  selection: ObjectiveLoopSmokeConfig["name"] | "all",
+  options?: Omit<ObjectiveLoopRunOptions, "browser">
 ): Promise<object[]>;

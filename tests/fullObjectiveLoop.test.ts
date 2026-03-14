@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { Browser } from "playwright";
 
 import {
   beaconApproachState,
@@ -7,6 +8,8 @@ import {
   isSkippableBrowserLaunchError,
   parseSmokeSelection,
   resolveObjectiveLoopSmoke,
+  runObjectiveLoopSmoke,
+  runSelectedObjectiveLoopSmokes,
   resolveExecutablePath,
   resolveExecutablePathCandidates,
   withStepTimeout,
@@ -225,5 +228,69 @@ describe("fullObjectiveLoop helpers", () => {
     };
     const c = syncGateApproachState(target, statePast, 0);
     expect(c.beforeGate).toBe(false);
+  });
+
+  it("reuses one launched browser across the selected smoke suite", async () => {
+    const browser = { close: vi.fn() } as unknown as Browser;
+    const launchBrowser = vi.fn<(candidatePaths: string[]) => Promise<Browser>>(async () => browser);
+    const runSmoke = vi.fn(async (smoke: { name: string }, calledBrowser: Browser) => ({ smoke: smoke.name, browser: calledBrowser }));
+
+    const results = await runSelectedObjectiveLoopSmokes("all", {
+      candidatePaths: ["/tmp/chromium"],
+      launchBrowser,
+      runSmoke
+    });
+
+    expect(launchBrowser).toHaveBeenCalledTimes(1);
+    expect(launchBrowser).toHaveBeenCalledWith(["/tmp/chromium"]);
+    expect(runSmoke.mock.calls.map(([smoke, calledBrowser]) => [smoke.name, calledBrowser])).toEqual([
+      ["town", browser],
+      ["ruin", browser],
+      ["nature", browser],
+      ["anomaly", browser]
+    ]);
+    expect(results).toEqual([
+      { smoke: "town", browser },
+      { smoke: "ruin", browser },
+      { smoke: "nature", browser },
+      { smoke: "anomaly", browser }
+    ]);
+    expect((browser.close as unknown as ReturnType<typeof vi.fn>)).toHaveBeenCalledTimes(1);
+  });
+
+  it("launches and closes an owned browser for a single smoke when one is not provided", async () => {
+    const browser = { close: vi.fn() } as unknown as Browser;
+    const smoke = resolveObjectiveLoopSmoke("town");
+    const launchBrowser = vi.fn<(candidatePaths: string[]) => Promise<Browser>>(async () => browser);
+    const runSmoke = vi.fn(async () => ({ smoke: "town" }));
+
+    const result = await runObjectiveLoopSmoke(smoke, {
+      candidatePaths: ["/tmp/chromium"],
+      launchBrowser,
+      runSmoke
+    });
+
+    expect(launchBrowser).toHaveBeenCalledTimes(1);
+    expect(runSmoke).toHaveBeenCalledWith(smoke, browser);
+    expect((browser.close as unknown as ReturnType<typeof vi.fn>)).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ smoke: "town" });
+  });
+
+  it("returns an empty result set when a shared browser launch is skippable", async () => {
+    const launchBrowser = vi.fn(async () => {
+      throw new Error(
+        "Looks like Playwright Test or Playwright was just installed or updated. Please run the following command to download new browsers"
+      );
+    });
+    const runSmoke = vi.fn();
+
+    const results = await runSelectedObjectiveLoopSmokes("all", {
+      candidatePaths: ["/tmp/chromium"],
+      launchBrowser,
+      runSmoke
+    });
+
+    expect(results).toEqual([]);
+    expect(runSmoke).not.toHaveBeenCalled();
   });
 });
