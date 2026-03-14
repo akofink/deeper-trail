@@ -1,3 +1,8 @@
+- Browser-shell renderer helper pass:
+  - Added `src/game/runtime/browserShellRenderer.ts` so browser-shell render module loading, Pixi app dependency shaping, and scene-render callback binding now live behind one focused runtime helper instead of staying embedded in `src/game/runtime/browserShellBootstrap.ts`.
+  - Updated `src/game/runtime/browserShellBootstrap.ts` to consume the new renderer helper and keep bootstrap focused on app creation plus runtime-controller wiring.
+  - Added `tests/browserShellRenderer.test.ts` and refreshed `tests/browserShellBootstrap.test.ts`, then ran `npm run check` successfully; browser smoke still skipped because no Chromium executable could be launched in this environment.
+
 - Browser shell blur-reset pass:
   - Updated `src/game/runtime/shellEventBridge.ts`, `src/game/runtime/shellRuntimeLoop.ts`, and `src/game/runtime/browserShellRuntimeLoopController.ts` so the browser shell now clears held keys and edge-trigger latches when the window loses focus instead of letting movement, jump, dash, or map-navigation input stick across a blur.
   - Expanded `tests/shellEventBridge.test.ts`, `tests/shellRuntimeLoop.test.ts`, `tests/browserShellRuntimeLoopController.test.ts`, and `tests/browserShellRuntime.test.ts` to lock down blur handling through the event bridge and runtime loop wiring.
